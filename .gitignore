@@ -1,0 +1,16 @@
+# Environment variables
+.env
+.env.local
+
+# Generated files
+node_modules/
+dist/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+
+# Claude Code / OMC local state
+.omc/
+.claude/settings.local.json
