@@ -16,14 +16,14 @@ describe('i18n', () => {
 
   it('translates Korean keys correctly', () => {
     expect(i18n.t('common:subtitle')).toBe('멈춘 터미널의 쉼터');
-    expect(i18n.t('status:normal')).toBe('정상');
-    expect(i18n.t('feed:createPost')).toBe('게시글 작성');
+    expect(i18n.t('status:checking')).toBe('상태 확인 중...');
+    expect(i18n.t('feed:placeholder')).toBe('무슨 일이 있나요?');
   });
 
   it('translates English keys correctly', () => {
     i18n.changeLanguage('en');
-    expect(i18n.t('status:normal')).toBe('Normal');
-    expect(i18n.t('feed:createPost')).toBe('Create Post');
+    expect(i18n.t('status:checking')).toBe('Checking status...');
+    expect(i18n.t('feed:placeholder')).toBe("What's happening?");
     i18n.changeLanguage('ko');
   });
 });

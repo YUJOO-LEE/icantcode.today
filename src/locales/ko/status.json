@@ -1,14 +1,9 @@
 {
   "checking": "상태 확인 중...",
-  "normal": "정상",
-  "down": "장애 발생",
-  "degraded": "성능 저하",
   "apiOnline": "Claude Code API가 정상입니다",
   "apiDown": "Claude Code API 장애가 감지되었습니다",
   "apiDegraded": "Claude Code API 성능이 저하되었습니다",
   "goWork": "지금은 코딩할 수 있어요.\n일하러 가세요!",
   "feedOnlyOnOutage": "피드는 장애 시에만 열립니다.",
-  "recovered": "API가 복구되었습니다! 이제 코딩하러 가세요!",
-  "lastChecked": "마지막 확인",
   "apiStatusLabel": "API 상태:"
 }

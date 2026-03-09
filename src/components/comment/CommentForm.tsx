@@ -67,7 +67,7 @@ function CommentForm({ postId }: CommentFormProps) {
         }}
       />
       <p className="mt-1 text-[10px] text-muted-foreground/50 pl-4">
-        {t('replyHint')}
+        enter: submit | esc: cancel
       </p>
     </div>
   );

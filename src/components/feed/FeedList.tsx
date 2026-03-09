@@ -37,7 +37,7 @@ function FeedList() {
   if (!posts || posts.length === 0) {
     return (
       <div className="text-xs text-muted-foreground py-4">
-        <p>{t('emptyDir')}</p>
+        <p>drwxr-xr-x  0 posts  (empty)</p>
         <p className="mt-2 text-muted-foreground/50">{t('empty')}</p>
       </div>
     );
@@ -46,7 +46,7 @@ function FeedList() {
   return (
     <div role="feed" aria-label={t('feedLabel')}>
       <div className="mb-4 text-xs text-muted-foreground">
-        <span className="text-foreground">$</span> {t('listCommand')}
+        <span className="text-foreground">$</span> ls -la ./posts/
       </div>
       <div className="text-xs text-muted-foreground mb-3">
         {t('total', { count: posts.length })}

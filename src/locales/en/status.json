@@ -1,14 +1,9 @@
 {
   "checking": "Checking status...",
-  "normal": "Normal",
-  "down": "Down",
-  "degraded": "Degraded",
   "apiOnline": "Claude Code API is online",
   "apiDown": "Claude Code API outage detected",
   "apiDegraded": "Claude Code API performance degraded",
   "goWork": "You can code right now.\nGet back to work!",
   "feedOnlyOnOutage": "Feed is only available during outages.",
-  "recovered": "API recovered! Get back to coding!",
-  "lastChecked": "Last checked",
   "apiStatusLabel": "API status:"
 }

@@ -75,7 +75,7 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
       >
         <span className="text-foreground">$</span>
         <span className="text-muted-foreground group-hover:text-foreground transition-colors ml-1">
-          {isOpen ? t('writing') : t('newPost')}
+          {isOpen ? '# writing new post...' : './post --new'}
         </span>
         {!isOpen && <span className="cursor ml-1 text-muted-foreground">_</span>}
       </button>
@@ -105,7 +105,7 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
           </div>
 
           <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
-            <span>{t('submitHint')}</span>
+            <span>ctrl+enter: submit | esc: cancel</span>
             <div className="flex gap-2">
               <TerminalButton
                 type="button"
