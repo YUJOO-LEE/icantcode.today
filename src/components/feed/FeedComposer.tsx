@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSessionStore } from '@/stores/sessionStore';
+import { useNicknameGuard } from '@/hooks/useNicknameGuard';
 import { useCreatePost } from '@/apis/queries/usePosts';
 import { MAX_POST_LENGTH } from '@/lib/constants';
 import NicknamePrompt from '@/components/common/NicknamePrompt';
@@ -13,11 +13,8 @@ interface FeedComposerProps {
 
 function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
   const { t } = useTranslation('feed');
-  const nickname = useSessionStore((s) => s.nickname);
-  const userCode = useSessionStore((s) => s.userCode);
-  const hasNickname = useSessionStore((s) => s.hasNickname);
+  const { nickname, userCode, guardAction, showPromptIfNeeded, dismissPrompt, shouldRenderPrompt } = useNicknameGuard();
   const [content, setContent] = useState('');
-  const [showNicknamePrompt, setShowNicknamePrompt] = useState(false);
   const createPost = useCreatePost();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -28,21 +25,19 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
   }, [isOpen]);
 
   const handleSubmit = () => {
-    if (!hasNickname()) {
-      setShowNicknamePrompt(true);
-      return;
-    }
-    if (content.trim().length === 0 || !nickname) return;
+    guardAction(() => {
+      if (content.trim().length === 0 || !nickname) return;
 
-    createPost.mutate(
-      { content: content.trim(), author: nickname, userCode },
-      {
-        onSuccess: () => {
-          setContent('');
-          onToggle?.();
+      createPost.mutate(
+        { content: content.trim(), author: nickname, userCode },
+        {
+          onSuccess: () => {
+            setContent('');
+            onToggle?.();
+          },
         },
-      },
-    );
+      );
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -55,12 +50,12 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
     }
   };
 
-  if (showNicknamePrompt && !hasNickname()) {
+  if (shouldRenderPrompt) {
     return (
       <div className="mb-6">
         <NicknamePrompt
-          onComplete={() => setShowNicknamePrompt(false)}
-          onCancel={() => setShowNicknamePrompt(false)}
+          onComplete={dismissPrompt}
+          onCancel={dismissPrompt}
         />
       </div>
     );
@@ -91,15 +86,11 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
                 onChange={(e) => setContent(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={t('placeholder')}
-                className="flex-1 min-h-[80px] bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none leading-relaxed"
+                className="flex-1 min-h-20 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none leading-relaxed"
                 aria-label={t('placeholder')}
                 maxLength={MAX_POST_LENGTH}
                 disabled={createPost.isPending}
-                onFocus={() => {
-                  if (!hasNickname()) {
-                    setShowNicknamePrompt(true);
-                  }
-                }}
+                onFocus={showPromptIfNeeded}
               />
             </div>
           </div>
