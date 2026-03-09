@@ -15,7 +15,7 @@ describe('i18n', () => {
   });
 
   it('translates Korean keys correctly', () => {
-    expect(i18n.t('common:subtitle')).toBe('일하기 싫을 때 한마디');
+    expect(i18n.t('common:subtitle')).toBe('멈춘 터미널의 쉼터');
     expect(i18n.t('status:normal')).toBe('정상');
     expect(i18n.t('feed:createPost')).toBe('게시글 작성');
   });
