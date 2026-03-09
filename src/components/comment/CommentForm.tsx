@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSessionStore } from '@/stores/sessionStore';
+import { useNicknameGuard } from '@/hooks/useNicknameGuard';
 import { useCreateComment } from '@/apis/queries/useComments';
 import { MAX_COMMENT_LENGTH } from '@/lib/constants';
 import TerminalInput from '@/components/ui/TerminalInput';
@@ -12,24 +12,19 @@ interface CommentFormProps {
 
 function CommentForm({ postId }: CommentFormProps) {
   const { t } = useTranslation('feed');
-  const nickname = useSessionStore((s) => s.nickname);
-  const userCode = useSessionStore((s) => s.userCode);
-  const hasNickname = useSessionStore((s) => s.hasNickname);
+  const { nickname, userCode, guardAction, showPromptIfNeeded, dismissPrompt, shouldRenderPrompt } = useNicknameGuard();
   const [content, setContent] = useState('');
-  const [showNicknamePrompt, setShowNicknamePrompt] = useState(false);
   const createComment = useCreateComment(postId);
 
   const handleSubmit = () => {
-    if (!hasNickname()) {
-      setShowNicknamePrompt(true);
-      return;
-    }
-    if (content.trim().length === 0 || !nickname) return;
+    guardAction(() => {
+      if (content.trim().length === 0 || !nickname) return;
 
-    createComment.mutate(
-      { content: content.trim(), author: nickname, userCode },
-      { onSuccess: () => setContent('') },
-    );
+      createComment.mutate(
+        { content: content.trim(), author: nickname, userCode },
+        { onSuccess: () => setContent('') },
+      );
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -42,11 +37,11 @@ function CommentForm({ postId }: CommentFormProps) {
     }
   };
 
-  if (showNicknamePrompt && !hasNickname()) {
+  if (shouldRenderPrompt) {
     return (
       <NicknamePrompt
-        onComplete={() => setShowNicknamePrompt(false)}
-        onCancel={() => setShowNicknamePrompt(false)}
+        onComplete={dismissPrompt}
+        onCancel={dismissPrompt}
       />
     );
   }
@@ -60,11 +55,7 @@ function CommentForm({ postId }: CommentFormProps) {
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
         maxLength={MAX_COMMENT_LENGTH}
-        onFocus={() => {
-          if (!hasNickname()) {
-            setShowNicknamePrompt(true);
-          }
-        }}
+        onFocus={showPromptIfNeeded}
       />
       <p className="mt-1 text-[10px] text-muted-foreground/50 pl-4">
         enter: submit | esc: cancel

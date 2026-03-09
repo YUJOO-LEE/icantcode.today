@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { generateUUID } from '@/lib/utils';
 
 interface SessionState {
   userCode: string;
@@ -8,7 +9,7 @@ interface SessionState {
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
-  userCode: crypto.randomUUID(),
+  userCode: generateUUID(),
   nickname: null,
   setNickname: (nickname: string) => set({ nickname }),
   hasNickname: () => get().nickname !== null,
