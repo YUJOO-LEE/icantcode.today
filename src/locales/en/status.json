@@ -8,7 +8,6 @@
   "apiDegraded": "Claude Code API performance degraded",
   "goWork": "You can code right now.\nGet back to work!",
   "feedOnlyOnOutage": "Feed is only available during outages.",
-  "statusCheck": "$ status --check",
   "recovered": "API recovered! Get back to coding!",
   "lastChecked": "Last checked",
   "apiStatusLabel": "API status:"

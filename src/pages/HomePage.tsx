@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { APP_NAME, SHORTCUTS } from '@/constants/app';
 import { AnimatePresence, motion } from 'motion/react';
 import { useStatusStore } from '@/stores/statusStore';
 import { useThemeStore } from '@/stores/themeStore';
@@ -92,8 +93,12 @@ function HomePage() {
               <span className="text-foreground">$</span> cat /etc/motd
             </div>
             <div className="mt-2 pl-2 border-l-2 border-border text-muted-foreground">
-              <p>{t('appName')} - {t('subtitle')}</p>
-              <p className="mt-1">{t('help')}</p>
+              <p>{APP_NAME} - {t('subtitle')}</p>
+              <p className="mt-1">
+                [{SHORTCUTS.NEW.key}] {t('shortcutNew')}{'  '}
+                [{SHORTCUTS.THEME.key}] {t('shortcutTheme')}{'  '}
+                [{SHORTCUTS.LANG.key}] {t('shortcutLang')}
+              </p>
             </div>
           </div>
 

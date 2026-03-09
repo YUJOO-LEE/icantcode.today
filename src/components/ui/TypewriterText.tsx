@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Cursor from './Cursor';
 
 interface TypewriterTextProps {
@@ -11,6 +11,8 @@ interface TypewriterTextProps {
 function TypewriterText({ text, speed = 50, showCursor = true, onComplete }: TypewriterTextProps) {
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     // Check for reduced motion preference
@@ -19,7 +21,7 @@ function TypewriterText({ text, speed = 50, showCursor = true, onComplete }: Typ
     if (prefersReducedMotion) {
       setDisplayedText(text);
       setIsComplete(true);
-      onComplete?.();
+      onCompleteRef.current?.();
       return;
     }
 
@@ -34,12 +36,12 @@ function TypewriterText({ text, speed = 50, showCursor = true, onComplete }: Typ
       } else {
         clearInterval(timer);
         setIsComplete(true);
-        onComplete?.();
+        onCompleteRef.current?.();
       }
     }, speed);
 
     return () => clearInterval(timer);
-  }, [text, speed, onComplete]);
+  }, [text, speed]);
 
   return (
     <span>

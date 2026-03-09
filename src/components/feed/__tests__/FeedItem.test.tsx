@@ -39,7 +39,7 @@ describe('FeedItem', () => {
 
   it('shows reply and show count buttons', () => {
     render(<FeedItem post={mockPost} />, { wrapper: createWrapper() });
-    expect(screen.getByText('[reply]')).toBeInTheDocument();
+    expect(screen.getByText('[답글]')).toBeInTheDocument();
     expect(screen.getByText('[보기 3]')).toBeInTheDocument();
   });
 
@@ -47,7 +47,7 @@ describe('FeedItem', () => {
     const user = userEvent.setup();
     render(<FeedItem post={mockPost} />, { wrapper: createWrapper() });
 
-    const replyBtn = screen.getByText('[reply]');
+    const replyBtn = screen.getByText('[답글]');
     await user.click(replyBtn);
 
     expect(screen.getByPlaceholderText(/댓글을 입력/)).toBeInTheDocument();
