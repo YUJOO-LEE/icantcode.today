@@ -1,6 +1,7 @@
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import TerminalPrompt from '@/components/ui/TerminalPrompt';
+import TerminalButton from '@/components/ui/TerminalButton';
 import CommentList from '@/components/comment/CommentList';
 import type { PostSummaryResponse } from '@/types/api';
 
@@ -24,23 +25,21 @@ const FeedItem = memo(function FeedItem({ post }: FeedItemProps) {
         </pre>
       </div>
 
-      <div className="flex items-center gap-4 text-muted-foreground">
-        <button
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <TerminalButton
           onClick={() => setShowComments(!showComments)}
-          className="hover:text-foreground transition-colors focus:outline-none focus-visible:text-foreground"
           aria-expanded={showComments}
           aria-label={t('toggleComments', { count: post.commentCount })}
         >
-          [{t('replies')}]
-        </button>
+          {t('replies')}
+        </TerminalButton>
 
         {post.commentCount > 0 && (
-          <button
+          <TerminalButton
             onClick={() => setShowComments(!showComments)}
-            className="hover:text-foreground transition-colors focus:outline-none focus-visible:text-foreground"
           >
-            [{showComments ? t('hideComments') : t('showComments')} {post.commentCount}]
-          </button>
+            {showComments ? t('hideComments') : t('showComments')} {post.commentCount}
+          </TerminalButton>
         )}
       </div>
 

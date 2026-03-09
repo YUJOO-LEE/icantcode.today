@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useThemeStore } from '@/stores/themeStore';
+import TerminalButton from '@/components/ui/TerminalButton';
 
 function Header() {
   const { t, i18n } = useTranslation('common');
@@ -27,21 +28,21 @@ function Header() {
             <span className="cursor">_</span>
           </div>
 
-          <div className="flex items-center gap-1 text-[10px]">
-            <button
+          <div className="flex items-center gap-2 text-[10px]">
+            <TerminalButton
               onClick={toggleLanguage}
-              className="px-2 py-1 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="text-[10px]"
               aria-label={t('switchLang', { lang: i18n.language === 'ko' ? 'English' : '한국어' })}
             >
-              [{t('currentLang')}]
-            </button>
-            <button
+              {t('currentLang')}
+            </TerminalButton>
+            <TerminalButton
               onClick={toggleTheme}
-              className="px-2 py-1 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="text-[10px]"
               aria-label={t('switchTheme', { theme: theme === 'dark' ? t('lightMode') : t('darkMode') })}
             >
-              [{theme === 'dark' ? t('lightMode') : t('darkMode')}]
-            </button>
+              {theme === 'dark' ? t('lightMode') : t('darkMode')}
+            </TerminalButton>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSessionStore } from '@/stores/sessionStore';
 import { MAX_NICKNAME_LENGTH } from '@/lib/constants';
 import TerminalInput from '@/components/ui/TerminalInput';
+import TerminalButton from '@/components/ui/TerminalButton';
 
 interface NicknamePromptProps {
   onComplete: () => void;
@@ -47,21 +48,17 @@ function NicknamePrompt({ onComplete, onCancel }: NicknamePromptProps) {
         maxLength={MAX_NICKNAME_LENGTH}
         autoFocus
       />
-      <div className="flex gap-3 mt-3 text-muted-foreground">
-        <button
+      <div className="flex gap-2 mt-3 text-muted-foreground">
+        <TerminalButton
           onClick={handleSubmit}
           disabled={value.trim().length === 0}
-          className="hover:text-foreground transition-colors focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          [{t('common:submit')}]
-        </button>
+          {t('common:submit')}
+        </TerminalButton>
         {onCancel && (
-          <button
-            onClick={onCancel}
-            className="hover:text-foreground transition-colors focus:outline-none"
-          >
-            [{t('common:cancel')}]
-          </button>
+          <TerminalButton onClick={onCancel}>
+            {t('common:cancel')}
+          </TerminalButton>
         )}
       </div>
     </div>

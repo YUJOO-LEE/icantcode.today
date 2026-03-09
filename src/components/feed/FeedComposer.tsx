@@ -4,6 +4,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useCreatePost } from '@/apis/queries/usePosts';
 import { MAX_POST_LENGTH } from '@/lib/constants';
 import NicknamePrompt from '@/components/common/NicknamePrompt';
+import TerminalButton from '@/components/ui/TerminalButton';
 
 interface FeedComposerProps {
   isOpen?: boolean;
@@ -69,7 +70,7 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
     <div className="mb-6">
       <button
         onClick={onToggle}
-        className="text-xs text-left w-full group focus:outline-none"
+        className="text-xs text-left w-full group focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
         aria-expanded={isOpen}
       >
         <span className="text-foreground">$</span>
@@ -106,21 +107,20 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
           <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
             <span>{t('submitHint')}</span>
             <div className="flex gap-2">
-              <button
+              <TerminalButton
                 type="button"
                 onClick={onToggle}
-                className="hover:text-foreground transition-colors focus:outline-none"
               >
-                [{t('common:cancel')}]
-              </button>
-              <button
+                {t('common:cancel')}
+              </TerminalButton>
+              <TerminalButton
                 type="button"
                 onClick={handleSubmit}
                 disabled={content.trim().length === 0 || createPost.isPending}
-                className="text-foreground hover:underline focus:outline-none disabled:opacity-30 disabled:no-underline disabled:cursor-not-allowed"
+                className="text-foreground"
               >
-                [{createPost.isPending ? t('sending') : t('common:submit')}]
-              </button>
+                {createPost.isPending ? t('sending') : t('common:submit')}
+              </TerminalButton>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import TerminalButton from '@/components/ui/TerminalButton';
 
 interface ErrorFallbackProps {
   error?: Error;
@@ -21,12 +22,9 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
           </p>
         )}
         {onRetry && (
-          <button
-            onClick={onRetry}
-            className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none"
-          >
-            [{t('retry')}]
-          </button>
+          <TerminalButton onClick={onRetry}>
+            {t('retry')}
+          </TerminalButton>
         )}
       </div>
     </div>
