@@ -1,0 +1,29 @@
+/* Light mode (default root values) */
+:root {
+  /* Brand */
+  --color-primary: #ABC95B;
+
+  /* Semantic */
+  --color-success: #ABC95B;
+  --color-error: #FF6B6B;
+  --color-warning: #FFD93D;
+  --color-info: #6BB5FF;
+
+  /* Light mode colors */
+  --color-bg: #F5F5F0;
+  --color-surface: #EAEAE4;
+  --color-border: #C8C8C0;
+  --color-text-primary: #2D2D2D;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
+}
+
+/* Dark mode */
+.dark {
+  --color-bg: #121519;
+  --color-surface: #1E2329;
+  --color-border: #2D3440;
+  --color-text-primary: #E8E8E8;
+  --color-text-secondary: #8B9299;
+  --color-text-muted: #4A5568;
+}

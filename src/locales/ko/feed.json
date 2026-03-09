@@ -1,0 +1,12 @@
+{
+  "createPost": "게시글 작성",
+  "placeholder": "무슨 일이 있나요?",
+  "post": "게시",
+  "empty": "아직 게시글이 없습니다",
+  "emptyDescription": "첫 번째 게시글을 작성해보세요!",
+  "charCount": "{{current}}/{{max}}",
+  "comments": "댓글",
+  "commentPlaceholder": "댓글을 입력하세요...",
+  "commentSubmit": "댓글 작성",
+  "noComments": "아직 댓글이 없습니다"
+}

@@ -5,6 +5,7 @@
 # Generated files
 node_modules/
 dist/
+coverage/
 
 # IDE / editor
 .idea/

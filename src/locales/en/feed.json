@@ -1,0 +1,12 @@
+{
+  "createPost": "Create Post",
+  "placeholder": "What's happening?",
+  "post": "Post",
+  "empty": "No posts yet",
+  "emptyDescription": "Be the first to post!",
+  "charCount": "{{current}}/{{max}}",
+  "comments": "Comments",
+  "commentPlaceholder": "Write a comment...",
+  "commentSubmit": "Comment",
+  "noComments": "No comments yet"
+}
