@@ -27,7 +27,7 @@ describe('NicknamePrompt', () => {
     render(<NicknamePrompt onComplete={onComplete} />, { wrapper: Wrapper });
 
     await user.type(screen.getByPlaceholderText(/닉네임을 입력/), 'dev_user');
-    await user.click(screen.getByRole('button', { name: /확인/ }));
+    await user.click(screen.getByText('[제출]'));
 
     expect(useSessionStore.getState().nickname).toBe('dev_user');
     expect(onComplete).toHaveBeenCalled();
@@ -35,7 +35,7 @@ describe('NicknamePrompt', () => {
 
   it('disables confirm when input is empty', () => {
     render(<NicknamePrompt onComplete={vi.fn()} />, { wrapper: Wrapper });
-    const confirmBtn = screen.getByRole('button', { name: /확인/ });
+    const confirmBtn = screen.getByText('[제출]');
     expect(confirmBtn).toBeDisabled();
   });
 
@@ -43,7 +43,7 @@ describe('NicknamePrompt', () => {
     const user = userEvent.setup();
     const onCancel = vi.fn();
     render(<NicknamePrompt onComplete={vi.fn()} onCancel={onCancel} />, { wrapper: Wrapper });
-    await user.click(screen.getByRole('button', { name: /취소/ }));
+    await user.click(screen.getByText('[취소]'));
     expect(onCancel).toHaveBeenCalled();
   });
 });

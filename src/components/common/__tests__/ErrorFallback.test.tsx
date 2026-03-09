@@ -11,7 +11,7 @@ function Wrapper({ children }: { children: ReactNode }) {
 }
 
 describe('ErrorFallback', () => {
-  it('renders error badge and message', () => {
+  it('renders error text with bracket notation', () => {
     render(<ErrorFallback />, { wrapper: Wrapper });
     expect(screen.getByText('[ERR]')).toBeInTheDocument();
     expect(screen.getByText(/오류가 발생했습니다/)).toBeInTheDocument();
@@ -26,7 +26,7 @@ describe('ErrorFallback', () => {
     const user = userEvent.setup();
     const onRetry = vi.fn();
     render(<ErrorFallback onRetry={onRetry} />, { wrapper: Wrapper });
-    await user.click(screen.getByRole('button', { name: /다시 시도/ }));
+    await user.click(screen.getByText('[다시 시도]'));
     expect(onRetry).toHaveBeenCalledOnce();
   });
 

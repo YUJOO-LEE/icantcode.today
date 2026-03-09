@@ -16,7 +16,7 @@ describe('App', () => {
 
   it('renders app name in header', () => {
     render(<App />);
-    expect(screen.getByText('icantcode.today')).toBeInTheDocument();
+    expect(screen.getAllByText(/icantcode\.today/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows checking view initially', () => {
@@ -54,7 +54,7 @@ describe('App', () => {
 
     render(<App />);
     await waitFor(() => {
-      expect(screen.getByText('[DOWN]')).toBeInTheDocument();
+      expect(screen.getByText('[ERR]')).toBeInTheDocument();
     });
   });
 

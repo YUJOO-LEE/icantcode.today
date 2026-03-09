@@ -29,25 +29,33 @@ const mockPost = {
 };
 
 describe('FeedItem', () => {
-  it('renders post content and author', () => {
+  it('renders post content and author in ls -la style', () => {
     render(<FeedItem post={mockPost} />, { wrapper: createWrapper() });
     expect(screen.getByText('Test post')).toBeInTheDocument();
-    expect(screen.getByText('@testuser')).toBeInTheDocument();
+    expect(screen.getByText('testuser')).toBeInTheDocument();
+    expect(screen.getByText('-rw-r--r--')).toBeInTheDocument();
+    expect(screen.getByText('#1')).toBeInTheDocument();
   });
 
-  it('shows comment count', () => {
+  it('shows reply and show count buttons', () => {
     render(<FeedItem post={mockPost} />, { wrapper: createWrapper() });
-    expect(screen.getByText(/💬 3/)).toBeInTheDocument();
+    expect(screen.getByText('[reply]')).toBeInTheDocument();
+    expect(screen.getByText('[보기 3]')).toBeInTheDocument();
   });
 
   it('toggles comments on click', async () => {
     const user = userEvent.setup();
     render(<FeedItem post={mockPost} />, { wrapper: createWrapper() });
 
-    const commentBtn = screen.getByText(/💬 3/);
-    await user.click(commentBtn);
+    const replyBtn = screen.getByText('[reply]');
+    await user.click(replyBtn);
 
-    // Comments section should now be visible
     expect(screen.getByPlaceholderText(/댓글을 입력/)).toBeInTheDocument();
+  });
+
+  it('has aria-label on comment toggle button', () => {
+    render(<FeedItem post={mockPost} />, { wrapper: createWrapper() });
+    const btn = screen.getByLabelText(/댓글/);
+    expect(btn).toBeInTheDocument();
   });
 });

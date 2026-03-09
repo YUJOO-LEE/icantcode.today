@@ -3,19 +3,8 @@ interface TerminalBadgeProps {
   children: string;
 }
 
-function TerminalBadge({ variant, children }: TerminalBadgeProps) {
-  const variantStyles = {
-    success: 'text-[var(--color-success)]',
-    error: 'text-[var(--color-error)]',
-    warning: 'text-[var(--color-warning)]',
-    info: 'text-[var(--color-info)]',
-  };
-
-  return (
-    <span className={`font-bold ${variantStyles[variant]}`}>
-      [{children}]
-    </span>
-  );
+function TerminalBadge({ children }: TerminalBadgeProps) {
+  return <span className="text-xs text-foreground">[{children}]</span>;
 }
 
 export default TerminalBadge;

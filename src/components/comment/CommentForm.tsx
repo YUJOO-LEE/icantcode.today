@@ -4,7 +4,6 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useCreateComment } from '@/apis/queries/useComments';
 import { MAX_COMMENT_LENGTH } from '@/lib/constants';
 import TerminalInput from '@/components/ui/TerminalInput';
-import TerminalButton from '@/components/ui/TerminalButton';
 import NicknamePrompt from '@/components/common/NicknamePrompt';
 
 interface CommentFormProps {
@@ -38,6 +37,9 @@ function CommentForm({ postId }: CommentFormProps) {
       e.preventDefault();
       handleSubmit();
     }
+    if (e.key === 'Escape') {
+      setContent('');
+    }
   };
 
   if (showNicknamePrompt && !hasNickname()) {
@@ -50,28 +52,23 @@ function CommentForm({ postId }: CommentFormProps) {
   }
 
   return (
-    <div className="flex items-center gap-2 mt-2">
-      <div className="flex-1">
-        <TerminalInput
-          prompt=">"
-          placeholder={t('commentPlaceholder')}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onKeyDown={handleKeyDown}
-          maxLength={MAX_COMMENT_LENGTH}
-          onFocus={() => {
-            if (!hasNickname()) {
-              setShowNicknamePrompt(true);
-            }
-          }}
-        />
-      </div>
-      <TerminalButton
-        onClick={handleSubmit}
-        disabled={content.trim().length === 0 || createComment.isPending}
-      >
-        {t('commentSubmit')}
-      </TerminalButton>
+    <div className="mt-3">
+      <TerminalInput
+        prompt=">"
+        placeholder={t('commentPlaceholder')}
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        onKeyDown={handleKeyDown}
+        maxLength={MAX_COMMENT_LENGTH}
+        onFocus={() => {
+          if (!hasNickname()) {
+            setShowNicknamePrompt(true);
+          }
+        }}
+      />
+      <p className="mt-1 text-[10px] text-muted-foreground/50 pl-4">
+        {t('replyHint')}
+      </p>
     </div>
   );
 }

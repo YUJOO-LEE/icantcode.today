@@ -5,35 +5,25 @@ import TerminalCard from '../TerminalCard';
 describe('TerminalCard', () => {
   it('renders children', () => {
     render(
-      <TerminalCard>
-        <TerminalCard.Body>Test content</TerminalCard.Body>
-      </TerminalCard>
+      <TerminalCard>Test content</TerminalCard>
     );
     expect(screen.getByText('Test content')).toBeInTheDocument();
   });
 
-  it('renders box-drawing characters as aria-hidden', () => {
+  it('renders as a box with border and no rounded corners', () => {
     const { container } = render(
-      <TerminalCard>
-        <TerminalCard.Body>Content</TerminalCard.Body>
-      </TerminalCard>
+      <TerminalCard>Content</TerminalCard>
     );
-    const hiddenChars = container.querySelectorAll('[aria-hidden="true"]');
-    expect(hiddenChars.length).toBeGreaterThanOrEqual(4);
+    const card = container.firstElementChild;
+    expect(card).toHaveClass('border');
+    expect(card).toHaveClass('bg-card');
+    expect(card).toHaveClass('p-4');
   });
 
-  it('renders compound components', () => {
-    render(
-      <TerminalCard>
-        <TerminalCard.Header>Header</TerminalCard.Header>
-        <TerminalCard.Divider />
-        <TerminalCard.Body>Body</TerminalCard.Body>
-        <TerminalCard.Divider />
-        <TerminalCard.Footer>Footer</TerminalCard.Footer>
-      </TerminalCard>
+  it('applies custom className', () => {
+    const { container } = render(
+      <TerminalCard className="mt-4">Content</TerminalCard>
     );
-    expect(screen.getByText('Header')).toBeInTheDocument();
-    expect(screen.getByText('Body')).toBeInTheDocument();
-    expect(screen.getByText('Footer')).toBeInTheDocument();
+    expect(container.firstElementChild).toHaveClass('mt-4');
   });
 });

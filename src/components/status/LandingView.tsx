@@ -1,7 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import TerminalCard from '@/components/ui/TerminalCard';
-import TerminalBadge from '@/components/ui/TerminalBadge';
 import TypewriterText from '@/components/ui/TypewriterText';
 
 function LandingView() {
@@ -9,30 +7,29 @@ function LandingView() {
 
   return (
     <motion.div
-      className="flex items-center justify-center min-h-[60vh]"
+      className="flex-1 flex items-center justify-center"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
-      <TerminalCard className="w-full max-w-lg">
-        <TerminalCard.Body className="space-y-4 py-8 px-6">
-          <p className="text-[var(--color-text-muted)] text-sm">{t('statusCheck')}</p>
-          <p className="text-lg">
-            <TerminalBadge variant="success">OK</TerminalBadge>{' '}
-            <span className="text-[var(--color-text-primary)]">{t('apiOnline')}</span>
+      <div className="w-full text-xs leading-relaxed">
+        <div className="text-muted-foreground">
+          <span className="text-foreground">$</span> cat /etc/motd
+        </div>
+        <div className="mt-2 pl-2 border-l-2 border-border text-muted-foreground space-y-1">
+          <p className="text-xs text-muted-foreground">{t('statusCheck')}</p>
+          <p>
+            <span className="text-foreground">[OK]</span>{' '}
+            <span className="text-foreground">{t('apiOnline')}</span>
           </p>
-          <div className="text-[var(--color-primary)]">
-            <p>&gt; <TypewriterText text={t('goWork').split('\n')[0] ?? ''} speed={40} /></p>
-            <p>&gt; <TypewriterText text={t('goWork').split('\n')[1] ?? ''} speed={40} showCursor={true} /></p>
+          <p>&gt; <TypewriterText text={t('goWork').split('\n')[0] ?? ''} speed={40} /></p>
+          <p>&gt; <TypewriterText text={t('goWork').split('\n')[1] ?? ''} speed={40} showCursor={true} /></p>
+          <div className="mt-2 pt-2 border-t border-border/50">
+            <p className="text-muted-foreground/50"># {t('feedOnlyOnOutage')}</p>
           </div>
-          <div className="border-t border-[var(--color-border)] pt-4 mt-4">
-            <p className="text-[var(--color-text-muted)] text-xs">
-              # {t('feedOnlyOnOutage')}
-            </p>
-          </div>
-        </TerminalCard.Body>
-      </TerminalCard>
+        </div>
+      </div>
     </motion.div>
   );
 }

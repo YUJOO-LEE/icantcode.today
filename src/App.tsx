@@ -62,8 +62,8 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
 function LoadingFallback() {
   return (
-    <div className="flex items-center justify-center min-h-[60vh] text-[var(--color-text-muted)]">
-      <p>Loading... <Cursor /></p>
+    <div className="flex items-center justify-center min-h-[60vh] text-xs text-muted-foreground">
+      <p>loading... <Cursor /></p>
     </div>
   );
 }

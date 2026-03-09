@@ -10,5 +10,6 @@
   "feedOnlyOnOutage": "Feed is only available during outages.",
   "statusCheck": "$ status --check",
   "recovered": "API recovered! Get back to coding!",
-  "lastChecked": "Last checked"
+  "lastChecked": "Last checked",
+  "apiStatusLabel": "API status:"
 }

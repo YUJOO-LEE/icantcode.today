@@ -49,7 +49,7 @@ describe('HomePage', () => {
 
     render(<HomePage />, { wrapper: createWrapper() });
     await waitFor(() => {
-      expect(screen.getByText('[OK]')).toBeInTheDocument();
+      expect(screen.getByText(/Claude Code API가 정상입니다/)).toBeInTheDocument();
     });
   });
 
@@ -66,7 +66,7 @@ describe('HomePage', () => {
 
     render(<HomePage />, { wrapper: createWrapper() });
     await waitFor(() => {
-      expect(screen.getByText('[DOWN]')).toBeInTheDocument();
+      expect(screen.getByText('[ERR]')).toBeInTheDocument();
     });
   });
 

@@ -2,27 +2,22 @@ import { formatRelativeTime } from '@/lib/utils';
 
 interface TerminalPromptProps {
   user: string;
-  path?: string;
   time?: string;
-  symbol?: '>' | '$' | '#';
+  id?: number;
 }
 
-function TerminalPrompt({ user, path = '~/feed', time, symbol = '>' }: TerminalPromptProps) {
+function TerminalPrompt({ user, time, id }: TerminalPromptProps) {
   return (
-    <span className="text-sm">
-      <span className="text-[var(--color-text-muted)]">{symbol}</span>{' '}
-      <span className="text-[var(--color-primary)]">@{user}</span>{' '}
-      <span className="text-[var(--color-text-muted)]">{path}</span>
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <span>-rw-r--r--</span>
+      <span className="text-foreground">{user}</span>
       {time && (
-        <>
-          {' '}
-          <span className="text-[var(--color-text-muted)]">$</span>{' '}
-          <time className="text-[var(--color-text-muted)]" title={time}>
-            {formatRelativeTime(time)}
-          </time>
-        </>
+        <time dateTime={time}>{formatRelativeTime(time)}</time>
       )}
-    </span>
+      {id !== undefined && (
+        <span className="text-muted-foreground/50">#{id}</span>
+      )}
+    </div>
   );
 }
 

@@ -1,12 +1,26 @@
 {
   "createPost": "게시글 작성",
+  "newPost": "./post --new",
+  "writing": "# writing new post...",
   "placeholder": "무슨 일이 있나요?",
   "post": "게시",
   "empty": "아직 게시글이 없습니다",
+  "emptyDir": "drwxr-xr-x  0 posts  (empty)",
   "emptyDescription": "첫 번째 게시글을 작성해보세요!",
+  "listCommand": "ls -la ./posts/",
+  "total": "total {{count}}",
+  "submitHint": "ctrl+enter: submit | esc: cancel",
+  "replyHint": "enter: submit | esc: cancel",
   "charCount": "{{current}}/{{max}}",
   "comments": "댓글",
   "commentPlaceholder": "댓글을 입력하세요...",
   "commentSubmit": "댓글 작성",
-  "noComments": "아직 댓글이 없습니다"
+  "noComments": "아직 댓글이 없습니다",
+  "replies": "reply",
+  "toggleComments": "댓글 {{count}}개 보기",
+  "sending": "전송 중...",
+  "hideComments": "숨기기",
+  "showComments": "보기",
+  "loadError": "게시글을 불러오지 못했습니다",
+  "feedLabel": "게시글 목록"
 }

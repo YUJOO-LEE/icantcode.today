@@ -8,12 +8,10 @@ interface LayoutProps {
 
 function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-bg)]">
+    <div className="min-h-screen bg-background font-mono antialiased">
       <Header />
-      <main className="flex-1 px-4 py-6">
-        <div className="max-w-3xl mx-auto">
-          {children}
-        </div>
+      <main className="mx-auto max-w-3xl px-4 py-6">
+        {children}
       </main>
       <Footer />
     </div>

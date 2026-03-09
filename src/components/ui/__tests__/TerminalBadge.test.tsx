@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import TerminalBadge from '../TerminalBadge';
 
 describe('TerminalBadge', () => {
-  it('renders with bracket notation', () => {
+  it('renders text in brackets', () => {
     render(<TerminalBadge variant="error">DOWN</TerminalBadge>);
     expect(screen.getByText('[DOWN]')).toBeInTheDocument();
   });

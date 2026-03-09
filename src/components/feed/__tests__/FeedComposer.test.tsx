@@ -1,5 +1,4 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -29,42 +28,34 @@ describe('FeedComposer', () => {
     });
   });
 
-  it('shows nickname prompt when focusing without nickname', async () => {
-    const user = userEvent.setup();
+  it('shows collapsed command prompt by default', () => {
     render(<FeedComposer />, { wrapper: createWrapper() });
-
-    const textarea = screen.getByPlaceholderText(/무슨 일이 있나요/);
-    await user.click(textarea);
-
-    await waitFor(() => {
-      expect(screen.getByText(/닉네임이 필요합니다/)).toBeInTheDocument();
-    });
+    expect(screen.getByText('./post --new')).toBeInTheDocument();
   });
 
-  it('shows compose form when nickname is set', () => {
+  it('shows textarea when opened', () => {
     useSessionStore.setState({ nickname: 'testuser' });
-    render(<FeedComposer />, { wrapper: createWrapper() });
-
-    expect(screen.getByText(/@testuser/)).toBeInTheDocument();
+    const onToggle = () => {};
+    render(<FeedComposer isOpen onToggle={onToggle} />, { wrapper: createWrapper() });
     expect(screen.getByPlaceholderText(/무슨 일이 있나요/)).toBeInTheDocument();
   });
 
-  it('shows character count', async () => {
-    useSessionStore.setState({ nickname: 'testuser' });
-    const user = userEvent.setup();
-    render(<FeedComposer />, { wrapper: createWrapper() });
+  it('shows nickname prompt when opening composer without nickname', async () => {
+    const onToggle = () => {};
+    render(<FeedComposer isOpen onToggle={onToggle} />, { wrapper: createWrapper() });
 
-    const textarea = screen.getByPlaceholderText(/무슨 일이 있나요/);
-    await user.type(textarea, 'Hello');
-
-    expect(screen.getByText('5/500')).toBeInTheDocument();
+    // When isOpen and no nickname, textarea onFocus triggers nickname prompt
+    await waitFor(() => {
+      expect(screen.getByText(/set-nickname/)).toBeInTheDocument();
+    });
   });
 
-  it('disables post button when content is empty', () => {
+  it('disables submit button when content is empty', () => {
     useSessionStore.setState({ nickname: 'testuser' });
-    render(<FeedComposer />, { wrapper: createWrapper() });
+    const onToggle = () => {};
+    render(<FeedComposer isOpen onToggle={onToggle} />, { wrapper: createWrapper() });
 
-    const postButton = screen.getByRole('button', { name: /게시/ });
-    expect(postButton).toBeDisabled();
+    const submitButton = screen.getByText('[제출]');
+    expect(submitButton).toBeDisabled();
   });
 });

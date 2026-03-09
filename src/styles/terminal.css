@@ -6,11 +6,7 @@
 
 .cursor {
   display: inline-block;
-  width: 0.6em;
-  height: 1em;
-  background-color: var(--color-primary);
   animation: cursor-blink 1s step-end infinite;
-  vertical-align: text-bottom;
 }
 
 /* Status pulse animation */
@@ -23,57 +19,62 @@
   animation: status-pulse 1.5s ease-in-out infinite;
 }
 
-/* Terminal button */
-.btn-terminal {
-  font-family: 'MulmaruMono', monospace;
-  border: 1px solid var(--color-border);
-  padding: 0.4em 1em;
+/* CRT scanline effect (dark mode only) */
+.dark body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.04) 2px,
+    rgba(0,0,0,0.04) 4px
+  );
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
   background: transparent;
-  color: var(--color-primary);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
 }
 
-.btn-terminal:hover {
-  background: var(--color-primary);
-  color: var(--color-bg);
+::-webkit-scrollbar-thumb {
+  background: var(--border);
 }
 
-.btn-terminal:focus-visible {
-  outline: 2px solid var(--color-primary);
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Interactive state utilities */
+.terminal-interactive {
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
+}
+
+.terminal-interactive:hover {
+  background-color: var(--secondary);
+  opacity: 0.8;
+}
+
+.terminal-interactive:active {
+  transform: scale(0.97);
+}
+
+.terminal-interactive:focus-visible {
+  outline: 1px solid var(--primary);
   outline-offset: 2px;
 }
 
-.btn-terminal:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.btn-terminal:disabled:hover {
-  background: transparent;
-  color: var(--color-primary);
-}
-
-/* Terminal input wrapper */
-.terminal-input-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-}
-
-.terminal-input {
-  font-family: 'MulmaruMono', monospace;
-  background: transparent;
-  border: none;
-  color: var(--color-text-primary);
-  outline: none;
-  width: 100%;
-  font-size: inherit;
-  line-height: 1.5;
-}
-
-.terminal-input::placeholder {
-  color: var(--color-text-muted);
+/* Focus ring glow for inputs */
+.terminal-focus-glow:focus {
+  border-color: var(--primary);
+  box-shadow: 0 1px 0 0 var(--primary);
 }
 
 /* Reduced motion */
@@ -86,6 +87,14 @@
   .status-dot-down {
     animation: none;
     opacity: 1;
+  }
+
+  .dark body::after {
+    display: none;
+  }
+
+  .terminal-interactive:active {
+    transform: none;
   }
 
   *,

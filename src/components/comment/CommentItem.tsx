@@ -7,15 +7,15 @@ interface CommentItemProps {
 
 function CommentItem({ comment }: CommentItemProps) {
   return (
-    <div className="py-2 border-b border-[var(--color-border)] last:border-b-0">
-      <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] mb-1">
-        <span className="text-[var(--color-primary)]">@{comment.author}</span>
-        <span>·</span>
-        <time title={comment.createdAt}>{formatRelativeTime(comment.createdAt)}</time>
+    <div className="border-l border-border/30 pl-4 py-1 text-xs">
+      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+        <span>└──</span>
+        <span className="text-foreground">{comment.author}</span>
+        <time dateTime={comment.createdAt}>{formatRelativeTime(comment.createdAt)}</time>
       </div>
-      <p className="text-sm text-[var(--color-text-primary)] whitespace-pre-wrap">
+      <pre className="whitespace-pre-wrap text-foreground/80 pl-6 leading-relaxed">
         {comment.content}
-      </p>
+      </pre>
     </div>
   );
 }

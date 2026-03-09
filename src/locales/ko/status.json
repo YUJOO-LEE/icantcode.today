@@ -10,5 +10,6 @@
   "feedOnlyOnOutage": "피드는 장애 시에만 열립니다.",
   "statusCheck": "$ status --check",
   "recovered": "API가 복구되었습니다! 이제 코딩하러 가세요!",
-  "lastChecked": "마지막 확인"
+  "lastChecked": "마지막 확인",
+  "apiStatusLabel": "API 상태:"
 }

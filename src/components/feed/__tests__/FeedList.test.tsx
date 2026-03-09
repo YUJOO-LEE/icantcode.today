@@ -49,7 +49,7 @@ describe('FeedList', () => {
     render(<FeedList />, { wrapper: createWrapper() });
     await waitFor(() => {
       expect(screen.getByText('Test post content')).toBeInTheDocument();
-      expect(screen.getByText('@tester')).toBeInTheDocument();
+      expect(screen.getByText('tester')).toBeInTheDocument();
     });
   });
 

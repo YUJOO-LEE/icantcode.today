@@ -54,7 +54,7 @@ describe('CommentList', () => {
     render(<CommentList postId={1} />, { wrapper: createWrapper() });
     await waitFor(() => {
       expect(screen.getByText('Great post!')).toBeInTheDocument();
-      expect(screen.getByText('@commenter')).toBeInTheDocument();
+      expect(screen.getByText('commenter')).toBeInTheDocument();
     });
   });
 

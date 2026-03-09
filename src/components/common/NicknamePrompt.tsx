@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSessionStore } from '@/stores/sessionStore';
 import { MAX_NICKNAME_LENGTH } from '@/lib/constants';
-import TerminalCard from '@/components/ui/TerminalCard';
 import TerminalInput from '@/components/ui/TerminalInput';
-import TerminalButton from '@/components/ui/TerminalButton';
 
 interface NicknamePromptProps {
   onComplete: () => void;
@@ -33,34 +31,40 @@ function NicknamePrompt({ onComplete, onCancel }: NicknamePromptProps) {
   };
 
   return (
-    <TerminalCard>
-      <TerminalCard.Header>$ set-nickname</TerminalCard.Header>
-      <TerminalCard.Divider />
-      <TerminalCard.Body className="space-y-3">
-        <p className="text-[var(--color-text-muted)] text-sm">
-          # {t('nicknameRequired')}
-        </p>
-        <TerminalInput
-          prompt=">"
-          placeholder={t('nicknamePlaceholder')}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          maxLength={MAX_NICKNAME_LENGTH}
-          autoFocus
-        />
-        <div className="flex gap-2">
-          <TerminalButton onClick={handleSubmit} disabled={value.trim().length === 0}>
-            {t('confirm', { ns: 'common' })}
-          </TerminalButton>
-          {onCancel && (
-            <TerminalButton variant="ghost" onClick={onCancel}>
-              {t('cancel', { ns: 'common' })}
-            </TerminalButton>
-          )}
-        </div>
-      </TerminalCard.Body>
-    </TerminalCard>
+    <div className="border border-border p-4 text-xs">
+      <p className="text-muted-foreground mb-2">
+        <span className="text-foreground">$</span> set-nickname
+      </p>
+      <p className="text-muted-foreground/50 mb-3">
+        # {t('nicknameRequired')}
+      </p>
+      <TerminalInput
+        prompt=">"
+        placeholder={t('nicknamePlaceholder')}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        maxLength={MAX_NICKNAME_LENGTH}
+        autoFocus
+      />
+      <div className="flex gap-3 mt-3 text-muted-foreground">
+        <button
+          onClick={handleSubmit}
+          disabled={value.trim().length === 0}
+          className="hover:text-foreground transition-colors focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          [{t('common:submit')}]
+        </button>
+        {onCancel && (
+          <button
+            onClick={onCancel}
+            className="hover:text-foreground transition-colors focus:outline-none"
+          >
+            [{t('common:cancel')}]
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

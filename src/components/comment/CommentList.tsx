@@ -13,17 +13,17 @@ function CommentList({ postId }: CommentListProps) {
   const { data: comments, isLoading } = useCommentsQuery(postId);
 
   return (
-    <div className="ml-4 mt-1 border-l-2 border-[var(--color-border)] pl-4 pb-2">
+    <div className="space-y-2">
       {isLoading ? (
-        <p className="text-xs text-[var(--color-text-muted)] py-2">
-          Loading... <Cursor />
+        <p className="text-xs text-muted-foreground">
+          loading... <Cursor />
         </p>
       ) : comments && comments.length > 0 ? (
         comments.map((comment) => (
           <CommentItem key={comment.id} comment={comment} />
         ))
       ) : (
-        <p className="text-xs text-[var(--color-text-muted)] py-2">{t('noComments')}</p>
+        <p className="text-xs text-muted-foreground">{t('noComments')}</p>
       )}
       <CommentForm postId={postId} />
     </div>
