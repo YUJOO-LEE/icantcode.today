@@ -6,7 +6,7 @@
 
 .cursor {
   display: inline-block;
-  animation: cursor-blink 1s step-end infinite;
+  animation: cursor-blink var(--animation-cursor-blink) step-end infinite;
 }
 
 /* Status pulse animation */
@@ -16,7 +16,7 @@
 }
 
 .status-dot-down {
-  animation: status-pulse 1.5s ease-in-out infinite;
+  animation: status-pulse var(--animation-status-pulse) ease-in-out infinite;
 }
 
 /* CRT scanline effect (dark mode only) */

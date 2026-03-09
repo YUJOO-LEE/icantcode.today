@@ -1,3 +1,9 @@
+/* Animation timing tokens */
+:root {
+  --animation-cursor-blink: 1s;
+  --animation-status-pulse: 1.5s;
+}
+
 /* ===== MONO THEME (Modern Terminal) - Default ===== */
 :root[data-terminal="mono"],
 :root {
