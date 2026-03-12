@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { usePostsQuery } from '@/apis/queries/usePosts';
 import FeedItem from './FeedItem';
+import Logo from '@/components/ui/Logo';
 
 const listVariants = {
   animate: {
@@ -36,9 +37,14 @@ function FeedList() {
 
   if (!posts || posts.length === 0) {
     return (
-      <div className="text-xs text-muted-foreground py-4">
-        <p>drwxr-xr-x  0 posts  (empty)</p>
-        <p className="mt-2 text-muted-foreground/50">{t('empty')}</p>
+      <div className="relative text-xs text-muted-foreground py-4">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <Logo size={64} className="opacity-[0.04]" />
+        </div>
+        <div className="relative">
+          <p>$ cat /dev/null</p>
+          <p className="mt-2 text-muted-foreground/50">{t('empty')}</p>
+        </div>
       </div>
     );
   }

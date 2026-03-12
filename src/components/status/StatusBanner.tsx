@@ -21,10 +21,12 @@ function StatusBanner({ status }: StatusBannerProps) {
     <div
       role="status"
       aria-live="polite"
-      className={`mb-4 pl-3 border-l-2 ${borderClass} text-xs`}
+      className={`mb-4 pl-3 border-l-2 ${borderClass} text-xs flex items-center gap-2`}
     >
-      <span className="text-foreground">[{label}]</span>{' '}
-      <span className="text-muted-foreground">{message}</span>
+      <span>
+        <span className="text-foreground">[{label}]</span>{' '}
+        <span className="text-muted-foreground">{message}</span>
+      </span>
     </div>
   );
 }

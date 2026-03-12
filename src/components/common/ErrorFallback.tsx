@@ -11,21 +11,23 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
 
   return (
     <div className="flex items-center justify-center min-h-[40vh]" role="alert">
-      <div className="text-xs space-y-2">
-        <p>
-          <span className="text-foreground">[ERR]</span>{' '}
-          <span className="text-muted-foreground">{t('error')}</span>
-        </p>
-        {error && (
-          <p className="text-muted-foreground/50">
-            &gt; {error.message}
+      <div className="flex flex-col items-center gap-4">
+        <div className="text-xs space-y-2">
+          <p>
+            <span className="text-foreground">[ERR]</span>{' '}
+            <span className="text-muted-foreground">{t('error')}</span>
           </p>
-        )}
-        {onRetry && (
-          <TerminalButton onClick={onRetry}>
-            {t('retry')}
-          </TerminalButton>
-        )}
+          {error && (
+            <p className="text-muted-foreground/50">
+              &gt; {error.message}
+            </p>
+          )}
+          {onRetry && (
+            <TerminalButton onClick={onRetry}>
+              {t('retry')}
+            </TerminalButton>
+          )}
+        </div>
       </div>
     </div>
   );

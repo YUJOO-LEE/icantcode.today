@@ -10,6 +10,7 @@ import Layout from '@/components/layout/Layout';
 import HomePage from '@/pages/HomePage';
 import ErrorFallback from '@/components/common/ErrorFallback';
 import Cursor from '@/components/ui/Cursor';
+import Logo from '@/components/ui/Logo';
 
 function ThemeInitializer() {
   const initTheme = useThemeStore((s) => s.initTheme);
@@ -62,8 +63,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
 function LoadingFallback() {
   return (
-    <div className="flex items-center justify-center min-h-[60vh] text-xs text-muted-foreground">
-      <p>loading... <Cursor /></p>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <Logo size={48} animate />
+      <p className="text-xs text-muted-foreground">loading... <Cursor /></p>
     </div>
   );
 }

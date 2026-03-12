@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useThemeStore } from '@/stores/themeStore';
 import TerminalButton from '@/components/ui/TerminalButton';
+import Logo from '@/components/ui/Logo';
 
 function Header() {
   const { t, i18n } = useTranslation('common');
@@ -21,6 +22,7 @@ function Header() {
       <div className="mx-auto max-w-3xl px-4 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Logo size={16} />
             <span className="text-foreground">{username}@icantcode.today</span>
             <span>:</span>
             <span className="text-foreground">~</span>
