@@ -27,8 +27,6 @@ function Logo({ size = 48, animate = false, className = '' }: LogoProps) {
   const shouldReduceMotion = useReducedMotion();
   const shouldAnimate = animate && !shouldReduceMotion;
 
-  const classes = className || undefined;
-
   return (
     <svg
       width={size}
@@ -37,7 +35,7 @@ function Logo({ size = 48, animate = false, className = '' }: LogoProps) {
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-label="icantcode.today logo"
-      className={classes}
+      className={className || undefined}
       {...(shouldAnimate ? { 'data-animated': 'true' } : {})}
     >
       {paths.map((path, i) => {
