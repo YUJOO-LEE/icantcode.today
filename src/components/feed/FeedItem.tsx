@@ -31,16 +31,12 @@ const FeedItem = memo(function FeedItem({ post }: FeedItemProps) {
           aria-expanded={showComments}
           aria-label={t('toggleComments', { count: post.commentCount })}
         >
-          {t('replies')}
+          {post.commentCount === 0
+            ? t('replies')
+            : showComments
+              ? t('hideComments')
+              : `${t('showComments')} ${post.commentCount}`}
         </TerminalButton>
-
-        {post.commentCount > 0 && (
-          <TerminalButton
-            onClick={() => setShowComments(!showComments)}
-          >
-            {showComments ? t('hideComments') : t('showComments')} {post.commentCount}
-          </TerminalButton>
-        )}
       </div>
 
       {showComments && (
