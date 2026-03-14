@@ -2,7 +2,6 @@
   "checking": "Checking status...",
   "apiOnline": "Claude Code API is online",
   "apiDown": "Claude Code API outage detected",
-  "apiDegraded": "Claude Code API performance degraded",
   "goWork": "You can code right now.\nGet back to work!",
   "feedOnlyOnOutage": "Feed is only available during outages.",
   "apiStatusLabel": "API status:"

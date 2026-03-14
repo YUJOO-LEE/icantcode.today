@@ -1,4 +1,4 @@
-export type ApiStatus = 'normal' | 'degraded' | 'down' | 'checking';
+export type ApiStatus = 'normal' | 'down' | 'checking';
 
 export interface CanICodeResponse {
   canCode: boolean;

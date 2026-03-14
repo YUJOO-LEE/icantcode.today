@@ -23,7 +23,6 @@ function HomePage() {
       normal: 'icantcode.today',
       checking: '[...] icantcode.today',
       down: '[DOWN] icantcode.today',
-      degraded: '[WARN] icantcode.today',
     };
     document.title = titles[apiStatus] || 'icantcode.today';
   }, [apiStatus]);
@@ -65,7 +64,7 @@ function HomePage() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  const isFeedVisible = apiStatus === 'down' || apiStatus === 'degraded';
+  const isFeedVisible = apiStatus === 'down';
 
   return (
     <AnimatePresence mode="wait">

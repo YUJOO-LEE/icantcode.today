@@ -10,12 +10,9 @@ function StatusBanner({ status }: StatusBannerProps) {
 
   if (status === 'normal' || status === 'checking') return null;
 
-  const config = {
+  const { label, message, borderClass } = {
     down: { label: 'ERR', message: t('apiDown'), borderClass: 'border-destructive' },
-    degraded: { label: 'WARN', message: t('apiDegraded'), borderClass: 'border-muted-foreground' },
-  };
-
-  const { label, message, borderClass } = config[status];
+  }[status];
 
   return (
     <div
