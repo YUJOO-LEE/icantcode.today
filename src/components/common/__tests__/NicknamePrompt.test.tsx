@@ -7,6 +7,16 @@ import { useSessionStore } from '@/stores/sessionStore';
 import NicknamePrompt from '../NicknamePrompt';
 import type { ReactNode } from 'react';
 
+vi.mock('@/lib/nicknameGenerator', () => {
+  let callCount = 0;
+  return {
+    generateRandomNickname: () => {
+      callCount++;
+      return `random_dev_${callCount}`;
+    },
+  };
+});
+
 function Wrapper({ children }: { children: ReactNode }) {
   return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>;
 }
@@ -21,22 +31,44 @@ describe('NicknamePrompt', () => {
     expect(screen.getByPlaceholderText(/닉네임을 입력/)).toBeInTheDocument();
   });
 
+  it('has a random nickname as initial value', () => {
+    render(<NicknamePrompt onComplete={vi.fn()} />, { wrapper: Wrapper });
+    const input = screen.getByPlaceholderText(/닉네임을 입력/) as HTMLInputElement;
+    expect(input.value).toMatch(/^random_dev_\d+$/);
+  });
+
   it('sets nickname and calls onComplete', async () => {
     const user = userEvent.setup();
     const onComplete = vi.fn();
     render(<NicknamePrompt onComplete={onComplete} />, { wrapper: Wrapper });
 
-    await user.type(screen.getByPlaceholderText(/닉네임을 입력/), 'dev_user');
+    const input = screen.getByPlaceholderText(/닉네임을 입력/);
+    await user.clear(input);
+    await user.type(input, 'dev_user');
     await user.click(screen.getByText('[제출]'));
 
     expect(useSessionStore.getState().nickname).toBe('dev_user');
     expect(onComplete).toHaveBeenCalled();
   });
 
-  it('disables confirm when input is empty', () => {
+  it('disables confirm when input is cleared', async () => {
+    const user = userEvent.setup();
     render(<NicknamePrompt onComplete={vi.fn()} />, { wrapper: Wrapper });
+    const input = screen.getByPlaceholderText(/닉네임을 입력/);
+    await user.clear(input);
     const confirmBtn = screen.getByText('[제출]');
     expect(confirmBtn).toBeDisabled();
+  });
+
+  it('reroll button changes the nickname', async () => {
+    const user = userEvent.setup();
+    render(<NicknamePrompt onComplete={vi.fn()} />, { wrapper: Wrapper });
+    const input = screen.getByPlaceholderText(/닉네임을 입력/) as HTMLInputElement;
+    const initialValue = input.value;
+
+    await user.click(screen.getByText('[다시 뽑기]'));
+    expect(input.value).not.toBe(initialValue);
+    expect(input.value).toMatch(/^random_dev_\d+$/);
   });
 
   it('calls onCancel when cancel clicked', async () => {

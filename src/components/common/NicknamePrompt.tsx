@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSessionStore } from '@/stores/sessionStore';
 import { MAX_NICKNAME_LENGTH } from '@/lib/constants';
+import { generateRandomNickname } from '@/lib/nicknameGenerator';
 import TerminalInput from '@/components/ui/TerminalInput';
 import TerminalButton from '@/components/ui/TerminalButton';
 
@@ -11,8 +12,8 @@ interface NicknamePromptProps {
 }
 
 function NicknamePrompt({ onComplete, onCancel }: NicknamePromptProps) {
-  const { t } = useTranslation('auth');
-  const [value, setValue] = useState('');
+  const { t, i18n } = useTranslation('auth');
+  const [value, setValue] = useState(() => generateRandomNickname(i18n.language));
   const setNickname = useSessionStore((s) => s.setNickname);
 
   const handleSubmit = () => {
@@ -57,6 +58,9 @@ function NicknamePrompt({ onComplete, onCancel }: NicknamePromptProps) {
           disabled={value.trim().length === 0}
         >
           {t('common:submit')}
+        </TerminalButton>
+        <TerminalButton onClick={() => setValue(generateRandomNickname(i18n.language))}>
+          {t('reroll')}
         </TerminalButton>
         {onCancel && (
           <TerminalButton onClick={onCancel}>
