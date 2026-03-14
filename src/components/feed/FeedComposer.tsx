@@ -68,18 +68,18 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
     <div className="mb-6">
       <button
         onClick={onToggle}
-        className="text-xs text-left w-full group focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
+        className={`text-sm text-left w-full group focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60 transition-colors py-3 ${isOpen ? '' : 'border-b border-border hover:border-primary dark:hover:shadow-[0_0_30px_rgba(171,201,91,0.06)]'}`}
         aria-expanded={isOpen}
       >
-        <span className="text-foreground">$</span>
-        <span className="text-muted-foreground group-hover:text-foreground transition-colors ml-1">
+        <span className="text-primary">$</span>
+        <span className="text-foreground group-hover:text-primary transition-colors ml-1">
           {isOpen ? '# writing new post...' : './post --new'}
         </span>
-        {!isOpen && <span className="cursor ml-1 text-muted-foreground">_</span>}
+        {!isOpen && <span className="cursor ml-1 text-primary">_</span>}
       </button>
 
       {isOpen && (
-        <div className="mt-3">
+        <div>
           <div className="border border-border bg-card p-4">
             <div className="flex items-start gap-2">
               <span className="text-muted-foreground select-none pt-0.5 text-xs">&gt;</span>
