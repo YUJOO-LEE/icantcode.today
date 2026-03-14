@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useThemeStore } from '@/stores/themeStore';
 import TerminalButton from '@/components/ui/TerminalButton';
@@ -7,8 +8,9 @@ import Logo from '@/components/ui/Logo';
 function Header() {
   const { t, i18n } = useTranslation('common');
   const nickname = useSessionStore((s) => s.nickname);
-  const toggleTheme = useThemeStore((s) => s.toggleTheme);
-  const theme = useThemeStore((s) => s.theme);
+  const { theme, toggleTheme } = useThemeStore(
+    useShallow((s) => ({ theme: s.theme, toggleTheme: s.toggleTheme })),
+  );
 
   const toggleLanguage = () => {
     const next = i18n.language === 'ko' ? 'en' : 'ko';

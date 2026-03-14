@@ -17,17 +17,19 @@ function CommentForm({ postId }: CommentFormProps) {
   const createComment = useCreateComment(postId);
 
   const handleSubmit = () => {
+    if (createComment.isPending) return;
     guardAction(() => {
       if (content.trim().length === 0 || !nickname) return;
 
       createComment.mutate(
         { content: content.trim(), author: nickname, userCode },
-        { onSuccess: () => setContent('') },
+        { onSuccess: () => setContent(''), onError: () => alert(t('submitError')) },
       );
     });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();

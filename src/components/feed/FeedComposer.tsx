@@ -25,6 +25,7 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
   }, [isOpen]);
 
   const handleSubmit = () => {
+    if (createPost.isPending) return;
     guardAction(() => {
       if (content.trim().length === 0 || !nickname) return;
 
@@ -35,12 +36,14 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
             setContent('');
             onToggle?.();
           },
+          onError: () => alert(t('submitError')),
         },
       );
     });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handleSubmit();

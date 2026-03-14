@@ -17,7 +17,7 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
             <span className="text-foreground">[ERR]</span>{' '}
             <span className="text-muted-foreground">{t('error')}</span>
           </p>
-          {error && (
+          {error && import.meta.env.DEV && (
             <p className="text-muted-foreground/50">
               &gt; {error.message}
             </p>

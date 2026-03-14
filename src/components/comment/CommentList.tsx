@@ -10,13 +10,17 @@ interface CommentListProps {
 
 function CommentList({ postId }: CommentListProps) {
   const { t } = useTranslation('feed');
-  const { data: comments, isLoading } = useCommentsQuery(postId);
+  const { data: comments, isLoading, isError } = useCommentsQuery(postId);
 
   return (
     <div className="space-y-2">
       {isLoading ? (
         <p className="text-xs text-muted-foreground">
           loading... <Cursor />
+        </p>
+      ) : isError ? (
+        <p className="text-xs text-destructive">
+          [ERR] {t('loadError')}
         </p>
       ) : comments && comments.length > 0 ? (
         comments.map((comment) => (

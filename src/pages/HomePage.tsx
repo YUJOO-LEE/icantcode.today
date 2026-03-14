@@ -12,8 +12,7 @@ import FeedComposer from '@/components/feed/FeedComposer';
 import FeedList from '@/components/feed/FeedList';
 
 function HomePage() {
-  const { t } = useTranslation('common');
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation('common');
   const apiStatus = useStatusStore((s) => s.apiStatus);
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const [showComposer, setShowComposer] = useState(false);
@@ -31,6 +30,7 @@ function HomePage() {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      if (e.isComposing) return;
       const target = e.target as HTMLElement;
       const isInputFocused =
         target.tagName === 'INPUT' ||
@@ -69,17 +69,15 @@ function HomePage() {
 
   return (
     <AnimatePresence mode="wait">
-      {apiStatus === 'checking' && (
+      {apiStatus === 'checking' ? (
         <motion.div key="checking" className="flex-1 flex flex-col">
           <CheckingView />
         </motion.div>
-      )}
-      {apiStatus === 'normal' && (
+      ) : apiStatus === 'normal' ? (
         <motion.div key="landing" className="flex-1 flex flex-col">
           <LandingView />
         </motion.div>
-      )}
-      {isFeedVisible && (
+      ) : isFeedVisible ? (
         <motion.div
           key="feed"
           initial={{ opacity: 0, y: 8 }}
@@ -109,7 +107,7 @@ function HomePage() {
           />
           <FeedList />
         </motion.div>
-      )}
+      ) : null}
     </AnimatePresence>
   );
 }

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post } from '@/apis/client';
-import type { CommentResponse, CreateCommentRequest, IdResponse } from '@/types/api';
+import type { CommentResponse, CreateCommentRequest, IdResponse, PostSummaryResponse } from '@/types/api';
 
 export function useCommentsQuery(postId: number) {
   return useQuery({
@@ -17,7 +17,13 @@ export function useCreateComment(postId: number) {
       post<IdResponse>(`/posts/${postId}/comments`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', postId] });
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.setQueriesData<PostSummaryResponse[]>(
+        { queryKey: ['posts'] },
+        (old) =>
+          old?.map((p) =>
+            p.id === postId ? { ...p, commentCount: p.commentCount + 1 } : p,
+          ),
+      );
     },
   });
 }

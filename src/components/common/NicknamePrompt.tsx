@@ -17,14 +17,17 @@ function NicknamePrompt({ onComplete, onCancel }: NicknamePromptProps) {
 
   const handleSubmit = () => {
     const trimmed = value.trim();
-    if (trimmed.length > 0 && trimmed.length <= MAX_NICKNAME_LENGTH) {
-      setNickname(trimmed);
+    const sanitized = trimmed.replace(/[\p{Cc}\p{Cf}]/gu, '');
+    if (sanitized.length > 0 && sanitized.length <= MAX_NICKNAME_LENGTH) {
+      setNickname(sanitized);
       onComplete();
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter') {
+      e.preventDefault();
       handleSubmit();
     } else if (e.key === 'Escape' && onCancel) {
       onCancel();

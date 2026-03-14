@@ -31,7 +31,7 @@ i18n.use(initReactI18next).init({
   ns: ['common', 'feed', 'auth', 'status'],
   defaultNS: 'common',
   interpolation: {
-    escapeValue: false,
+    escapeValue: true,
   },
 });
 

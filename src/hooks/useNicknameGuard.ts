@@ -1,28 +1,29 @@
 import { useState, useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useSessionStore } from '@/stores/sessionStore';
 
 export function useNicknameGuard() {
-  const nickname = useSessionStore((s) => s.nickname);
-  const userCode = useSessionStore((s) => s.userCode);
-  const hasNickname = useSessionStore((s) => s.hasNickname);
+  const { nickname, userCode } = useSessionStore(
+    useShallow((s) => ({ nickname: s.nickname, userCode: s.userCode })),
+  );
   const [showNicknamePrompt, setShowNicknamePrompt] = useState(false);
 
   const guardAction = useCallback(
     (action: () => void) => {
-      if (!hasNickname()) {
+      if (nickname === null) {
         setShowNicknamePrompt(true);
         return;
       }
       action();
     },
-    [hasNickname],
+    [nickname],
   );
 
   const showPromptIfNeeded = useCallback(() => {
-    if (!hasNickname()) {
+    if (nickname === null) {
       setShowNicknamePrompt(true);
     }
-  }, [hasNickname]);
+  }, [nickname]);
 
   const dismissPrompt = useCallback(() => {
     setShowNicknamePrompt(false);
