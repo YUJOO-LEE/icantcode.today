@@ -38,20 +38,20 @@ function HomePage() {
 
       if (isInputFocused) return;
 
-      switch (e.key.toLowerCase()) {
-        case 'n':
+      switch (e.code) {
+        case SHORTCUTS.NEW.code:
           e.preventDefault();
           setShowComposer((prev) => !prev);
           break;
-        case 't':
+        case SHORTCUTS.THEME.code:
           e.preventDefault();
           toggleTheme();
           break;
-        case 'l':
+        case SHORTCUTS.LANG.code:
           e.preventDefault();
           i18n.changeLanguage(i18n.language === 'ko' ? 'en' : 'ko');
           break;
-        case 'escape':
+        case 'Escape':
           setShowComposer(false);
           break;
       }
