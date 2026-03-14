@@ -35,10 +35,13 @@
   }
   body {
     @apply bg-background text-foreground font-mono text-sm antialiased;
-    min-height: 100vh;
+    min-height: 100dvh;
   }
   #root {
-    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  button:not(:disabled) {
+    cursor: pointer;
   }
 }
 

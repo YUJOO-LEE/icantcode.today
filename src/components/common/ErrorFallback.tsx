@@ -10,7 +10,7 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
   const { t } = useTranslation('common');
 
   return (
-    <div className="flex items-center justify-center min-h-[40vh]" role="alert">
+    <div className="flex items-center justify-center min-h-[40dvh]" role="alert">
       <div className="flex flex-col items-center gap-4">
         <div className="text-xs space-y-2">
           <p>
