@@ -10,5 +10,9 @@
   "hideComments": "hide",
   "showComments": "show",
   "loadError": "Failed to load posts",
-  "feedLabel": "Posts"
+  "feedLabel": "Posts",
+  "submitError": "Failed to submit. Please try again.",
+  "commentsLabel": "Comments",
+  "loadingComments": "Loading comments...",
+  "loadingPosts": "Loading posts..."
 }

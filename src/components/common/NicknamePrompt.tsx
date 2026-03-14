@@ -46,6 +46,7 @@ function NicknamePrompt({ onComplete, onCancel }: NicknamePromptProps) {
       <TerminalInput
         prompt=">"
         placeholder={t('nicknamePlaceholder')}
+        aria-label={t('nicknamePlaceholder')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}

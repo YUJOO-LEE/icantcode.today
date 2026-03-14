@@ -15,6 +15,7 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
   const { t } = useTranslation('feed');
   const { nickname, userCode, guardAction, dismissPrompt, shouldRenderPrompt } = useNicknameGuard();
   const [content, setContent] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const createPost = useCreatePost();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -26,6 +27,7 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
 
   const handleSubmit = () => {
     if (createPost.isPending) return;
+    setErrorMessage('');
     guardAction(() => {
       if (content.trim().length === 0 || !nickname) return;
 
@@ -36,7 +38,7 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
             setContent('');
             onToggle?.();
           },
-          onError: () => alert(t('submitError')),
+          onError: () => setErrorMessage(t('submitError')),
         },
       );
     });
@@ -98,8 +100,13 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
             </div>
           </div>
 
+          {errorMessage && (
+            <p role="alert" className="mt-2 text-[10px] text-destructive">
+              {errorMessage}
+            </p>
+          )}
           <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
-            <span>ctrl+enter: submit | esc: cancel</span>
+            <span aria-hidden="true">ctrl+enter: submit | esc: cancel</span>
             <div className="flex gap-2">
               <TerminalButton
                 type="button"

@@ -7,7 +7,7 @@ interface CommentItemProps {
 
 function CommentItem({ comment }: CommentItemProps) {
   return (
-    <div className="border-l border-border/30 pl-4 py-1 text-xs">
+    <div className="border-l border-border/30 pl-4 py-1 text-xs" role="listitem">
       <div className="flex items-center gap-2 text-muted-foreground mb-1">
         <span>└──</span>
         <span className="text-foreground">{comment.author}</span>

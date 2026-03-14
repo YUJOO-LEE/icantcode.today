@@ -13,13 +13,13 @@ function CommentList({ postId }: CommentListProps) {
   const { data: comments, isLoading, isError } = useCommentsQuery(postId);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" role="list" aria-label={t('commentsLabel')}>
       {isLoading ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground" role="status" aria-label={t('loadingComments')}>
           loading... <Cursor />
         </p>
       ) : isError ? (
-        <p className="text-xs text-destructive">
+        <p className="text-xs text-destructive" role="alert">
           [ERR] {t('loadError')}
         </p>
       ) : comments && comments.length > 0 ? (

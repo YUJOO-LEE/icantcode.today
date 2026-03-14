@@ -10,5 +10,9 @@
   "hideComments": "숨기기",
   "showComments": "보기",
   "loadError": "게시글을 불러오지 못했습니다",
-  "feedLabel": "게시글 목록"
+  "feedLabel": "게시글 목록",
+  "submitError": "전송에 실패했습니다. 다시 시도해 주세요.",
+  "commentsLabel": "댓글 목록",
+  "loadingComments": "댓글 로딩 중...",
+  "loadingPosts": "게시글 로딩 중..."
 }

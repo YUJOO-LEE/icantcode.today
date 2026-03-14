@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -40,11 +41,15 @@ describe('FeedComposer', () => {
     expect(screen.getByPlaceholderText(/무슨 일이 있나요/)).toBeInTheDocument();
   });
 
-  it('shows nickname prompt when opening composer without nickname', async () => {
+  it('shows nickname prompt when submitting without nickname', async () => {
+    const user = userEvent.setup();
     const onToggle = () => {};
     render(<FeedComposer isOpen onToggle={onToggle} />, { wrapper: createWrapper() });
 
-    // When isOpen and no nickname, textarea onFocus triggers nickname prompt
+    const textarea = screen.getByPlaceholderText(/무슨 일이 있나요/);
+    await user.type(textarea, 'test content');
+    await user.click(screen.getByText('[제출]'));
+
     await waitFor(() => {
       expect(screen.getByText(/set-nickname/)).toBeInTheDocument();
     });

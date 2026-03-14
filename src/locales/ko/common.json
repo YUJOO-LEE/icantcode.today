@@ -13,5 +13,7 @@
   "darkMode": "어둡게",
   "currentLang": "한국어",
   "switchLang": "{{lang}}로 전환",
-  "switchTheme": "{{theme}} 모드로 전환"
+  "switchTheme": "{{theme}} 모드로 전환",
+  "skipToContent": "본문으로 건너뛰기",
+  "siteNav": "사이트 탐색"
 }

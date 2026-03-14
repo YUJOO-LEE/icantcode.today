@@ -21,7 +21,7 @@ function FeedList() {
 
   if (isLoading) {
     return (
-      <div className="text-xs text-muted-foreground">
+      <div className="text-xs text-muted-foreground" role="status" aria-label={t('loadingPosts')}>
         <span className="cursor">{t('common:loading')}</span>
       </div>
     );
@@ -29,7 +29,7 @@ function FeedList() {
 
   if (isError) {
     return (
-      <div className="text-xs text-destructive">
+      <div className="text-xs text-destructive" role="alert">
         <p>[ERR] {t('loadError')}</p>
       </div>
     );
@@ -50,7 +50,7 @@ function FeedList() {
   }
 
   return (
-    <div role="feed" aria-label={t('feedLabel')}>
+    <div role="feed" aria-label={t('feedLabel')} aria-busy={isLoading}>
       <div className="mb-4 text-xs text-muted-foreground">
         <span className="text-foreground">$</span> ls -la ./posts/
       </div>

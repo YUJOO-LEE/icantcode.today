@@ -32,22 +32,24 @@ function Header() {
             <span className="cursor">_</span>
           </div>
 
-          <div className="flex items-center gap-2 text-[10px]">
-            <TerminalButton
-              onClick={toggleLanguage}
-              className="text-[10px]"
-              aria-label={t('switchLang', { lang: i18n.language === 'ko' ? 'English' : '한국어' })}
-            >
-              {t('currentLang')}
-            </TerminalButton>
-            <TerminalButton
-              onClick={toggleTheme}
-              className="text-[10px]"
-              aria-label={t('switchTheme', { theme: theme === 'dark' ? t('lightMode') : t('darkMode') })}
-            >
-              {theme === 'dark' ? t('lightMode') : t('darkMode')}
-            </TerminalButton>
-          </div>
+          <nav aria-label={t('siteNav')}>
+            <div className="flex items-center gap-2 text-[10px]">
+              <TerminalButton
+                onClick={toggleLanguage}
+                className="text-[10px]"
+                aria-label={t('switchLang', { lang: i18n.language === 'ko' ? 'English' : '한국어' })}
+              >
+                {t('currentLang')}
+              </TerminalButton>
+              <TerminalButton
+                onClick={toggleTheme}
+                className="text-[10px]"
+                aria-label={t('switchTheme', { theme: theme === 'dark' ? t('lightMode') : t('darkMode') })}
+              >
+                {theme === 'dark' ? t('lightMode') : t('darkMode')}
+              </TerminalButton>
+            </div>
+          </nav>
         </div>
       </div>
     </header>

@@ -14,16 +14,21 @@ function CommentForm({ postId }: CommentFormProps) {
   const { t } = useTranslation('feed');
   const { nickname, userCode, guardAction, dismissPrompt, shouldRenderPrompt } = useNicknameGuard();
   const [content, setContent] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const createComment = useCreateComment(postId);
 
   const handleSubmit = () => {
     if (createComment.isPending) return;
+    setErrorMessage('');
     guardAction(() => {
       if (content.trim().length === 0 || !nickname) return;
 
       createComment.mutate(
         { content: content.trim(), author: nickname, userCode },
-        { onSuccess: () => setContent(''), onError: () => alert(t('submitError')) },
+        {
+          onSuccess: () => setContent(''),
+          onError: () => setErrorMessage(t('submitError')),
+        },
       );
     });
   };
@@ -53,15 +58,21 @@ function CommentForm({ postId }: CommentFormProps) {
       <TerminalInput
         prompt=">"
         placeholder={t('commentPlaceholder')}
+        aria-label={t('commentPlaceholder')}
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
         maxLength={MAX_COMMENT_LENGTH}
         autoFocus
       />
-      <p className="mt-1 text-[10px] text-muted-foreground/50 pl-4">
+      <p className="mt-1 text-[10px] text-muted-foreground/50 pl-4" aria-hidden="true">
         enter: submit | esc: cancel
       </p>
+      {errorMessage && (
+        <p role="alert" className="mt-1 text-[10px] text-destructive pl-4">
+          {errorMessage}
+        </p>
+      )}
     </div>
   );
 }

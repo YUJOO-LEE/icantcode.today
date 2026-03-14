@@ -12,6 +12,7 @@ function LandingView() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
+      aria-label={t('apiOnline')}
     >
       <div className="w-full text-xs leading-relaxed">
         <div className="text-muted-foreground">

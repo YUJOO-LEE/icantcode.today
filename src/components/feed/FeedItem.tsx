@@ -40,7 +40,7 @@ const FeedItem = memo(function FeedItem({ post }: FeedItemProps) {
       </div>
 
       {showComments && (
-        <div className="mt-3 pl-4">
+        <div className="mt-3 pl-4" aria-label={t('commentsLabel')}>
           <CommentList postId={post.id} />
         </div>
       )}

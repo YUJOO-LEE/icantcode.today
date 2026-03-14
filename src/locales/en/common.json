@@ -13,5 +13,7 @@
   "darkMode": "DARK",
   "currentLang": "EN",
   "switchLang": "Switch to {{lang}}",
-  "switchTheme": "Switch to {{theme}} mode"
+  "switchTheme": "Switch to {{theme}} mode",
+  "skipToContent": "Skip to content",
+  "siteNav": "Site navigation"
 }
