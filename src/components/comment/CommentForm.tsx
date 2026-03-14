@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNicknameGuard } from '@/hooks/useNicknameGuard';
 import { useCreateComment } from '@/apis/queries/useComments';
+import { useSessionStore } from '@/stores/sessionStore';
 import { MAX_COMMENT_LENGTH } from '@/lib/constants';
 import TerminalInput from '@/components/ui/TerminalInput';
 import NicknamePrompt from '@/components/common/NicknamePrompt';
@@ -12,7 +13,7 @@ interface CommentFormProps {
 
 function CommentForm({ postId }: CommentFormProps) {
   const { t } = useTranslation('feed');
-  const { nickname, userCode, guardAction, dismissPrompt, shouldRenderPrompt } = useNicknameGuard();
+  const { userCode, guardAction, dismissPrompt, completeWithNickname, shouldRenderPrompt } = useNicknameGuard();
   const [content, setContent] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const createComment = useCreateComment(postId);
@@ -21,10 +22,11 @@ function CommentForm({ postId }: CommentFormProps) {
     if (createComment.isPending) return;
     setErrorMessage('');
     guardAction(() => {
-      if (content.trim().length === 0 || !nickname) return;
+      const currentNickname = useSessionStore.getState().nickname;
+      if (content.trim().length === 0 || !currentNickname) return;
 
       createComment.mutate(
-        { content: content.trim(), author: nickname, userCode },
+        { content: content.trim(), author: currentNickname, userCode },
         {
           onSuccess: () => setContent(''),
           onError: () => setErrorMessage(t('submitError')),
@@ -47,7 +49,7 @@ function CommentForm({ postId }: CommentFormProps) {
   if (shouldRenderPrompt) {
     return (
       <NicknamePrompt
-        onComplete={dismissPrompt}
+        onComplete={completeWithNickname}
         onCancel={dismissPrompt}
       />
     );

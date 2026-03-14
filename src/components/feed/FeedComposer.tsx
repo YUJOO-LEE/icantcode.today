@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNicknameGuard } from '@/hooks/useNicknameGuard';
 import { useCreatePost } from '@/apis/queries/usePosts';
+import { useSessionStore } from '@/stores/sessionStore';
 import { MAX_POST_LENGTH } from '@/lib/constants';
 import NicknamePrompt from '@/components/common/NicknamePrompt';
 import TerminalButton from '@/components/ui/TerminalButton';
@@ -13,7 +14,7 @@ interface FeedComposerProps {
 
 function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
   const { t } = useTranslation('feed');
-  const { nickname, userCode, guardAction, dismissPrompt, shouldRenderPrompt } = useNicknameGuard();
+  const { userCode, guardAction, dismissPrompt, completeWithNickname, shouldRenderPrompt } = useNicknameGuard();
   const [content, setContent] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const createPost = useCreatePost();
@@ -29,10 +30,11 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
     if (createPost.isPending) return;
     setErrorMessage('');
     guardAction(() => {
-      if (content.trim().length === 0 || !nickname) return;
+      const currentNickname = useSessionStore.getState().nickname;
+      if (content.trim().length === 0 || !currentNickname) return;
 
       createPost.mutate(
-        { content: content.trim(), author: nickname, userCode },
+        { content: content.trim(), author: currentNickname, userCode },
         {
           onSuccess: () => {
             setContent('');
@@ -59,7 +61,7 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
     return (
       <div className="mb-6">
         <NicknamePrompt
-          onComplete={dismissPrompt}
+          onComplete={completeWithNickname}
           onCancel={dismissPrompt}
         />
       </div>
