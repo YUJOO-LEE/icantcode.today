@@ -13,7 +13,7 @@ interface FeedComposerProps {
 
 function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
   const { t } = useTranslation('feed');
-  const { nickname, userCode, guardAction, showPromptIfNeeded, dismissPrompt, shouldRenderPrompt } = useNicknameGuard();
+  const { nickname, userCode, guardAction, dismissPrompt, shouldRenderPrompt } = useNicknameGuard();
   const [content, setContent] = useState('');
   const createPost = useCreatePost();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -93,7 +93,7 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
                 aria-label={t('placeholder')}
                 maxLength={MAX_POST_LENGTH}
                 disabled={createPost.isPending}
-                onFocus={showPromptIfNeeded}
+
               />
             </div>
           </div>

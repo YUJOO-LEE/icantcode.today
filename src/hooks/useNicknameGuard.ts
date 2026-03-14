@@ -19,17 +19,11 @@ export function useNicknameGuard() {
     [nickname],
   );
 
-  const showPromptIfNeeded = useCallback(() => {
-    if (nickname === null) {
-      setShowNicknamePrompt(true);
-    }
-  }, [nickname]);
-
   const dismissPrompt = useCallback(() => {
     setShowNicknamePrompt(false);
   }, []);
 
   const shouldRenderPrompt = showNicknamePrompt && nickname === null;
 
-  return { nickname, userCode, guardAction, showPromptIfNeeded, dismissPrompt, shouldRenderPrompt };
+  return { nickname, userCode, guardAction, dismissPrompt, shouldRenderPrompt };
 }

@@ -59,25 +59,28 @@ describe('useNicknameGuard', () => {
     expect(result.current.shouldRenderPrompt).toBe(false);
   });
 
-  it('showPromptIfNeeded shows prompt when no nickname', () => {
+  it('dismiss prevents reopen until next guardAction call', () => {
     const { result } = renderHook(() => useNicknameGuard());
+    const action = vi.fn();
 
+    // guardAction shows prompt
     act(() => {
-      result.current.showPromptIfNeeded();
+      result.current.guardAction(action);
     });
-
     expect(result.current.shouldRenderPrompt).toBe(true);
-  });
 
-  it('showPromptIfNeeded does nothing when nickname exists', () => {
-    useSessionStore.setState({ nickname: 'testuser' });
-    const { result } = renderHook(() => useNicknameGuard());
-
+    // dismiss hides prompt
     act(() => {
-      result.current.showPromptIfNeeded();
+      result.current.dismissPrompt();
     });
-
     expect(result.current.shouldRenderPrompt).toBe(false);
+
+    // another guardAction re-shows prompt
+    act(() => {
+      result.current.guardAction(action);
+    });
+    expect(result.current.shouldRenderPrompt).toBe(true);
+    expect(action).not.toHaveBeenCalled();
   });
 
   it('shouldRenderPrompt is false after nickname is set', () => {

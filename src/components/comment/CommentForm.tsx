@@ -12,7 +12,7 @@ interface CommentFormProps {
 
 function CommentForm({ postId }: CommentFormProps) {
   const { t } = useTranslation('feed');
-  const { nickname, userCode, guardAction, showPromptIfNeeded, dismissPrompt, shouldRenderPrompt } = useNicknameGuard();
+  const { nickname, userCode, guardAction, dismissPrompt, shouldRenderPrompt } = useNicknameGuard();
   const [content, setContent] = useState('');
   const createComment = useCreateComment(postId);
 
@@ -57,7 +57,7 @@ function CommentForm({ postId }: CommentFormProps) {
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
         maxLength={MAX_COMMENT_LENGTH}
-        onFocus={showPromptIfNeeded}
+        autoFocus
       />
       <p className="mt-1 text-[10px] text-muted-foreground/50 pl-4">
         enter: submit | esc: cancel
