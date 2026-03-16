@@ -27,11 +27,9 @@
   - TanStack Query와 연동
 
 ### 커스텀 Hooks (`src/hooks/`)
-- **useApiHealth**: API 상태 모니터링 (주기적 폴링)
-- **useSession**: UUID 세션 관리 (생성, 닉네임)
-- **useTheme**: 테마 전환, 시스템 설정 감지
-- **useInfiniteScroll**: 무한 스크롤 로직
-- **useRelativeTime**: 상대적 타임스탬프 ("5m ago")
+- **useNicknameGuard**: 닉네임 미설정 시 작성 차단 가드
+
+> **참고**: API 상태 폴링은 `src/apis/queries/useStatus.ts` (TanStack Query hook), 테마는 `src/stores/themeStore.ts`, 세션은 `src/stores/sessionStore.ts`에 각각 구현됨.
 
 ### Zustand Stores (`src/stores/`)
 - **sessionStore**: sessionId (UUID), nickname
@@ -42,6 +40,7 @@
 - **constants.ts**: 상수 정의 (폴링 간격, API URL 등)
 - **utils.ts**: 공통 유틸리티 함수
 - **i18n.ts**: react-i18next 설정
+- **nicknameGenerator.ts**: 랜덤 닉네임 생성기
 
 ### 타입 정의 (`src/types/`)
 - API 응답 타입, 도메인 모델, 공통 타입
@@ -54,7 +53,7 @@
 ### 프로젝트 설정
 - Vite 설정, TypeScript 설정
 - Tailwind CSS 설정, PostCSS
-- Vitest 설정, Playwright 설정
+- Vitest 설정, Playwright 설정 (도입 예정)
 - ESLint, Prettier
 
 ### 테스트 인프라

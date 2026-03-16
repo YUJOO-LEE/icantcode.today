@@ -13,7 +13,7 @@
 | UI 프리미티브 | `src/components/ui/` | TerminalPrompt, TerminalCard, TerminalButton |
 | 피드 관련 | `src/components/feed/` | FeedList, FeedItem, FeedComposer |
 | 댓글 관련 | `src/components/comment/` | CommentList, CommentItem |
-| 상태 표시 | `src/components/status/` | StatusIndicator, StatusBanner |
+| 상태 표시 | `src/components/status/` | CheckingView, LandingView, StatusBanner |
 | 레이아웃 | `src/components/layout/` | Header, Footer, Layout |
 | 공통/유틸 | `src/components/common/` | ThemeToggle, LanguageSwitch |
 

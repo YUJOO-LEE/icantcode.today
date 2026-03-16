@@ -14,7 +14,7 @@
 | Vitest | 단위 테스트 러너 |
 | React Testing Library | 컴포넌트 테스트 |
 | MSW (Mock Service Worker) | API 모킹 |
-| Playwright | E2E 테스트 |
+| Playwright (도입 예정) | E2E 테스트 |
 | axe-core | 접근성 자동 검사 |
 
 ## 테스트 전략
@@ -37,7 +37,7 @@
 - 상태 기반 화면 전환
 - 세션 기반 게시글 권한 (본인 세션만 수정/삭제 가능)
 
-### E2E 테스트 (Playwright)
+### E2E 테스트 (Playwright — 도입 예정)
 - 핵심 사용자 플로우:
   1. 첫 접속 → 피드 즉시 읽기 가능 (닉네임 불필요)
   2. API 정상 → 랜딩 화면 표시 (단일 루트, 라우트 분리 없음)

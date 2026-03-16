@@ -64,7 +64,7 @@ Claude Code API 장애 시 활성화되는 개발자 커뮤니티. CLI 터미널
 ### 🧪 QA Agent
 - **파일**: `.claude/agents/qa.md`
 - **역할**: 테스트 전략, 품질 보증, E2E 테스트
-- **핵심 원칙**: Vitest + RTL + Playwright, 상태 전환 테스트 필수
+- **핵심 원칙**: Vitest + RTL + MSW, 상태 전환 테스트 필수 (Playwright 도입 예정)
 - **개입 시점**: 기능 완료 후 테스트, PR 리뷰, 릴리스 전 QA
 
 ## 개발자 에이전트 협업 프로토콜

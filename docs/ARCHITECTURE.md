@@ -114,9 +114,7 @@ src/
 │   └── queries/                 # TanStack Query hooks
 │       ├── useStatus.ts         # API 상태 폴링 쿼리
 │       ├── usePosts.ts          # 피드 목록 (무한스크롤)
-│       ├── usePost.ts           # 단일 게시물
-│       ├── useComments.ts       # 댓글 목록
-│       └── useReactions.ts      # 좋아요/반응
+│       └── useComments.ts       # 댓글 목록
 │
 ├── components/
 │   ├── ui/                      # 기본 CLI 스타일 UI 컴포넌트
@@ -139,7 +137,8 @@ src/
 │   │   └── CommentForm.tsx      # 댓글 작성 폼
 │   │
 │   ├── status/                  # API 상태 관련 컴포넌트
-│   │   ├── StatusIndicator.tsx  # 상태 도트 인디케이터
+│   │   ├── CheckingView.tsx     # 상태 확인 중 UI
+│   │   ├── LandingView.tsx      # API 정상 시 랜딩 UI
 │   │   └── StatusBanner.tsx     # 상단 상태 배너
 │   │
 │   ├── layout/                  # 레이아웃 컴포넌트
@@ -155,9 +154,7 @@ src/
 │   └── HomePage.tsx             # 유일한 페이지 — API 상태에 따라 랜딩/피드 조건부 렌더링
 │
 ├── hooks/                       # 커스텀 훅
-│   ├── useTheme.ts              # 테마 상태 및 전환 로직
-│   ├── useApiHealth.ts          # API 상태 폴링 + 라우팅 로직
-│   └── useInfiniteScroll.ts     # IntersectionObserver 기반 무한스크롤
+│   └── useNicknameGuard.ts      # 닉네임 미설정 시 작성 차단 가드
 │
 ├── stores/                      # Zustand 스토어
 │   ├── themeStore.ts            # 다크/라이트 모드 상태
@@ -172,13 +169,11 @@ src/
 ├── lib/                         # 유틸리티 모듈
 │   ├── i18n.ts                  # react-i18next 설정
 │   ├── constants.ts             # 전역 상수 (폴링 간격, API URL 등)
+│   ├── nicknameGenerator.ts     # 랜덤 닉네임 생성기
 │   └── utils.ts                 # 공통 유틸 함수 (날짜 포맷 등)
 │
 ├── types/                       # TypeScript 타입 정의
-│   ├── api.d.ts                 # 자동 생성 (openapi-typescript)
-│   ├── post.ts                  # 게시물 타입 (향후 필요 시 추가)
-│   ├── user.ts                  # 사용자 타입 (향후 필요 시 추가)
-│   └── status.ts                # API 상태 타입 (향후 필요 시 추가)
+│   └── api.ts                   # API 응답 타입, 도메인 모델 통합 정의
 │
 ├── locales/                     # i18n 번역 파일
 │   ├── ko/
@@ -375,7 +370,7 @@ GitHub Repository
 | Zustand v5 | KEEP | 클라이언트 상태 1위, ~1.5KB |
 | Tailwind CSS v4 | KEEP | Rust 엔진, 100배 빠른 증분 빌드 |
 | react-i18next | KEEP | i18n 표준, 번들 ~3KB |
-| Vitest + RTL + MSW + Playwright | KEEP | 테스트 스택 업계 표준 |
+| Vitest + RTL + MSW | KEEP | 테스트 스택 업계 표준 (Playwright 도입 예정) |
 | React Router v7 | **REMOVE** | 단일 루트만 사용 — 불필요 (~14KB 절감) |
 | framer-motion | **RENAME** | `motion`으로 리브랜딩 완료 |
 | axios | **REMOVED** | JWT 없는 프로젝트에서 과잉 — fetch 래퍼로 전환 완료 (~13KB 절감) |
