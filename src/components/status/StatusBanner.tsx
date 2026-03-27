@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { ApiStatus } from '@/types/api';
+import ModelStatusLine from './ModelStatusLine';
 
 interface StatusBannerProps {
   status: ApiStatus;
@@ -18,12 +19,17 @@ function StatusBanner({ status }: StatusBannerProps) {
     <div
       role="status"
       aria-live="polite"
-      className={`mb-4 pl-3 border-l-2 ${borderClass} text-xs flex items-center gap-2`}
+      className={`mb-4 pl-3 border-l-2 ${borderClass} text-xs`}
     >
-      <span>
-        <span className="text-foreground">[{label}]</span>{' '}
-        <span className="text-muted-foreground">{message}</span>
-      </span>
+      <div className="flex items-center gap-2">
+        <span>
+          <span className="text-foreground">[{label}]</span>{' '}
+          <span className="text-muted-foreground">{message}</span>
+        </span>
+      </div>
+      <div className="mt-1">
+        <ModelStatusLine />
+      </div>
     </div>
   );
 }

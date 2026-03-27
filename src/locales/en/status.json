@@ -4,5 +4,6 @@
   "apiDown": "Claude Code API outage detected",
   "goWork": "You can code right now.\nGet back to work!",
   "feedOnlyOnOutage": "Feed is only available during outages.",
-  "apiStatusLabel": "API status:"
+  "apiStatusLabel": "API status:",
+  "modelStatus": "Model Status"
 }

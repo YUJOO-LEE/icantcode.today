@@ -30,16 +30,23 @@ describe('useStatusQuery', () => {
       apiStatus: 'checking',
       statusMessage: '',
       checkedAt: null,
+      models: [],
     });
   });
 
   it('fetches status and updates store when API is up', async () => {
+    const models = [
+      { model: 'claude-sonnet-4-6', status: 'HEALTHY', responseTimeMs: 1500 },
+      { model: 'claude-opus-4-6', status: 'HEALTHY', responseTimeMs: 2000 },
+    ];
+
     server.use(
       http.get(`${API_BASE_URL}/can-i-code`, () => {
         return HttpResponse.json({
           canCode: true,
           checkedAt: '2026-03-09T12:00:00Z',
           statusMessage: 'All systems operational',
+          models,
         });
       }),
     );
@@ -53,6 +60,7 @@ describe('useStatusQuery', () => {
     const store = useStatusStore.getState();
     expect(store.apiStatus).toBe('normal');
     expect(store.statusMessage).toBe('All systems operational');
+    expect(store.models).toEqual(models);
   });
 
   it('sets status to down when API reports canCode false', async () => {
@@ -62,6 +70,7 @@ describe('useStatusQuery', () => {
           canCode: false,
           checkedAt: '2026-03-09T12:00:00Z',
           statusMessage: 'API is down',
+          models: [{ model: 'claude-opus-4-6', status: 'DEGRADED', responseTimeMs: 9000 }],
         });
       }),
     );

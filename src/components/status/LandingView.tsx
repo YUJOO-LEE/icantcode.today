@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import MultilineTypewriterText from '@/components/ui/MultilineTypewriterText';
+import ModelStatusLine from './ModelStatusLine';
 
 function LandingView() {
   const { t } = useTranslation('status');
@@ -19,7 +20,8 @@ function LandingView() {
           <span className="text-foreground">$</span> cat /etc/motd
         </div>
         <div className="mt-2 pl-2 border-l-2 border-border text-muted-foreground space-y-1">
-          <p className="text-xs text-muted-foreground">$ status --check</p>
+          <p className="text-xs text-muted-foreground"><span className="text-foreground">$</span> status --check</p>
+          <ModelStatusLine />
           <p>
             <span className="text-foreground">[OK]</span>{' '}
             <span className="text-foreground">{t('apiOnline')}</span>

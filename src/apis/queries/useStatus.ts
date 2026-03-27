@@ -25,6 +25,7 @@ export function useStatusQuery() {
         apiStatus: mapStatus(query.data.canCode),
         statusMessage: query.data.statusMessage,
         checkedAt: query.data.checkedAt,
+        models: query.data.models ?? [],
       });
     }
   }, [query.data, setStatus]);
@@ -35,6 +36,7 @@ export function useStatusQuery() {
         apiStatus: 'down',
         statusMessage: 'Unable to reach API',
         checkedAt: new Date().toISOString(),
+        models: [],
       });
     }
   }, [query.error, setStatus]);
