@@ -23,12 +23,13 @@ function FeedList() {
     data,
     isLoading,
     isError,
+    isSuccess,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
   } = useInfinitePostsQuery();
 
-  usePostsPolling(!!data);
+  usePostsPolling(isSuccess, data?.pages[0]);
 
   const sentinelRef = useIntersectionObserver(
     fetchNextPage,

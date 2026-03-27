@@ -29,7 +29,7 @@ export function useInfinitePostsQuery() {
   });
 }
 
-export function usePostsPolling(enabled: boolean) {
+export function usePostsPolling(enabled: boolean, initialData?: PostListResponse) {
   const queryClient = useQueryClient();
 
   const poll = useQuery({
@@ -37,6 +37,8 @@ export function usePostsPolling(enabled: boolean) {
     queryFn: () =>
       get<PostListResponse>('/posts', { page: 0, size: POSTS_PAGE_SIZE }),
     enabled,
+    initialData,
+    staleTime: POLLING_INTERVAL,
     refetchInterval: enabled ? POLLING_INTERVAL : false,
     refetchIntervalInBackground: false,
   });
