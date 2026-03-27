@@ -14,5 +14,6 @@
   "submitError": "Failed to submit. Please try again.",
   "commentsLabel": "Comments",
   "loadingComments": "Loading comments...",
-  "loadingPosts": "Loading posts..."
+  "loadingPosts": "Loading posts...",
+  "eof": "--- EOF ---"
 }

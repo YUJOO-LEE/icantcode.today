@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
-import { usePostsQuery } from '@/apis/queries/usePosts';
+import { useInfinitePostsQuery, usePostsPolling } from '@/apis/queries/usePosts';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import FeedItem from './FeedItem';
 import Logo from '@/components/ui/Logo';
 
@@ -17,7 +19,31 @@ const itemVariants = {
 
 function FeedList() {
   const { t } = useTranslation('feed');
-  const { data: posts, isLoading, isError } = usePostsQuery();
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfinitePostsQuery();
+
+  usePostsPolling(!!data);
+
+  const sentinelRef = useIntersectionObserver(
+    fetchNextPage,
+    { enabled: hasNextPage && !isFetchingNextPage },
+  );
+
+  const posts = useMemo(() => {
+    const all = data?.pages.flatMap((page) => page.list) ?? [];
+    const seen = new Set<number>();
+    return all.filter((p) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+  }, [data?.pages]);
 
   if (isLoading) {
     return (
@@ -35,7 +61,7 @@ function FeedList() {
     );
   }
 
-  if (!posts || posts.length === 0) {
+  if (posts.length === 0) {
     return (
       <div className="relative text-xs text-muted-foreground py-4">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -64,6 +90,20 @@ function FeedList() {
           </motion.div>
         ))}
       </motion.div>
+
+      <div ref={sentinelRef} className="h-4" aria-hidden="true" />
+
+      {isFetchingNextPage && (
+        <div className="text-xs text-muted-foreground py-2" role="status">
+          <span className="cursor">{t('common:loading')}</span>
+        </div>
+      )}
+
+      {!hasNextPage && posts.length > 0 && (
+        <div className="text-xs text-muted-foreground/50 py-2 text-center">
+          {t('eof')}
+        </div>
+      )}
     </div>
   );
 }

@@ -14,5 +14,6 @@
   "submitError": "전송에 실패했습니다. 다시 시도해 주세요.",
   "commentsLabel": "댓글 목록",
   "loadingComments": "댓글 로딩 중...",
-  "loadingPosts": "게시글 로딩 중..."
+  "loadingPosts": "게시글 로딩 중...",
+  "eof": "--- EOF ---"
 }
