@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSessionStore } from '@/stores/sessionStore';
 import { MAX_NICKNAME_LENGTH } from '@/lib/constants';
@@ -15,11 +15,14 @@ function NicknamePrompt({ onComplete, onCancel }: NicknamePromptProps) {
   const { t, i18n } = useTranslation('auth');
   const [value, setValue] = useState(() => generateRandomNickname(i18n.language));
   const setNickname = useSessionStore((s) => s.setNickname);
+  const isSubmittedRef = useRef(false);
 
   const handleSubmit = () => {
+    if (isSubmittedRef.current) return;
     const trimmed = value.trim();
     const sanitized = trimmed.replace(/[\p{Cc}\p{Cf}]/gu, '');
     if (sanitized.length > 0 && sanitized.length <= MAX_NICKNAME_LENGTH) {
+      isSubmittedRef.current = true;
       setNickname(sanitized);
       onComplete();
     }
@@ -29,6 +32,7 @@ function NicknamePrompt({ onComplete, onCancel }: NicknamePromptProps) {
     if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       handleSubmit();
     } else if (e.key === 'Escape' && onCancel) {
       onCancel();

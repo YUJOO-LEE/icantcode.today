@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNicknameGuard } from '@/hooks/useNicknameGuard';
 import { useCreateComment } from '@/apis/queries/useComments';
@@ -17,19 +17,23 @@ function CommentForm({ postId }: CommentFormProps) {
   const [content, setContent] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const createComment = useCreateComment(postId);
+  const isMutatingRef = useRef(false);
 
   const handleSubmit = () => {
-    if (createComment.isPending) return;
+    if (createComment.isPending || isMutatingRef.current) return;
     setErrorMessage('');
     guardAction(() => {
       const currentNickname = useSessionStore.getState().nickname;
       if (content.trim().length === 0 || !currentNickname) return;
+      if (isMutatingRef.current) return;
+      isMutatingRef.current = true;
 
       createComment.mutate(
         { content: content.trim(), author: currentNickname, userCode },
         {
           onSuccess: () => setContent(''),
           onError: () => setErrorMessage(t('submitError')),
+          onSettled: () => { isMutatingRef.current = false; },
         },
       );
     });

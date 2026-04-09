@@ -19,6 +19,7 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
   const [errorMessage, setErrorMessage] = useState('');
   const createPost = useCreatePost();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isMutatingRef = useRef(false);
 
   useEffect(() => {
     if (isOpen && textareaRef.current) {
@@ -27,11 +28,13 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
   }, [isOpen]);
 
   const handleSubmit = () => {
-    if (createPost.isPending) return;
+    if (createPost.isPending || isMutatingRef.current) return;
     setErrorMessage('');
     guardAction(() => {
       const currentNickname = useSessionStore.getState().nickname;
       if (content.trim().length === 0 || !currentNickname) return;
+      if (isMutatingRef.current) return;
+      isMutatingRef.current = true;
 
       createPost.mutate(
         { content: content.trim(), author: currentNickname, userCode },
@@ -41,6 +44,7 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
             onToggle?.();
           },
           onError: () => setErrorMessage(t('submitError')),
+          onSettled: () => { isMutatingRef.current = false; },
         },
       );
     });
