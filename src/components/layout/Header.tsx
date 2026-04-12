@@ -12,9 +12,10 @@ function Header() {
     useShallow((s) => ({ theme: s.theme, toggleTheme: s.toggleTheme })),
   );
 
+  const nextLang = i18n.language === 'ko' ? 'en' : 'ko';
+
   const toggleLanguage = () => {
-    const next = i18n.language === 'ko' ? 'en' : 'ko';
-    i18n.changeLanguage(next);
+    i18n.changeLanguage(nextLang);
   };
 
   const username = nickname || 'guest';
@@ -39,7 +40,7 @@ function Header() {
                 className="text-[10px]"
                 aria-label={t('switchLang', { lang: i18n.language === 'ko' ? 'English' : '한국어' })}
               >
-                {t('currentLang')}
+                {i18n.getFixedT(nextLang, 'common')('currentLang')}
               </TerminalButton>
               <TerminalButton
                 onClick={toggleTheme}
