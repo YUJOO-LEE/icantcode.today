@@ -9,9 +9,11 @@ export default defineConfig({
   retries: CI ? 2 : 0,
   workers: CI ? 1 : undefined,
   reporter: CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  snapshotPathTemplate: '{testDir}/__snapshots__/{testFilePath}/{arg}{ext}',
   expect: {
     toHaveScreenshot: {
-      maxDiffPixelRatio: 0.01,
+      // Tolerate subpixel font/AA differences across OS (dev often macOS, CI linux).
+      maxDiffPixelRatio: 0.03,
     },
   },
   use: {

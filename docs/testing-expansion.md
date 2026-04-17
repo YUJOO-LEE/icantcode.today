@@ -14,7 +14,7 @@ next session can resume mid-stream.
 | GitHub Actions test gate | ✅ done | — | `deploy.yml` → test job → build → deploy |
 | **Playwright E2E** | ✅ done | Claude | 8 flows passing, CI wired |
 | **ESLint gate** | ✅ done | Claude | Flat config, lint clean, pre-push + CI wired |
-| **Visual regression** | 🟡 in progress | Claude | Phase 3 of 3; local Playwright screenshots |
+| **Visual regression** | ✅ done | Claude | 5 baselines committed, shared across OS |
 
 ## Order of operations
 
@@ -79,21 +79,21 @@ fallback) without paying for Chromatic/Percy. Uses Playwright's built-in
 `toHaveScreenshot()` with baseline images committed to git.
 
 ### Tasks
-- [ ] In `e2e/visual/*.spec.ts`, write snapshot specs for:
+- [x] In `e2e/visual/*.spec.ts`, snapshot specs committed:
   - `landing-ko.png`, `landing-en.png`
-  - `feed-down.png`
-  - `error-fallback.png`
-  - `theme-dark.png`, `theme-light.png`
-- [ ] Lock non-determinism:
-  - Freeze clock (`page.clock.install({ time: "2026-01-01T00:00:00Z" })` or mock Date).
-  - Disable motion (prefers-reduced-motion header or `page.emulateMedia({ reducedMotion: "reduce" })`).
-  - Hide cursors that blink (add a test-only CSS flag or set a cookie read by the app).
-- [ ] Generate baselines once on main branch:
-  - `npx playwright test e2e/visual --update-snapshots`.
-- [ ] Commit `.png` baselines to git (under `e2e/visual/__snapshots__`).
-- [ ] Add a separate CI job `visual-regression` that runs on PRs, uploads
-  diff artifacts on failure, but does not auto-update baselines.
-- [ ] Document the baseline refresh procedure (how to intentionally update).
+  - `feed-down-empty.png`, `feed-down-with-posts.png`
+  - `theme-light.png` (theme-dark is the default covered by landing-ko)
+  - `error-fallback.png` deferred — rendering the error boundary in a
+    real preview requires in-app injection; the unit test
+    `src/__tests__/App.boundaries.test.tsx` already covers it.
+- [x] Lock non-determinism: reduced-motion media + Date freeze via
+  `addInitScript`, API stubbed via `stubApi()`.
+- [x] Baselines committed under `e2e/__snapshots__/visual/` (OS-agnostic
+  via `snapshotPathTemplate` in `playwright.config.ts`).
+- [x] CI reuses the existing `e2e` job — visual specs run under the same
+  `npm run e2e` command, Playwright HTML report uploaded on failure
+  already includes diff images.
+- [x] `e2e/visual/README.md` documents the refresh flow.
 
 ### Acceptance
 - Baselines exist and pass locally on two consecutive runs.
@@ -123,3 +123,6 @@ fallback) without paying for Chromatic/Percy. Uses Playwright's built-in
 ## Log (append entries as work progresses)
 
 - 2026-04-18 — Doc created. Starting Phase 1: Playwright install and config.
+- 2026-04-18 — Phase 1 complete (8 e2e flows + CI job `cac73ed`, `185ecf8`, `fe3fb33`). Starting Phase 2: ESLint.
+- 2026-04-18 — Phase 2 complete (`427702d` — flat config, 4 baseline errors fixed, pre-push + CI gate). Starting Phase 3: Visual regression.
+- 2026-04-18 — Phase 3 complete (5 visual baselines committed, OS-agnostic via `snapshotPathTemplate`, tolerance 3%). All three expansion tracks done.
