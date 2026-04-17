@@ -1,0 +1,19 @@
+import { test, expect } from '@playwright/test';
+import { stubApi, buildPost } from './helpers/api';
+
+test('reads the feed without setting a nickname first', async ({ page }) => {
+  await stubApi(page, {
+    status: 'down',
+    posts: [
+      buildPost({ id: 1, content: 'first post', author: 'alice' }),
+      buildPost({ id: 2, content: 'second post', author: 'bob' }),
+    ],
+  });
+
+  await page.goto('/');
+
+  await expect(page.getByText('first post')).toBeVisible();
+  await expect(page.getByText('second post')).toBeVisible();
+  // No nickname prompt should appear just from reading
+  await expect(page.getByText(/set-nickname/)).toHaveCount(0);
+});
