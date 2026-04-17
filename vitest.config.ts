@@ -23,6 +23,12 @@ export default defineConfig({
         'src/types/**',
         'src/locales/**',
       ],
+      thresholds: {
+        statements: 97,
+        branches: 92,
+        functions: 95,
+        lines: 97,
+      },
     },
   },
   resolve: {
