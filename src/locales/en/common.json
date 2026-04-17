@@ -15,5 +15,14 @@
   "switchLang": "Switch to {{lang}}",
   "switchTheme": "Switch to {{theme}} mode",
   "skipToContent": "Skip to content",
-  "siteNav": "Site navigation"
+  "siteNav": "Site navigation",
+
+  "seo": {
+    "titleNormal": "icantcode.today — Claude Code outage community",
+    "titleChecking": "[...] icantcode.today — checking Claude Code status",
+    "titleDown": "[DOWN] icantcode.today — Claude Code API is down",
+    "descriptionNormal": "A developer community that activates only when the Claude Code API goes down. No login required.",
+    "descriptionChecking": "Checking Claude Code API status... Visit icantcode.today for real-time updates.",
+    "descriptionDown": "Claude Code API is down! Join the community at icantcode.today to connect with other developers. Feed is now open."
+  }
 }

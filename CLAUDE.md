@@ -52,6 +52,15 @@ Claude Code API 장애 시에만 활성화되는 개발자 커뮤니티 SNS. CLI
 - 페이지 → src/pages/
 - 커스텀 hooks → src/hooks/
 - Zustand stores → src/stores/
+- 빌드 스크립트 → scripts/ (예: generate-sitemap.mjs)
+- 크롤러/SEO 정적 파일 → public/ (robots.txt, sitemap.xml, llms.txt, og.svg)
+
+### SEO/GEO 정책 (2026-04 추가)
+- **static-first explainability**: `index.html`이 JS 없이도 서비스 주제를 설명해야 함
+- SEO/GEO 관련 작업 시 `.claude/agents/seo-geo.md` 에이전트 우선 참조
+- `useDocumentMeta` 훅으로 apiStatus·lang 변화에 따라 메타 동기화 (src/hooks/useDocumentMeta.ts)
+- `public/llms.txt`는 LLM 크롤러 전용 Markdown 설명. 서비스 내용 변경 시 함께 업데이트 필수
+- CI 빌드 시 SEO 스모크 체크 자동 실행 (.github/workflows/deploy.yml)
 
 ### CLI 미학 원칙
 - 모든 텍스트: MulmaruMono (물마루 Mono)

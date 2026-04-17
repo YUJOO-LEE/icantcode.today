@@ -8,13 +8,13 @@
 
 **선택 이유:**
 - 백엔드 API가 별도로 존재하므로 SSR/SSG 불필요
-- SEO 필요성 낮음 (개발자 커뮤니티, 검색 유입보다 직접 접속)
-- 정적 호스팅 가능 (Vercel/Netlify/GitHub Pages) → 서버 비용 절감
+- **SEO/GEO 전략**: SSG 없이 `index.html` 정적 강화(JSON-LD, hreflang, hidden SEO body, robots.txt, sitemap.xml, llms.txt)로 대응 — "static-first explainability" 원칙. 크롤러·LLM이 JS 없이도 서비스 주제를 파악할 수 있어야 한다 (2026-04 기조 변경)
+- 정적 호스팅 가능 (GitHub Pages) → 서버 비용 절감
 - SPA 특유의 빠른 페이지 전환이 터미널 감성 UX와 잘 어울림
 - Vite의 빠른 HMR로 개발 생산성 극대화
 
 **대안 검토:**
-- Next.js: SSR 장점 있으나 이 프로젝트에서 불필요한 복잡도 추가
+- Next.js: SSR 장점 있으나 단일 루트(`/`) 구조에서 불필요한 복잡도 추가
 - Remix: 마찬가지로 오버엔지니어링
 - Astro: 정적 콘텐츠 중심 프로젝트에 적합, SNS 동적 피드와 맞지 않음
 

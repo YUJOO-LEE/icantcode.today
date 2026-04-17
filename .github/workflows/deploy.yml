@@ -30,6 +30,17 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
+      - name: SEO smoke check
+        run: |
+          echo "Checking required SEO elements in dist/index.html..."
+          grep -q 'og:image' dist/index.html || (echo "FAIL: og:image missing" && exit 1)
+          grep -q 'canonical' dist/index.html || (echo "FAIL: canonical missing" && exit 1)
+          grep -q 'application/ld+json' dist/index.html || (echo "FAIL: JSON-LD missing" && exit 1)
+          grep -q 'hreflang' dist/index.html || (echo "FAIL: hreflang missing" && exit 1)
+          grep -q 'robots.txt' dist/ -r || test -f dist/robots.txt || (echo "FAIL: robots.txt missing" && exit 1)
+          grep -q 'sitemap.xml' dist/ -r || test -f dist/sitemap.xml || (echo "FAIL: sitemap.xml missing" && exit 1)
+          echo "✓ All SEO checks passed"
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

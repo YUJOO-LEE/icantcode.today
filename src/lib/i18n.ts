@@ -11,6 +11,8 @@ import enFeed from '@/locales/en/feed.json';
 import enAuth from '@/locales/en/auth.json';
 import enStatus from '@/locales/en/status.json';
 
+const browserLang = navigator.language?.startsWith('en') ? 'en' : 'ko';
+
 i18n.use(initReactI18next).init({
   resources: {
     ko: {
@@ -26,7 +28,7 @@ i18n.use(initReactI18next).init({
       status: enStatus,
     },
   },
-  lng: 'ko',
+  lng: browserLang,
   fallbackLng: 'ko',
   ns: ['common', 'feed', 'auth', 'status'],
   defaultNS: 'common',

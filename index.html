@@ -2,19 +2,166 @@
 <html lang="ko" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Claude Code API 장애 시에만 활성화되는 개발자 커뮤니티" />
-    <meta property="og:title" content="icantcode.today" />
-    <meta property="og:description" content="Claude Code API 장애 시에만 활성화되는 개발자 커뮤니티" />
+
+    <!-- Favicon & icons -->
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="apple-touch-icon" href="/logo.svg" />
+
+    <!-- Primary meta -->
+    <title>icantcode.today — Claude Code outage community</title>
+    <meta name="description" content="Claude Code API가 다운됐을 때 개발자들이 모이는 커뮤니티. A developer community that activates only when the Claude Code API goes down." />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121519" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F5F0" />
+
+    <!-- Canonical & hreflang -->
+    <link rel="canonical" href="https://icantcode.today/" />
+    <link rel="alternate" hreflang="ko" href="https://icantcode.today/" />
+    <link rel="alternate" hreflang="en" href="https://icantcode.today/" />
+    <link rel="alternate" hreflang="x-default" href="https://icantcode.today/" />
+
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="icantcode.today" />
-    <meta name="twitter:description" content="Claude Code API 장애 시에만 활성화되는 개발자 커뮤니티" />
-    <title>icantcode.today</title>
+    <meta property="og:url" content="https://icantcode.today/" />
+    <meta property="og:site_name" content="icantcode.today" />
+    <meta property="og:title" content="icantcode.today — Claude Code outage community" />
+    <meta property="og:description" content="Claude Code API가 다운됐을 때 개발자들이 모이는 커뮤니티. A developer community that activates only when the Claude Code API goes down." />
+    <meta property="og:image" content="https://icantcode.today/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="icantcode.today — terminal-style developer community for Claude Code outages" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="icantcode.today — Claude Code outage community" />
+    <meta name="twitter:description" content="Claude Code API가 다운됐을 때 개발자들이 모이는 커뮤니티. When Claude Code goes down, devs come here." />
+    <meta name="twitter:image" content="https://icantcode.today/og.png" />
+    <meta name="twitter:image:alt" content="icantcode.today terminal UI screenshot" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "icantcode.today",
+        "alternateName": "icantcode",
+        "url": "https://icantcode.today/",
+        "description": "A developer community SNS that activates exclusively during Claude Code API outages. Claude Code API 장애 시에만 활성화되는 개발자 커뮤니티.",
+        "inLanguage": ["ko", "en"],
+        "keywords": "Claude Code, Claude Code down, Claude Code outage, Claude API status, developer community, icantcode"
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "icantcode.today",
+        "url": "https://icantcode.today/",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any",
+        "isAccessibleForFree": true,
+        "description": "Real-time developer community that opens when the Claude Code API is down. No account required — anonymous sessions only.",
+        "inLanguage": ["ko", "en"]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is icantcode.today?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "icantcode.today is a developer community SNS that only activates when the Claude Code API is experiencing an outage. When developers can't code because Claude Code is down, they come here to share updates, commiserate, and connect with others in the same situation."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is Claude Code down right now?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "icantcode.today monitors the Claude Code API status in real time (polling every 30 seconds). When the API is down, the community feed opens automatically. Visit the site to check current status."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Do I need an account to use icantcode.today?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No account or signup is required. The site assigns you an anonymous UUID session automatically. You can read the feed without any nickname. A nickname is only needed when you want to post or comment."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Why does icantcode.today look like a terminal?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The site uses a CLI (Command Line Interface) aesthetic with monospace fonts, box-drawing characters, and terminal prompts. The goal: non-developers seeing your screen think you're working. It's part of the developer humor behind the project."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is this an official Anthropic or Claude service?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. icantcode.today is an independent community project built by Claude Code users, for Claude Code users. It is not affiliated with or endorsed by Anthropic."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Claude Code API가 다운됐는지 어떻게 확인하나요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "icantcode.today는 30초마다 Claude Code API 상태를 자동으로 폴링합니다. API가 다운되면 커뮤니티 피드가 자동으로 열립니다. 사이트에 접속하면 현재 상태를 바로 확인할 수 있습니다."
+            }
+          }
+        ]
+      }
+    ]
+    </script>
   </head>
   <body>
+    <!-- React app mounts here -->
     <div id="root"></div>
+
+    <!-- Static content for crawlers and LLMs (hidden from visual/screen-reader users) -->
+    <div id="seo-root" hidden aria-hidden="true">
+      <h1>icantcode.today — Claude Code outage community</h1>
+      <p>
+        icantcode.today is a real-time developer community that activates exclusively when the Claude Code API is down.
+        Claude Code API 장애 시에만 열리는 개발자 커뮤니티입니다.
+      </p>
+      <h2>How it works</h2>
+      <p>
+        The site polls the Claude Code API status every 30 seconds. When the API is up, only a landing page is shown.
+        When the API goes down or degrades, a community feed opens immediately — no login required.
+        Users get an anonymous UUID session. A nickname is only needed for posting, not for reading.
+      </p>
+      <h2>Key features</h2>
+      <ul>
+        <li>Real-time Claude Code API status monitoring (30-second polling)</li>
+        <li>Anonymous community feed — no account, no personal data collected</li>
+        <li>Terminal/CLI aesthetic design (MulmaruMono font, box-drawing characters)</li>
+        <li>Korean and English support</li>
+        <li>Dark and light mode</li>
+      </ul>
+      <h2>FAQ</h2>
+      <dl>
+        <dt>Is Claude Code down right now?</dt>
+        <dd>Visit icantcode.today to see real-time status. When the API is down, the community feed opens automatically.</dd>
+        <dt>Is this official Anthropic service?</dt>
+        <dd>No. This is an independent community project by Claude Code users, not affiliated with Anthropic.</dd>
+        <dt>Do I need to sign up?</dt>
+        <dd>No. Anonymous UUID session is assigned automatically. Nickname only required to post.</dd>
+        <dt>icantcode.today가 뭔가요?</dt>
+        <dd>Claude Code API가 장애일 때만 열리는 개발자 커뮤니티입니다. 같은 처지의 개발자들과 소통하는 공간입니다.</dd>
+        <dt>로그인이 필요한가요?</dt>
+        <dd>아니요. 익명 세션이 자동 생성됩니다. 글을 쓸 때만 닉네임이 필요합니다.</dd>
+      </dl>
+    </div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

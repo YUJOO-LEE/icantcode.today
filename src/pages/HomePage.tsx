@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useStatusStore } from '@/stores/statusStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useStatusQuery } from '@/apis/queries/useStatus';
+import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 import LandingView from '@/components/status/LandingView';
 import CheckingView from '@/components/status/CheckingView';
 import StatusBanner from '@/components/status/StatusBanner';
@@ -17,15 +18,7 @@ function HomePage() {
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const [showComposer, setShowComposer] = useState(false);
   useStatusQuery();
-
-  useEffect(() => {
-    const titles: Record<string, string> = {
-      normal: 'icantcode.today',
-      checking: '[...] icantcode.today',
-      down: '[DOWN] icantcode.today',
-    };
-    document.title = titles[apiStatus] || 'icantcode.today';
-  }, [apiStatus]);
+  useDocumentMeta({ apiStatus, lang: i18n.language === 'en' ? 'en' : 'ko' });
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

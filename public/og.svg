@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" font-family="MulmaruMono, monospace">
+  <rect width="1200" height="630" fill="#121519"/>
+  <rect x="60" y="60" width="1080" height="510" fill="none" stroke="#2D3440" stroke-width="2"/>
+
+  <text x="100" y="130" font-size="20" fill="#8B9299">guest@icantcode.today:~$</text>
+  <rect x="390" y="114" width="11" height="20" fill="#ABC95B"/>
+
+  <line x1="100" y1="158" x2="1100" y2="158" stroke="#2D3440" stroke-width="1"/>
+
+  <text x="100" y="210" font-size="18" fill="#E8E8E8">
+    <tspan fill="#ABC95B">$</tspan><tspan dx="12">cat /etc/motd</tspan>
+  </text>
+  <text x="120" y="246" font-size="16" fill="#8B9299">&gt; icantcode.today — a shelter for idle terminals</text>
+
+  <line x1="100" y1="288" x2="1100" y2="288" stroke="#2D3440" stroke-width="1"/>
+
+  <text x="100" y="390" font-size="64" font-weight="700" fill="#E8E8E8">icantcode.today</text>
+
+  <rect x="100" y="422" width="72" height="32" fill="#FF6B6B"/>
+  <text x="136" y="445" font-size="16" font-weight="700" fill="#121519" text-anchor="middle">[DOWN]</text>
+  <text x="188" y="445" font-size="22" fill="#ABC95B">Claude Code outage community</text>
+
+  <text x="100" y="488" font-size="18" fill="#8B9299">Claude Code API 장애 시에만 열리는 개발자 커뮤니티</text>
+
+  <line x1="100" y1="518" x2="1100" y2="518" stroke="#2D3440" stroke-width="1"/>
+
+  <text x="100" y="548" font-size="14" fill="#4A5568">
+    <tspan fill="#ABC95B">&gt;</tspan><tspan dx="10">no login. no data. just devs waiting for the API to come back.</tspan>
+  </text>
+</svg>

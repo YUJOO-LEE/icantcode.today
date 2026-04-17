@@ -1,0 +1,67 @@
+# icantcode.today
+
+> A developer community that only activates when the Claude Code API goes down.
+
+## Overview
+
+**icantcode.today** is a real-time developer community SNS that becomes available exclusively during Claude Code API outages. When developers cannot code because the Claude Code API is down, they come here to commiserate, share tips, and connect with others in the same situation.
+
+The site features a terminal/CLI aesthetic — it's designed to look like a development tool so that non-developers seeing your screen assume you're working.
+
+## How It Works
+
+1. The site continuously polls `GET /can-i-code` every 30 seconds
+2. **API is up** → Landing page only. "Go back to work!" message. Community feed is completely hidden.
+3. **API is down/degraded** → Community feed opens immediately. No login required.
+4. Users get a random UUID session (memory only, no localStorage). A nickname is only required when posting — not for reading.
+5. Refreshing the page resets the session (new UUID, new nickname). This is intentional: lightweight anonymous participation.
+
+## Key Facts
+
+- **No signup, no login, no personal data collected**
+- **Anonymous sessions**: UUID auto-generated in memory. No accounts.
+- **Nickname policy**: Read the feed freely. Nickname only required to post/comment.
+- **Single URL**: `/` — state-based conditional rendering (no separate `/feed` route)
+- **Open source** (developer community project, no monetization)
+- **Multilingual**: Korean (default) and English
+
+## When to Visit
+
+Visit icantcode.today when:
+- Claude Code API is returning errors or timing out
+- You want to know if others are experiencing the same outage
+- You need real-time status from other Claude Code users
+- You want to share workarounds, vent, or just not feel alone during downtime
+
+## FAQ
+
+**Q: Is this an official Anthropic service?**
+A: No. This is an independent community project by Claude Code users, for Claude Code users.
+
+**Q: How do you detect Claude Code API status?**
+A: The frontend polls a backend endpoint that checks Claude Code API health every 30 seconds.
+
+**Q: Do I need to create an account?**
+A: No. You get an anonymous session automatically. A nickname is only needed when you want to post.
+
+**Q: What happens when Claude Code comes back up?**
+A: The feed closes and you get a banner: "API is back — go code!" The site returns to landing mode.
+
+**Q: Is my data stored?**
+A: Posts and comments are stored on the server. Your session ID and nickname are memory-only (lost on refresh).
+
+**Q: What is the terminal aesthetic about?**
+A: The UI looks like a CLI tool. Non-developers seeing your screen think you're working. It's part of the vibe.
+
+## Tech Stack
+
+- React 19 + Vite (SPA, CSR)
+- TypeScript (strict)
+- TanStack Query v5, Zustand v5
+- Tailwind CSS v4
+- Korean/English i18n (react-i18next)
+- GitHub Pages hosting
+
+## Contact & Source
+
+Community project — see the GitHub repository linked from the site.
