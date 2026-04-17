@@ -36,9 +36,12 @@ describe('App', () => {
     );
 
     render(<App />);
-    await waitFor(() => {
-      expect(screen.getByText(/Claude Code API가 정상입니다/)).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Claude Code API가 정상입니다/)).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
   });
 
   it('shows status banner when API is down', async () => {
