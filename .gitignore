@@ -8,6 +8,11 @@ dist/
 coverage/
 .cache/
 
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
 # IDE / editor
 .idea/
 .vscode/
