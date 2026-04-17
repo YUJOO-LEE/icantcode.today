@@ -88,54 +88,58 @@ function createWrapper() {
 - [ ] 오프라인/에러 상태 처리
 
 ## API 모킹 전략 (MSW)
-- `src/tests/mocks/handlers.ts`: 기본 API 핸들러 정의 (`can-i-code`, `posts`, `posts/:id/comments`)
+- `src/tests/mocks/handlers.ts`: 기본 API 핸들러 (`can-i-code`, `posts`, `posts/:id/comments` — 전부 성공 기본값)
 - `src/tests/mocks/server.ts`: `setupServer(...handlers)` 노출
-- 픽스처 데이터는 테스트별 인라인으로 작성 (현재 전용 `data.ts` 없음)
-- 테스트별 오버라이드: `server.use(http.get(URL, () => HttpResponse.json(...)))`
-- 성공/실패/지연 시나리오별 핸들러로 교체
+- **`src/tests/mocks/presets.ts`**: 성공/에러/지연 핸들러 팩토리 + `buildPost` / `buildComment` 픽스처 빌더
+  ```ts
+  import { presets, buildComment } from '@/tests/mocks/presets';
+  server.use(presets.commentsError(1));
+  server.use(presets.statusDelayed(500));
+  server.use(presets.commentsList(1, [buildComment({ content: 'x' })]));
+  ```
+- 테스트별 오버라이드: `server.use(...)` 로 임시 교체 → `afterEach`에서 자동 리셋
 
 ## 실행 커맨드
 | 목적 | 커맨드 |
 |------|--------|
 | watch 모드 | `npm test` |
 | 1회 실행 (CI) | `npm run test:run` |
-| 커버리지 | `npm run test:coverage` (현재 `@vitest/coverage-v8` 미설치 — 필요 시 요청) |
+| 커버리지 | `npm run test:coverage` (v8 + HTML 리포트 `coverage/index.html`) |
 | 빌드 검증 | `npm run build` (sitemap + tsc -b + vite build) |
 
-## 커버리지 목표
-| 유형 | 목표 |
-|------|------|
-| 유틸리티 (`src/lib/*`) | 90%+ |
-| Hooks (`src/hooks/*`) | 80%+ |
-| Stores (`src/stores/*`) | 90%+ |
-| API 레이어 (`src/apis/*`) | 80%+ |
-| UI 프리미티브 (`src/components/ui/*`) | 80%+ |
-| Feature 컴포넌트 (feed/comment/status/layout) | 70%+ |
-| 페이지 (`src/pages/*`) | 60%+ |
+커버리지 threshold 는 `vitest.config.ts` 에서 강제 (statements 97, branches 92, functions 95, lines 97). 미달 시 명령 실패.
 
-## 현재 테스트 공백 (2026-04 감사)
+## CI 파이프라인
+- `.github/workflows/deploy.yml` — `push:master` / `pull_request` 양쪽에서 실행
+- **`test` job** 이 먼저 `npm run test:coverage` 실행 → threshold 미달 시 실패
+- `build` job 은 `test` 의존 → SEO smoke + pages artifact
+- `deploy` job 은 master push 한정
 
-아래 파일들은 테스트가 없거나 부족함 — 우선순위 순:
+로컬 측에서도 `.githooks/pre-push` 가 동일한 `npm run test:run` 실행. 우회는 `--no-verify` (비상용).
 
-### 우선순위 높음 (사용자 경로 핵심)
-- `src/components/comment/CommentForm.tsx` — 댓글 작성 플로우, 닉네임 가드
-- `src/components/comment/CommentItem.tsx` — 댓글 렌더링 (ls -la 스타일)
-- `src/apis/queries/useComments.ts` — 댓글 query/mutation, 캐시 무효화
-- `src/apis/queries/usePosts.ts` — 게시글 query, 페이지네이션, mutation
-- `src/components/status/LandingView.tsx` — 정상 상태 메인 화면
-- `src/components/status/StatusBanner.tsx` — [ERR] 배너
-- `src/components/layout/Header.tsx` — 테마/언어 토글 버튼
+## 커버리지 목표 · 현황 (2026-04)
+| 영역 | 목표 | 현재 |
+|------|------|------|
+| 유틸리티 (`src/lib/*`) | 90%+ | **100%** |
+| Hooks (`src/hooks/*`) | 80%+ | **100%** |
+| Stores (`src/stores/*`) | 90%+ | **100%** |
+| API 레이어 (`src/apis/*`) | 80%+ | 93–100% |
+| UI 프리미티브 (`src/components/ui/*`) | 80%+ | **100%** |
+| Feature 컴포넌트 (feed/comment/status/layout) | 70%+ | 98–100% |
+| 페이지 (`src/pages/*`) | 60%+ | **98.9%** |
+| **전체** | — | **99.18% / 94.52% branch / 98.86% fn** |
 
-### 우선순위 중간
-- `src/components/status/ModelStatusLine.tsx` — 모델별 상태 라인
-- `src/components/status/CheckingView.tsx` — checking 상태 로딩
-- `src/components/ui/TerminalPrompt.tsx` — 프롬프트 UI
-- `src/apis/queryClient.ts` — 전역 QueryClient 인스턴스 설정
+## 현재 테스트 공백 (2026-04 감사, v8 기반)
 
-### 우선순위 낮음 (간단하거나 엔트리)
-- `src/components/layout/Layout.tsx`, `Footer.tsx` — 정적 레이아웃
-- `src/main.tsx` — 앱 엔트리포인트
-- `src/constants/app.ts`, `src/lib/constants.ts` — 상수
+모든 고·중 우선순위 공백은 해소됨. 잔여는 소규모 branch 또는 defensive path:
+- `src/apis/queries/usePosts.ts` 87.5% — `usePostsPolling` 캐시 머지 effect(라인 66-74). 통합 테스트로만 자연스럽게 증명 가능
+- `src/components/feed/FeedList.tsx` 96.7% — IntersectionObserver 콜백 에러 경로(라인 98-100)
+- `src/lib/i18n.ts` / `src/lib/constants.ts` — `??` / `?.startsWith` nullish 짧은 가지 (분기 0%로 집계되지만 실제 런타임 양쪽 다 도달)
+
+### 향후 확장 (별도 트랙)
+- **Playwright E2E**: 여전히 도입 예정. qa.md E2E 섹션 8개 플로우가 타깃
+- **시각 회귀** (Chromatic / Percy): 아직 미도입
+- **Lint 게이트**: pre-push 에 eslint 단계 추가 고려
 
 ## 참고 문서
 - [서비스 기획서](../../docs/SERVICE_PLAN.md)
