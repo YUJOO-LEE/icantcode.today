@@ -62,6 +62,8 @@ A: The UI looks like a CLI tool. Non-developers seeing your screen think you're 
 - Korean/English i18n (react-i18next)
 - GitHub Pages hosting
 
-## Contact & Source
+## Source
 
-Community project — see the GitHub repository linked from the site.
+- Hosted at: https://icantcode.today
+- Source code: https://github.com/YUJOO-LEE/icantcode.today
+- Independent community project — not affiliated with or endorsed by Anthropic.

@@ -28,11 +28,16 @@
     <meta property="og:title" content="icantcode.today — Claude Code outage community" />
     <meta property="og:description" content="Claude Code API가 다운됐을 때 개발자들이 모이는 커뮤니티. A developer community that activates only when the Claude Code API goes down." />
     <meta property="og:image" content="https://icantcode.today/og.png" />
+    <meta property="og:image:secure_url" content="https://icantcode.today/og.png" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="icantcode.today — terminal-style developer community for Claude Code outages" />
     <meta property="og:locale" content="ko_KR" />
     <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/site.webmanifest" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -57,13 +62,69 @@
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",
+        "@id": "https://icantcode.today/#app",
         "name": "icantcode.today",
         "url": "https://icantcode.today/",
-        "applicationCategory": "DeveloperApplication",
+        "applicationCategory": "CommunicationApplication",
+        "applicationSubCategory": "CommunityApplication",
         "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript. Requires HTML5.",
         "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Real-time Claude Code API status polling every 30 seconds",
+          "Anonymous UUID session — no signup, no personal data",
+          "Delayed nickname entry — read freely, nickname only for posting",
+          "Terminal/CLI aesthetic (MulmaruMono font, box-drawing characters)",
+          "Korean and English interface with hreflang",
+          "Dark and light theme"
+        ],
+        "publisher": { "@id": "https://icantcode.today/#org" },
         "description": "Real-time developer community that opens when the Claude Code API is down. No account required — anonymous sessions only.",
         "inLanguage": ["ko", "en"]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": "https://icantcode.today/#org",
+        "name": "icantcode.today",
+        "url": "https://icantcode.today/",
+        "logo": "https://icantcode.today/logo.svg",
+        "sameAs": [
+          "https://github.com/YUJOO-LEE/icantcode.today"
+        ]
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to post anonymously on icantcode.today during a Claude Code outage",
+        "description": "Step-by-step guide for using icantcode.today — no signup, no personal data. Nickname is requested only when you post or comment.",
+        "totalTime": "PT30S",
+        "inLanguage": "en",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "position": 1,
+            "name": "Visit icantcode.today",
+            "text": "Open https://icantcode.today in any modern browser. The site automatically polls the Claude Code API status every 30 seconds."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 2,
+            "name": "Wait for the community feed to open",
+            "text": "If the Claude Code API is up, you only see a landing page. If it is down or degraded, the community feed opens automatically. No login is required — an anonymous UUID session is assigned in memory."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 3,
+            "name": "Post or comment with a one-time nickname",
+            "text": "Reading, scrolling and liking work without a nickname. When you try to post or comment, an inline prompt asks for a nickname. You only set it once per session; it is reused until refresh."
+          }
+        ]
       },
       {
         "@context": "https://schema.org",
@@ -163,5 +224,7 @@
     </div>
 
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- __CF_BEACON_SLOT__ -->
   </body>
 </html>

@@ -1,0 +1,28 @@
+{
+  "name": "icantcode.today",
+  "short_name": "icantcode",
+  "description": "Developer community that activates only when the Claude Code API is down.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#121519",
+  "theme_color": "#ABC95B",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["social", "productivity", "developer"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
