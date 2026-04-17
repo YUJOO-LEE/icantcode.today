@@ -64,4 +64,19 @@ describe('CommentList', () => {
       expect(screen.getByPlaceholderText(/댓글을 입력/)).toBeInTheDocument();
     });
   });
+
+  it('shows error state when fetch fails', async () => {
+    server.use(
+      http.get(`${API_BASE_URL}/posts/1/comments`, () => {
+        return new HttpResponse(null, { status: 500 });
+      }),
+    );
+
+    render(<CommentList postId={1} />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent('[ERR]');
+      expect(alert).toHaveTextContent(/게시글을 불러오지 못했습니다/);
+    });
+  });
 });
