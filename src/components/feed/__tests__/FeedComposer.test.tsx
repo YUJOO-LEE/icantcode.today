@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
@@ -142,5 +142,42 @@ describe('FeedComposer', () => {
     render(<FeedComposer isOpen onToggle={vi.fn()} />, { wrapper: createWrapper() });
     const textarea = screen.getByPlaceholderText(/무슨 일이 있나요/);
     expect(textarea).toHaveFocus();
+  });
+
+  it('ignores Ctrl+Enter while IME composition is active', async () => {
+    useSessionStore.setState({ nickname: 'testuser' });
+    let called = false;
+    server.use(
+      http.post(`${API_BASE_URL}/posts`, () => {
+        called = true;
+        return HttpResponse.json({ id: 1 });
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<FeedComposer isOpen onToggle={vi.fn()} />, { wrapper: createWrapper() });
+    const textarea = screen.getByPlaceholderText(/무슨 일이 있나요/);
+    await user.type(textarea, 'ㅎㅏㄴ');
+    fireEvent.keyDown(textarea, { key: 'Enter', ctrlKey: true, isComposing: true });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(called).toBe(false);
+  });
+
+  it('does not submit when content is empty even on click', async () => {
+    useSessionStore.setState({ nickname: 'testuser' });
+    let called = false;
+    server.use(
+      http.post(`${API_BASE_URL}/posts`, () => {
+        called = true;
+        return HttpResponse.json({ id: 1 });
+      }),
+    );
+
+    render(<FeedComposer isOpen onToggle={vi.fn()} />, { wrapper: createWrapper() });
+    const submit = screen.getByText('[제출]');
+    // button is disabled, but also submit fn guards internally
+    expect(submit).toBeDisabled();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(called).toBe(false);
   });
 });

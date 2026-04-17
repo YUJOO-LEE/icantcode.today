@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
@@ -94,6 +94,26 @@ describe('CommentForm', () => {
     expect(input.value).toBe('typing...');
     await user.keyboard('{Escape}');
     expect(input.value).toBe('');
+  });
+
+  it('does not submit while IME composition is active', async () => {
+    useSessionStore.setState({ nickname: 'tester' });
+    let called = false;
+    server.use(
+      http.post(`${API_BASE_URL}/posts/1/comments`, () => {
+        called = true;
+        return HttpResponse.json({ id: 1 });
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<CommentForm postId={1} />, { wrapper: createWrapper() });
+    const input = screen.getByPlaceholderText(/댓글을 입력/);
+    await user.type(input, 'hangul');
+    // isComposing=true blocks Enter submission
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(called).toBe(false);
   });
 
   it('does not submit whitespace-only content', async () => {

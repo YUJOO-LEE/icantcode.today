@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -77,5 +77,31 @@ describe('NicknamePrompt', () => {
     render(<NicknamePrompt onComplete={vi.fn()} onCancel={onCancel} />, { wrapper: Wrapper });
     await user.click(screen.getByText('[취소]'));
     expect(onCancel).toHaveBeenCalled();
+  });
+
+  it('Escape triggers onCancel', async () => {
+    const onCancel = vi.fn();
+    render(<NicknamePrompt onComplete={vi.fn()} onCancel={onCancel} />, { wrapper: Wrapper });
+    const input = screen.getByPlaceholderText(/닉네임을 입력/);
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(onCancel).toHaveBeenCalled();
+  });
+
+  it('ignores Enter while IME composition is active', async () => {
+    const onComplete = vi.fn();
+    render(<NicknamePrompt onComplete={onComplete} />, { wrapper: Wrapper });
+    const input = screen.getByPlaceholderText(/닉네임을 입력/);
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it('does not call onComplete twice on rapid re-submit', async () => {
+    const user = userEvent.setup();
+    const onComplete = vi.fn();
+    render(<NicknamePrompt onComplete={onComplete} />, { wrapper: Wrapper });
+    const submit = screen.getByText('[제출]');
+    await user.click(submit);
+    await user.click(submit);
+    expect(onComplete).toHaveBeenCalledTimes(1);
   });
 });
