@@ -8,23 +8,7 @@ test.use({
 test.beforeEach(async ({ page }) => {
   // Disable motion + freeze clock for deterministic screenshots.
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.addInitScript(() => {
-    const FROZEN = new Date('2026-04-01T00:00:00Z').getTime();
-    const OriginalDate = Date;
-    // @ts-expect-error — override global Date for tests
-    globalThis.Date = class extends OriginalDate {
-      constructor(...args: ConstructorParameters<typeof OriginalDate>) {
-        if (args.length === 0) {
-          super(FROZEN);
-        } else {
-          super(...args);
-        }
-      }
-      static now() {
-        return FROZEN;
-      }
-    } as DateConstructor;
-  });
+  await page.clock.install({ time: new Date('2026-04-01T00:00:00Z') });
 });
 
 test('landing-ko', async ({ page }) => {

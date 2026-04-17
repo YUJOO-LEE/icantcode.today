@@ -1,8 +1,11 @@
 #!/bin/sh
-# Runs lint + test suite before allowing a push.
+# Runs typecheck + lint + test suite before allowing a push.
 # Bypass (only for emergencies): git push --no-verify
 
 set -e
+
+echo "[pre-push] running typecheck..."
+npm run typecheck
 
 echo "[pre-push] running lint..."
 npm run lint
