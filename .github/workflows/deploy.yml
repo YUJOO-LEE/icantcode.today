@@ -29,14 +29,21 @@ jobs:
       - run: npm run build
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_CF_BEACON_TOKEN: ${{ secrets.VITE_CF_BEACON_TOKEN }}
 
       - name: SEO smoke check
         run: |
           echo "Checking required SEO elements in dist/index.html..."
           grep -q 'og:image' dist/index.html || (echo "FAIL: og:image missing" && exit 1)
+          grep -q 'og:image:type' dist/index.html || (echo "FAIL: og:image:type missing" && exit 1)
           grep -q 'canonical' dist/index.html || (echo "FAIL: canonical missing" && exit 1)
           grep -q 'application/ld+json' dist/index.html || (echo "FAIL: JSON-LD missing" && exit 1)
+          grep -q '"@type": "Organization"' dist/index.html || (echo "FAIL: Organization JSON-LD missing" && exit 1)
+          grep -q '"@type": "HowTo"' dist/index.html || (echo "FAIL: HowTo JSON-LD missing" && exit 1)
+          grep -q 'applicationSubCategory' dist/index.html || (echo "FAIL: WebApplication featureList not enriched" && exit 1)
           grep -q 'hreflang' dist/index.html || (echo "FAIL: hreflang missing" && exit 1)
+          grep -q 'rel="manifest"' dist/index.html || (echo "FAIL: manifest link missing" && exit 1)
+          test -f dist/site.webmanifest || (echo "FAIL: site.webmanifest missing" && exit 1)
           grep -q 'robots.txt' dist/ -r || test -f dist/robots.txt || (echo "FAIL: robots.txt missing" && exit 1)
           grep -q 'sitemap.xml' dist/ -r || test -f dist/sitemap.xml || (echo "FAIL: sitemap.xml missing" && exit 1)
           echo "✓ All SEO checks passed"
