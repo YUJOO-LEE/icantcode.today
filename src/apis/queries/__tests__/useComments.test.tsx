@@ -46,7 +46,7 @@ describe('useCommentsQuery', () => {
     const { result } = renderHook(() => useCommentsQuery(1), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data?.[0].content).toBe('c1');
+    expect(result.current.data?.[0]?.content).toBe('c1');
   });
 });
 
@@ -75,6 +75,6 @@ describe('useCreateComment', () => {
     expect(commentsState?.isInvalidated).toBe(true);
 
     const posts = client.getQueryData<{ id: number; commentCount: number }[]>(['posts']);
-    expect(posts?.[0].commentCount).toBe(4);
+    expect(posts?.[0]?.commentCount).toBe(4);
   });
 });

@@ -47,7 +47,7 @@ describe('useInfinitePostsQuery', () => {
     const { result } = renderHook(() => useInfinitePostsQuery(), { wrapper: Wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.pages[0].list).toHaveLength(10);
+    expect(result.current.data?.pages[0]?.list).toHaveLength(10);
     expect(result.current.hasNextPage).toBe(true);
   });
 

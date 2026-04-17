@@ -4,6 +4,7 @@ import { I18nextProvider } from 'react-i18next';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/tests/mocks/server';
+import { presets } from '@/tests/mocks/presets';
 import i18n from '@/lib/i18n';
 import { useSessionStore } from '@/stores/sessionStore';
 import CommentList from '../CommentList';
@@ -66,11 +67,7 @@ describe('CommentList', () => {
   });
 
   it('shows error state when fetch fails', async () => {
-    server.use(
-      http.get(`${API_BASE_URL}/posts/1/comments`, () => {
-        return new HttpResponse(null, { status: 500 });
-      }),
-    );
+    server.use(presets.commentsError(1));
 
     render(<CommentList postId={1} />, { wrapper: createWrapper() });
     await waitFor(() => {
