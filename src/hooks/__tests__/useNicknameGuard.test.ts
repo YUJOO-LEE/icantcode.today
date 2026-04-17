@@ -96,4 +96,30 @@ describe('useNicknameGuard', () => {
     });
     expect(result.current.shouldRenderPrompt).toBe(false);
   });
+
+  it('completeWithNickname runs the pending action and hides prompt', () => {
+    const { result } = renderHook(() => useNicknameGuard());
+    const action = vi.fn();
+
+    act(() => {
+      result.current.guardAction(action);
+    });
+    expect(action).not.toHaveBeenCalled();
+    expect(result.current.shouldRenderPrompt).toBe(true);
+
+    act(() => {
+      result.current.completeWithNickname();
+    });
+    expect(action).toHaveBeenCalledOnce();
+    expect(result.current.shouldRenderPrompt).toBe(false);
+  });
+
+  it('completeWithNickname is a no-op when no action is pending', () => {
+    const { result } = renderHook(() => useNicknameGuard());
+    expect(() => {
+      act(() => {
+        result.current.completeWithNickname();
+      });
+    }).not.toThrow();
+  });
 });
