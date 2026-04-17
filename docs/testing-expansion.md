@@ -12,8 +12,8 @@ next session can resume mid-stream.
 | MSW presets | ✅ done | — | `src/tests/mocks/presets.ts` |
 | Pre-push hook | ✅ done | — | `.githooks/pre-push` runs `npm run test:run` |
 | GitHub Actions test gate | ✅ done | — | `deploy.yml` → test job → build → deploy |
-| **Playwright E2E** | 🟡 in progress | Claude | Phase 1 of 3 |
-| **ESLint gate** | ⬜ pending | — | Phase 2 of 3 |
+| **Playwright E2E** | ✅ done | Claude | 8 flows passing, CI wired |
+| **ESLint gate** | 🟡 in progress | Claude | Phase 2 of 3 |
 | **Visual regression** | ⬜ pending | — | Phase 3 of 3; local Playwright screenshots |
 
 ## Order of operations
@@ -35,36 +35,15 @@ via `@playwright/test`. The tests run against a Vite preview of the
 production build so they reflect what actually ships.
 
 ### Tasks
-- [ ] Install `@playwright/test` (pinned, devDep).
-- [ ] Install Chromium browser only (`npx playwright install chromium`).
-  Firefox/WebKit deferred — Chromium covers the dominant user surface.
-- [ ] Scaffold `playwright.config.ts` at project root:
-  - `testDir: ./e2e`
-  - `webServer: { command: "npm run preview", port: 4173, reuseExistingServer: !CI }`
-  - `use: { baseURL: http://localhost:4173, trace: "on-first-retry" }`
-  - `projects: [{ name: "chromium", use: devices["Desktop Chrome"] }]`
-- [ ] Add scripts: `"e2e": "playwright test"`, `"e2e:ui": "playwright test --ui"`.
-- [ ] `.gitignore`: add `/test-results/`, `/playwright-report/`, `/playwright/.cache/`.
-- [ ] Write one spec per flow (`e2e/*.spec.ts`):
-  1. `01-read-feed-without-nickname.spec.ts` — visit `/`, see landing or feed, no nickname prompt on scroll/read.
-  2. `02-landing-when-api-normal.spec.ts` — status normal → landing view renders, no feed.
-  3. `03-feed-when-api-down.spec.ts` — status down → feed area visible at `/`.
-  4. `04-nickname-prompt-on-create.spec.ts` — composer submit without nickname opens inline prompt.
-  5. `05-nickname-reused-in-session.spec.ts` — once set, submit without re-prompt.
-  6. `06-comment-create-visible.spec.ts` — post a comment, assert appearance under thread.
-  7. `07-theme-toggle.spec.ts` — toggle dark/light, assert `<html class="dark">` change.
-  8. `08-language-toggle.spec.ts` — toggle ko/en, assert text changes.
-- [ ] Stub the API layer deterministically. Two options:
-  - (A) Playwright `page.route()` to intercept `VITE_API_BASE_URL/*` (preferred — self-contained).
-  - (B) Run MSW in-browser (`msw/browser`) via `start({ serviceWorker })`.
-  Recommend (A) to avoid bundling MSW into the prod bundle.
-- [ ] Add CI job `e2e` in `.github/workflows/deploy.yml`:
-  - Depends on `test` (unit).
-  - Sets up node 22, runs `npm ci`, `npx playwright install --with-deps chromium`,
-    `npm run build`, `npm run e2e`.
-  - Uploads `playwright-report/` as an artifact on failure.
-  - Gates `build` job behind `e2e` for master pushes.
-- [ ] Commit in logical slices: setup, spec bundle, CI.
+- [x] Install `@playwright/test@1.59.1` (pinned, devDep).
+- [x] Install Chromium browser only (`npx playwright install chromium`).
+- [x] Scaffold `playwright.config.ts` at project root (webServer via vite preview on 4173, ko-KR locale, chromium project).
+- [x] Add scripts: `"e2e": "playwright test"`, `"e2e:ui": "playwright test --ui"`.
+- [x] `.gitignore`: `/test-results/`, `/playwright-report/`, `/playwright/.cache/`.
+- [x] Write one spec per flow (`e2e/*.spec.ts`): all 8 flows implemented, 8/8 passing.
+- [x] API layer stubbed via `page.route()` in `e2e/helpers/api.ts`. MSW-in-browser skipped to keep prod bundle clean.
+- [x] CI job `e2e` in `.github/workflows/deploy.yml`: depends on `test`, caches `~/.cache/ms-playwright`, uploads `playwright-report/` on failure, gates `build` + `deploy`.
+- [x] Committed in slices: `cac73ed` (install+config), `185ecf8` (specs), CI commit to follow.
 
 ### Acceptance
 - `npm run e2e` passes locally against `npm run preview`.
