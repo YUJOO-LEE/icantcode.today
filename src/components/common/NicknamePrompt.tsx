@@ -55,6 +55,7 @@ function NicknamePrompt({ onComplete, onCancel }: NicknamePromptProps) {
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         maxLength={MAX_NICKNAME_LENGTH}
+        // eslint-disable-next-line jsx-a11y/no-autofocus -- inline nickname prompt is intentionally focused when it opens (CLI aesthetic)
         autoFocus
       />
       <div className="flex gap-2 mt-3 text-muted-foreground">

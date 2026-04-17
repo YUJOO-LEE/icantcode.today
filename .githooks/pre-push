@@ -1,9 +1,13 @@
 #!/bin/sh
-# Runs the full test suite before allowing a push.
+# Runs lint + test suite before allowing a push.
 # Bypass (only for emergencies): git push --no-verify
 
 set -e
 
+echo "[pre-push] running lint..."
+npm run lint
+
 echo "[pre-push] running test suite..."
 npm run test:run
-echo "[pre-push] all tests passed — proceeding with push."
+
+echo "[pre-push] all checks passed — proceeding with push."

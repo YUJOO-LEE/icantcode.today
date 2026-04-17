@@ -13,8 +13,8 @@ next session can resume mid-stream.
 | Pre-push hook | ✅ done | — | `.githooks/pre-push` runs `npm run test:run` |
 | GitHub Actions test gate | ✅ done | — | `deploy.yml` → test job → build → deploy |
 | **Playwright E2E** | ✅ done | Claude | 8 flows passing, CI wired |
-| **ESLint gate** | 🟡 in progress | Claude | Phase 2 of 3 |
-| **Visual regression** | ⬜ pending | — | Phase 3 of 3; local Playwright screenshots |
+| **ESLint gate** | ✅ done | Claude | Flat config, lint clean, pre-push + CI wired |
+| **Visual regression** | 🟡 in progress | Claude | Phase 3 of 3; local Playwright screenshots |
 
 ## Order of operations
 
@@ -58,25 +58,13 @@ dead imports, missing hooks deps, JSX a11y issues) before CI. Add to
 pre-push + CI so regressions fail fast.
 
 ### Tasks
-- [ ] Install devDeps (pin majors):
-  - `eslint@^9`
-  - `@eslint/js@^9`
-  - `typescript-eslint@^8`
-  - `eslint-plugin-react@^7`
-  - `eslint-plugin-react-hooks@^5`
-  - `eslint-plugin-jsx-a11y@^6`
-  - `globals@^15`
-- [ ] Create `eslint.config.js` (flat config) with:
-  - TS + React + hooks + a11y recommended sets.
-  - `ignores`: `dist`, `coverage`, `node_modules`, `e2e/test-results`, `playwright-report`, `public`.
-  - `parserOptions.project: "./tsconfig.json"` for type-aware rules.
-- [ ] Add scripts: `"lint": "eslint ."`, `"lint:fix": "eslint . --fix"`.
-- [ ] Run `npm run lint`, triage output:
-  - Auto-fixable → `npm run lint:fix` + review diff.
-  - Remaining → fix per file. Disable selectively only if rule is misaligned with the project style.
-- [ ] Update `.githooks/pre-push` to run `npm run lint` before tests.
-- [ ] Add a `lint` job in CI that runs in parallel with `test`; both must pass.
-- [ ] Commit in slices: install + config, code cleanups, hook + CI.
+- [x] Install devDeps: eslint 9, @eslint/js 9, typescript-eslint 8, eslint-plugin-react 7, eslint-plugin-react-hooks 5, eslint-plugin-jsx-a11y 6, globals 15.
+- [x] Create `eslint.config.js` (flat config): JS + TS + React + hooks + jsx-a11y recommended, unused-vars allow underscore prefix, tests allow `any`, scripts/configs ignored.
+- [x] Add scripts: `lint`, `lint:fix`.
+- [x] Baseline lint produced 4 errors total; fixed with two intentional autoFocus disables (CLI UX) + cleanup of vitest-axe.d.ts.
+- [x] Update `.githooks/pre-push` to run `npm run lint` then tests.
+- [x] Add a `lint` job in CI; `build` + `deploy` now gated on lint, test, e2e together.
+- [x] Committed as a single slice (install + config + cleanups + hook + CI).
 
 ### Acceptance
 - `npm run lint` exits 0 on master.

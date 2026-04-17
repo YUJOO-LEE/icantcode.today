@@ -1,7 +1,7 @@
-import type { AxeResults } from 'axe-core';
+export {};
 
 declare module 'vitest' {
-  interface Assertion<T> {
+  interface Assertion<_T> {
     toHaveNoViolations(): void;
   }
 }

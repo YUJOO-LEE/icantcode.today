@@ -69,6 +69,7 @@ function CommentForm({ postId }: CommentFormProps) {
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
         maxLength={MAX_COMMENT_LENGTH}
+        // eslint-disable-next-line jsx-a11y/no-autofocus -- inline comment form is intentionally focused when opened (CLI aesthetic)
         autoFocus
       />
       <p className="mt-1 text-[10px] text-muted-foreground/50 pl-4" aria-hidden="true">
