@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { stubApi } from './helpers/api';
+import { test, expect, stubApi } from './helpers/api';
 
 test('does not re-prompt for a nickname after the first submit succeeds', async ({ page }) => {
   await stubApi(page, { status: 'down', posts: [] });

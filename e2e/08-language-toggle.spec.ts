@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { stubApi } from './helpers/api';
+import { test, expect, stubApi } from './helpers/api';
 
 test('toggles UI language between ko and en', async ({ page }) => {
   await stubApi(page, { status: 'up' });

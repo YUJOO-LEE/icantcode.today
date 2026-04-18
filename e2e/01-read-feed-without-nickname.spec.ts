@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { stubApi, buildPost } from './helpers/api';
+import { test, expect, stubApi, buildPost } from './helpers/api';
 
 test('reads the feed without setting a nickname first', async ({ page }) => {
   await stubApi(page, {

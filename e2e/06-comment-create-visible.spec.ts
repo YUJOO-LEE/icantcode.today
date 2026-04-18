@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { stubApi, buildPost } from './helpers/api';
+import { test, expect, stubApi, buildPost } from './helpers/api';
 
 test('creates a comment and shows it under the post', async ({ page }) => {
   await stubApi(page, {

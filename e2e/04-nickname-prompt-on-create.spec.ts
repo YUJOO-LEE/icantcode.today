@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { stubApi } from './helpers/api';
+import { test, expect, stubApi } from './helpers/api';
 
 test('opens nickname prompt inline when submitting without a nickname', async ({ page }) => {
   await stubApi(page, { status: 'down', posts: [] });

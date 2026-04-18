@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { stubApi } from '../helpers/api';
+import { test, expect, stubApi } from '../helpers/api';
 
 test.use({
   viewport: { width: 1024, height: 720 },

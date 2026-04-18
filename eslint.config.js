@@ -85,6 +85,9 @@ export default tseslint.config(
     rules: {
       // Playwright specs use top-level `test()` calls; no components.
       'react/react-in-jsx-scope': 'off',
+      // Playwright fixtures take a `use` continuation callback that the
+      // react-hooks plugin mis-identifies as React's `use` hook.
+      'react-hooks/rules-of-hooks': 'off',
     },
   },
 

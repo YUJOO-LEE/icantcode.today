@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { stubApi } from './helpers/api';
+import { test, expect, stubApi } from './helpers/api';
 
 test('toggles between dark and light theme', async ({ page }) => {
   await stubApi(page, { status: 'up' });

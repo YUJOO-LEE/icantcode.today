@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { stubApi } from './helpers/api';
+import { test, expect, stubApi } from './helpers/api';
 
 test('shows the landing view and hides the feed when API is normal', async ({ page }) => {
   await stubApi(page, { status: 'up' });
