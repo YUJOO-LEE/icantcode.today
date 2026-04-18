@@ -1,385 +1,364 @@
-# ARCHITECTURE.md — icantcode.today 아키텍처 문서
+# ARCHITECTURE — icantcode.today
 
----
-
-## 1. 기술 스택 결정 및 근거
+## 1. Tech stack — decisions and rationale
 
 ### 1.1 React + Vite SPA
 
-**선택 이유:**
-- 백엔드 API가 별도로 존재하므로 SSR/SSG 불필요
-- **SEO/GEO 전략**: SSG 없이 `index.html` 정적 강화(JSON-LD, hreflang, hidden SEO body, robots.txt, sitemap.xml, llms.txt)로 대응 — "static-first explainability" 원칙. 크롤러·LLM이 JS 없이도 서비스 주제를 파악할 수 있어야 한다 (2026-04 기조 변경)
-- 정적 호스팅 가능 (GitHub Pages) → 서버 비용 절감
-- SPA 특유의 빠른 페이지 전환이 터미널 감성 UX와 잘 어울림
-- Vite의 빠른 HMR로 개발 생산성 극대화
+- A separate backend exists, so SSR/SSG isn't required.
+- **SEO/GEO strategy**: static-first explainability. `index.html` is
+  enriched with JSON-LD, `hreflang`, a hidden SEO body, `robots.txt`,
+  `sitemap.xml`, and `llms.txt` — crawlers and LLMs can understand the
+  service without running JS. (Policy shift, 2026-04.)
+- Static hosting (GitHub Pages) is enough.
+- SPA-fast transitions match the terminal aesthetic.
+- Vite's HMR is fast.
 
-**대안 검토:**
-- Next.js: SSR 장점 있으나 단일 루트(`/`) 구조에서 불필요한 복잡도 추가
-- Remix: 마찬가지로 오버엔지니어링
-- Astro: 정적 콘텐츠 중심 프로젝트에 적합, SNS 동적 피드와 맞지 않음
+Alternatives ruled out:
+- Next.js — needless complexity for a single-route app.
+- Remix — over-engineered for this scope.
+- Astro — great for static content, but the feed is dynamic.
 
-### 1.2 TypeScript Strict Mode
+### 1.2 TypeScript strict
 
-**선택 이유:**
-- `strict: true` 강제로 런타임 에러 사전 차단
-- API 응답 타입 명시로 계약(Contract) 명확화
-- 리팩토링 안전성 확보
-- IDE 자동완성으로 개발 속도 향상
+- `strict: true` catches runtime errors at compile time.
+- Explicit API response types make the contract visible.
+- Refactor-safe.
+- Good IDE autocomplete.
 
 ### 1.3 TanStack Query v5
 
-**선택 이유:**
-- 서버 상태(Server State) 관리에 특화
-- 자동 캐싱, 백그라운드 리페치, 낙관적 업데이트 내장
-- API 폴링 (`refetchInterval`) 네이티브 지원 → API 상태 모니터링에 최적
-- 무한 스크롤 (`useInfiniteQuery`) 내장
-- React Query DevTools로 디버깅 용이
+- Built for server state.
+- Built-in caching, background refetch, optimistic updates.
+- Native `refetchInterval` — perfect for API status polling.
+- `useInfiniteQuery` for pagination.
+- DevTools make debugging easy.
 
-**서버 상태 = TanStack Query, 클라이언트 상태 = Zustand** 원칙 엄수.
+**Invariant**: server state → TanStack Query, client state → Zustand.
 
 ### 1.4 Zustand v5
 
-**선택 이유:**
-- 클라이언트 상태(Client State)에 특화: 테마, 인증 정보, UI 상태
-- Redux 대비 보일러플레이트 최소화
-- TypeScript 지원 우수
-- Immer 없이도 직관적인 상태 업데이트
-- persist 미들웨어로 localStorage 연동 간편
+- For client state: theme, session, UI flags.
+- Minimal boilerplate compared to Redux.
+- Great TypeScript support.
+- Intuitive state updates without Immer.
+- `persist` middleware makes `localStorage` integration trivial.
 
 ### 1.5 Tailwind CSS v4
 
-**선택 이유:**
-- CSS 커스텀 프로퍼티 기반 v4로 다크/라이트 모드 전환 용이
-- CLI 컴포넌트 스타일링에 유틸리티 클래스가 적합
-- JIT 엔진으로 사용하지 않는 CSS 자동 제거
-- 디자인 토큰 일관성 유지
+- CSS-variable-driven (makes theme swaps easy).
+- Utility classes suit CLI component styling.
+- JIT engine strips unused CSS.
+- Keeps design tokens consistent.
 
 ### 1.6 react-i18next
 
-**선택 이유:**
-- React 생태계 표준 i18n 라이브러리
-- 네임스페이스 기반 번역 파일 분리로 유지보수 용이
-- 언어 감지, 폴백 지원
+- De-facto React i18n standard.
+- Namespace-split translation files are easy to maintain.
+- Language detection + fallback.
 
-### 1.7 ~~React Router v7~~ → 제거됨 (2026-03-08 재검토)
+### 1.7 ~~React Router v7~~ — removed (2026-03-08)
 
-**제거 근거:**
-- 단일 루트(`/`)에서 상태 기반 조건부 렌더링만 사용 — 라우터 자체가 불필요
-- ~14KB (gzip) 번들 절감
-- 향후 프로필 페이지 등 다중 라우트 필요 시 재도입 검토 (TanStack Router도 대안)
+Removed because:
+- Only a single route (`/`) is used; state-based conditional rendering is
+  enough.
+- Saves ~14 KB gzip.
+- If multi-route features (profile page) land later, reconsider. TanStack
+  Router is a viable alternative.
 
-### 1.8 motion (구 framer-motion)
+### 1.8 motion (formerly framer-motion)
 
-**선택 이유:**
-- 터미널 감성 애니메이션(타이핑 효과, 커서 깜빡임, 페이지 전환)
-- 선언적 API로 복잡한 애니메이션 간단하게 구현
-- `AnimatePresence`로 컴포넌트 언마운트 애니메이션 처리
+- Suits terminal-style motion (typewriter, cursor blink, page fades).
+- Declarative API keeps complex transitions simple.
+- `AnimatePresence` handles unmount animation cleanly.
 
-**패키지명 변경 (2026-03-08):** `framer-motion` → `motion`으로 리브랜딩 완료. import 경로만 변경, API 동일.
+**Package rename (2026-03-08)**: `framer-motion` → `motion`. Only the
+import path changed; API is identical.
 
-### 1.9 fetch 래퍼 (axios 대신 채택)
+### 1.9 fetch wrapper (instead of axios)
 
-**선택 이유:**
-- JWT 없는 익명 세션 → axios 인터셉터의 핵심 가치(토큰 갱신) 불필요
-- 간단한 fetch 래퍼(~20줄)로 충분
-- TanStack Query가 재시도, 에러 핸들링을 이미 담당
-- ~13KB (gzip) 번들 절감
-- 브라우저 네이티브 API로 추가 의존성 없음
+- No JWT → axios interceptors aren't needed.
+- A ~20-line fetch wrapper suffices.
+- TanStack Query already owns retry + error handling.
+- Saves ~13 KB gzip.
+- Native browser API, zero extra deps.
 
----
+## 2. Full tech stack
 
-## 2. 전체 기술 스택
-
-| 분류 | 기술 | 버전 |
-|------|------|------|
-| UI Framework | React | 19.x |
-| Build Tool | Vite | 6.x |
+| Concern | Tool | Version |
+|---|---|---|
+| UI framework | React | 19.x |
+| Build tool | Vite | 6.x |
 | Language | TypeScript | 5.x (strict) |
-| Server State | TanStack Query | v5 |
-| Client State | Zustand | v5 |
+| Server state | TanStack Query | v5 |
+| Client state | Zustand | v5 |
 | Styling | Tailwind CSS | v4 |
 | i18n | react-i18next | latest |
-| Animation | motion (구 framer-motion) | latest |
-| HTTP Client | fetch 래퍼 (apis/client.ts) | — |
-| Font | MulmaruMono (물마루 Mono) | — |
+| Animation | motion (ex-framer-motion) | latest |
+| HTTP | fetch wrapper (`src/apis/client.ts`) | — |
+| Font | MulmaruMono (self-hosted) | OFL 1.1 |
 
----
-
-## 3. 폴더 구조
+## 3. Folder structure
 
 ```
 src/
-├── apis/                        # API 레이어
-│   ├── client.ts                # API 클라이언트 (fetch 래퍼)
+├── apis/                        # API layer
+│   ├── client.ts                # fetch wrapper
 │   └── queries/                 # TanStack Query hooks
-│       ├── useStatus.ts         # API 상태 폴링 쿼리
-│       ├── usePosts.ts          # 피드 목록 (무한스크롤)
-│       └── useComments.ts       # 댓글 목록
+│       ├── useStatus.ts         # API status polling
+│       ├── usePosts.ts          # feed list (infinite)
+│       └── useComments.ts       # comments
 │
 ├── components/
-│   ├── ui/                      # 기본 CLI 스타일 UI 컴포넌트
-│   │   ├── TerminalCard.tsx     # box-drawing 문자 카드 래퍼
-│   │   ├── TerminalPrompt.tsx   # > $ # 프롬프트 라인
-│   │   ├── TerminalInput.tsx    # 프롬프트 prefix가 있는 입력창
-│   │   ├── TerminalButton.tsx   # CLI 스타일 버튼
-│   │   ├── TerminalBadge.tsx    # 상태 뱃지 (예: [DOWN])
-│   │   ├── Cursor.tsx           # 깜빡이는 커서 컴포넌트
-│   │   └── TypewriterText.tsx   # 타이핑 효과 텍스트
+│   ├── ui/                      # CLI-style primitives
+│   │   ├── TerminalCard.tsx
+│   │   ├── TerminalPrompt.tsx
+│   │   ├── TerminalInput.tsx
+│   │   ├── TerminalButton.tsx
+│   │   ├── TerminalBadge.tsx
+│   │   ├── Cursor.tsx
+│   │   └── TypewriterText.tsx
 │   │
-│   ├── feed/                    # 피드 관련 컴포넌트
-│   │   ├── FeedList.tsx         # 타임라인 전체 목록
-│   │   ├── FeedItem.tsx         # 개별 게시물 카드
-│   │   └── FeedComposer.tsx     # 게시물 작성 폼
+│   ├── feed/                    # feed
+│   │   ├── FeedList.tsx
+│   │   ├── FeedItem.tsx
+│   │   └── FeedComposer.tsx
 │   │
-│   ├── comment/                 # 댓글 관련 컴포넌트
-│   │   ├── CommentList.tsx      # 댓글 목록
-│   │   ├── CommentItem.tsx      # 개별 댓글
-│   │   └── CommentForm.tsx      # 댓글 작성 폼
+│   ├── comment/                 # comments
+│   │   ├── CommentList.tsx
+│   │   ├── CommentItem.tsx
+│   │   └── CommentForm.tsx
 │   │
-│   ├── status/                  # API 상태 관련 컴포넌트
-│   │   ├── CheckingView.tsx     # 상태 확인 중 UI
-│   │   ├── LandingView.tsx      # API 정상 시 랜딩 UI
-│   │   └── StatusBanner.tsx     # 상단 상태 배너
+│   ├── status/                  # status
+│   │   ├── CheckingView.tsx
+│   │   ├── LandingView.tsx
+│   │   └── StatusBanner.tsx
 │   │
-│   ├── layout/                  # 레이아웃 컴포넌트
-│   │   ├── Header.tsx           # 상단 헤더
-│   │   ├── Footer.tsx           # 하단 푸터
-│   │   └── Layout.tsx           # 페이지 레이아웃 래퍼
+│   ├── layout/                  # layout
+│   │   ├── Header.tsx
+│   │   ├── Footer.tsx
+│   │   └── Layout.tsx
 │   │
-│   └── common/                  # 공통 유틸리티 컴포넌트
-│       ├── ThemeToggle.tsx      # 다크/라이트 모드 토글
-│       └── LanguageSwitch.tsx   # 언어 전환 버튼
+│   └── common/                  # shared
+│       ├── ThemeToggle.tsx
+│       └── LanguageSwitch.tsx
 │
-├── pages/                       # 페이지 컴포넌트
-│   └── HomePage.tsx             # 유일한 페이지 — API 상태에 따라 랜딩/피드 조건부 렌더링
+├── pages/
+│   └── HomePage.tsx             # sole page; renders landing or feed based on apiStatus
 │
-├── hooks/                       # 커스텀 훅
-│   └── useNicknameGuard.ts      # 닉네임 미설정 시 작성 차단 가드
+├── hooks/
+│   ├── useDocumentMeta.ts       # sync <title>/meta to apiStatus + lang
+│   ├── useIntersectionObserver.ts
+│   └── useNicknameGuard.ts      # block write actions without a nickname
 │
-├── stores/                      # Zustand 스토어
-│   ├── themeStore.ts            # 다크/라이트 모드 상태
-│   ├── sessionStore.ts          # 세션 상태 (UUID, nickname)
-│   └── statusStore.ts           # API 상태 캐시
+├── stores/
+│   ├── themeStore.ts            # theme (persisted)
+│   ├── sessionStore.ts          # userCode (UUID) + nickname (memory only)
+│   └── statusStore.ts           # API status cache
 │
-├── styles/                      # 전역 스타일
-│   ├── globals.css              # CSS reset, 기본 전역 스타일
-│   ├── theme.css                # CSS 커스텀 프로퍼티 (색상 토큰)
-│   └── terminal.css             # CLI 특화 애니메이션, 스타일
+├── styles/
+│   ├── globals.css              # reset, global rules, font loading
+│   ├── theme.css                # CSS custom properties (color tokens)
+│   └── terminal.css             # CLI-specific animations and styles
 │
-├── lib/                         # 유틸리티 모듈
-│   ├── i18n.ts                  # react-i18next 설정
-│   ├── constants.ts             # 전역 상수 (폴링 간격, API URL 등)
-│   ├── nicknameGenerator.ts     # 랜덤 닉네임 생성기
-│   └── utils.ts                 # 공통 유틸 함수 (날짜 포맷 등)
+├── lib/
+│   ├── i18n.ts                  # react-i18next setup
+│   ├── constants.ts             # polling interval, etc.
+│   ├── nicknameGenerator.ts     # random nickname suggestions
+│   └── utils.ts                 # date formatters, etc.
 │
-├── types/                       # TypeScript 타입 정의
-│   └── api.ts                   # API 응답 타입, 도메인 모델 통합 정의
+├── constants/
+│   └── app.ts                   # APP_NAME, SHORTCUTS
 │
-├── locales/                     # i18n 번역 파일
-│   ├── ko/
-│   │   ├── common.json
-│   │   ├── feed.json
-│   │   ├── auth.json
-│   │   └── status.json
-│   └── en/
-│       ├── common.json
-│       ├── feed.json
-│       ├── auth.json
-│       └── status.json
+├── types/
+│   └── api.ts                   # hand-maintained API types
 │
-├── App.tsx                      # 라우터 설정, 전역 프로바이더
-└── main.tsx                     # 앱 진입점
+├── locales/
+│   ├── ko/{common,feed,auth,status}.json
+│   └── en/{common,feed,auth,status}.json
+│
+├── tests/                       # shared test infra (setup, MSW mocks)
+├── App.tsx                      # global providers
+└── main.tsx                     # entry
 ```
 
----
+## 4. State management
 
-## 4. 상태 관리 전략
-
-### 4.1 원칙: Server State vs Client State 분리
+### 4.1 Split rule
 
 ```
-TanStack Query  →  서버에서 오는 모든 데이터
-Zustand         →  순수 클라이언트 UI 상태
+TanStack Query → anything that comes from the server
+Zustand        → pure client-side UI state
 ```
 
-| 상태 | 관리 도구 | 예시 |
-|------|----------|------|
-| 피드 목록 | TanStack Query | 서버에서 페이지네이션으로 가져옴 |
-| 게시물 상세 | TanStack Query | ID 기반 캐싱 |
-| API 상태 | TanStack Query | 30초 폴링 |
-| 다크/라이트 모드 | Zustand + localStorage | 서버와 무관한 UI 설정 |
-| 세션 (UUID + 닉네임) | Zustand (메모리만) | 새로고침 시 초기화 |
-| 전역 API 상태 요약 | Zustand | TanStack Query 결과를 파생 저장 |
+| State | Owner | Example |
+|---|---|---|
+| Feed list | TanStack Query | server-paginated |
+| Post detail | TanStack Query | cached by id |
+| API status | TanStack Query | polled every 30 s |
+| Dark/light theme | Zustand + localStorage | unrelated to server |
+| Session (`userCode` + nickname) | Zustand (memory only) | cleared on refresh |
+| Global API-status summary | Zustand | derived from TanStack Query |
 
-### 4.2 Zustand 스토어 설계
+### 4.2 Zustand stores
 
-세션/테마/상태 3개 스토어로 분리:
+Split into three:
+- **`sessionStore`** — anonymous session (memory only, never persisted).
+- **`themeStore`** — dark/light toggle (persisted to `localStorage`).
+- **`statusStore`** — API status cache.
 
-- **sessionStore**: 익명 세션 관리 (메모리만, localStorage 저장 안 함)
-- **themeStore**: 다크/라이트 모드 (localStorage persist)
-- **statusStore**: API 상태 캐시
+### 4.3 TanStack Query config
 
-### 4.3 TanStack Query 설정
+- Global `QueryClient` defines `staleTime`, `gcTime`, `retry`, etc.
+- API status polling via `refetchInterval`; paused when tab is hidden.
+- Exact numbers in `src/lib/constants.ts`.
 
-- 전역 QueryClient에 staleTime, gcTime, retry 등 설정
-- API 상태 폴링: `refetchInterval` 사용, 탭 비활성 시 중단
-- 구체적 수치는 `src/lib/constants.ts` 참조
+## 5. Data flow
 
----
-
-## 5. 데이터 플로우
-
-### 5.1 API 상태 기반 화면 전환 플로우
+### 5.1 Status-driven screen
 
 ```
-App.tsx (최상위)
+App.tsx
   │
   ├── <QueryClientProvider>
   │     └── <ZustandHydration>
-  │           └── <ApiHealthWatcher>   ← 30초 폴링, statusStore 업데이트
+  │           └── <ApiHealthWatcher>   ← 30 s poll, updates statusStore
   │                 │
   │                 ▼
   │           statusStore.apiStatus
   │                 │
-  │                 ├── 'normal'    → 랜딩 UI (피드 완전 숨김, 컴포넌트 미렌더링)
-  │                 ├── 'down'      → 피드 UI (닉네임 없이도 읽기 가능)
-  │                 ├── 'degraded'  → 피드 UI (닉네임 없이도 읽기 가능)
-  │                 └── 'checking'  → 상태 확인 UI
+  │                 ├── 'normal'   → landing UI (feed not mounted)
+  │                 ├── 'down'     → feed UI (readable without nickname)
+  │                 └── 'checking' → status-check UI
   │
-  └── / (단일 루트 경로)
+  └── / (single route)
         └── <Layout><HomePage /></Layout>
-            └── HomePage 내부에서 apiStatus에 따라 조건부 렌더링
+            └── HomePage conditional-renders based on apiStatus
 ```
 
-> **별도 라우트 없음**: `/feed` 경로 불필요. 상태 기반 조건부 렌더링으로 화면 전환.
+> No `/feed` route. State-based conditional rendering.
 
-### 5.2 피드 데이터 플로우
+### 5.2 Feed data flow
 
 ```
-피드 UI (HomePage 내부)
+Feed UI (inside HomePage)
   │
   ├── useInfiniteQuery('posts')
   │     │
-  │     ├── [캐시 히트]  →  즉시 렌더링 (stale-while-revalidate)
-  │     └── [캐시 미스]  →  API fetch → TanStack Query 캐시 저장
-  │                               │
-  │                          FeedList → FeedItem 렌더링
+  │     ├── [cache hit] → render immediately (stale-while-revalidate)
+  │     └── [cache miss] → fetch → cache → FeedList renders FeedItems
   │
-└── useMutation (게시글 작성)
-      │
-      ├── Optimistic Update (즉시 UI 반영)
-      └── 성공 시 queryClient.invalidateQueries
+  └── useMutation (create post)
+        │
+        ├── Optimistic update (UI first)
+        └── On success: queryClient.invalidateQueries
 ```
 
-### 5.3 익명 세션 + 닉네임 지연 입력 플로우
+### 5.3 Anonymous session + delayed nickname
 
-상세 플로우는 [SERVICE_PLAN.md Section 4.3](SERVICE_PLAN.md) 참조.
-UI 스펙은 [DESIGN_SYSTEM.md Section 5](DESIGN_SYSTEM.md) 참조.
+See [SERVICE_PLAN.md §4.3](SERVICE_PLAN.md).
+UI spec: [DESIGN_SYSTEM.md §5](DESIGN_SYSTEM.md).
 
----
+## 6. API integration pattern
 
-## 6. API 통합 패턴
+- fetch wrapper: `src/apis/client.ts`.
+- TanStack Query hooks: `src/apis/queries/<resource>.ts`.
+- API contract: OpenAPI spec (see `docs/API_SPEC.md`).
+- Types: `src/types/api.ts` — **hand-maintained** (no codegen pipeline).
+  When the backend contract changes, update by hand.
 
-- **API 클라이언트**: `apis/client.ts`에 fetch 래퍼 구현
-- **Query hooks**: `apis/queries/`에 TanStack Query hooks 패턴으로 구현
-- API 명세는 Swagger UI 참조, 타입은 `openapi-typescript`로 자동 생성
+## 7. Performance
 
----
+### 7.1 Code splitting
 
-## 7. 성능 최적화
+Lazy-load feed components so they only load during an outage:
 
-### 7.1 코드 스플리팅
-
-피드 관련 컴포넌트를 React.lazy로 지연 로딩:
-
-```typescript
+```ts
 const FeedSection = lazy(() => import('./components/feed/FeedSection'));
 ```
 
-피드 컴포넌트는 API 장애 시에만 로드됨 → 정상 상황에서 불필요한 번들 로드 방지.
+### 7.2 Polling
 
-### 7.2 폴링 최적화
+- `refetchIntervalInBackground: false` — pause polling when tab is
+  hidden.
+- On `visibilitychange` return, re-check once immediately.
+- When transitioning from outage → normal, consider raising the polling
+  interval (e.g., 60 s).
 
-- `refetchIntervalInBackground: false`: 탭 비활성 시 폴링 중단 (배터리/네트워크 절약)
-- `visibilitychange` 이벤트로 탭 복귀 시 즉시 한 번 상태 확인
-- 장애 상태에서 정상 전환 시 polling interval 증가 고려 (60초)
+### 7.3 Render
 
-### 7.3 렌더링 최적화
+- `FeedItem` wrapped in `React.memo`.
+- Infinite scroll uses `IntersectionObserver` (not scroll listeners).
+- Virtual scrolling (TanStack Virtual) is a P2 consideration for long
+  feeds.
 
-- `FeedItem` 컴포넌트 `React.memo` 적용 (타임라인 스크롤 시 불필요한 리렌더 방지)
-- 무한스크롤: IntersectionObserver 활용, 스크롤 이벤트 리스너 대신 사용
-- 가상 스크롤: 피드가 길어질 경우 TanStack Virtual 도입 검토 (P2)
+### 7.4 Bundle
 
-### 7.4 번들 최적화
+Currently `vite.config.ts` ships Vite's default chunking — no custom
+`manualChunks`. The only concern so far is the MulmaruMono webfont, which
+is addressed via self-hosting + preload (see §7.5). If/when bundle size
+becomes a measured problem, consider `manualChunks` for
+`react` / `@tanstack/react-query` / `motion`. Don't add complexity without
+a measurement first.
 
-```typescript
-// vite.config.ts
-export default defineConfig({
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          query: ['@tanstack/react-query'],
-          motion: ['motion'],
-        },
-      },
-    },
-  },
-});
+### 7.5 Fonts (LCP)
+
+- MulmaruMono is self-hosted at `public/fonts/MulmaruMono.woff2`.
+- Preloaded in `index.html` with `crossorigin="anonymous"`.
+- Metric-adjusted fallback `@font-face` reduces CLS on swap.
+- Details in `docs/DESIGN_SYSTEM.md` §3.
+
+## 8. Environment variables
+
+- `.env.example` lists required variables.
+- Current set:
+  - `VITE_API_BASE_URL` — backend base URL.
+  - `VITE_CF_BEACON_TOKEN` — Cloudflare Web Analytics beacon token
+    (public by design).
+- Any new `VITE_*` var must be treated as **public** — it ends up inlined
+  in the client bundle.
+
+## 9. Deployment
+
 ```
-
----
-
-## 8. 환경 변수
-
-`.env.example` 파일을 참조하세요.
-
----
-
-## 9. 배포 아키텍처
-
-```
-GitHub Repository
+GitHub repo
   │
-  ├── Push to main
+  ├── push → master
   │     │
-  │     └── Vercel / Netlify CI/CD
-  │           │
-  │           ├── vite build
-  │           ├── 정적 파일 CDN 배포
-  │           └── SPA fallback (/* → index.html)
+  │     └── GitHub Actions (.github/workflows/deploy.yml)
+  │           ├── audit / typecheck / lint / test / e2e / build
+  │           ├── scripts/inject-cf-token.mjs — injects CF beacon token into dist/index.html
+  │           └── actions/deploy-pages → GitHub Pages
   │
-  └── Backend API (별도 서버)
-        └── REST API 서버 (이 문서 범위 외)
+  ├── DNS: CNAME at public/CNAME → icantcode.today
+  │     (Cloudflare proxy in front of Pages for RUM/analytics)
+  │
+  └── Backend API (separate service, out of scope)
 ```
 
----
+## 10. Tech-stack review log
 
-## 10. 기술 스택 재검토 이력
+### 2026-03-08 — initial stack audit
 
-### 2026-03-08: 초기 스택 종합 검증
+Stack matches 2026 industry norms; no anti-trend choices remain.
 
-**결론: 현재 스택은 2026년 업계 표준과 정확히 일치. 트렌드 역행 기술 없음.**
+| Item | Verdict | Rationale |
+|---|---|---|
+| React 19 + Vite 6 | KEEP | Industry-standard FE combo |
+| TypeScript strict | KEEP | TS 6.0 made strict default |
+| TanStack Query v5 | KEEP | #1 for server state, overtook SWR |
+| Zustand v5 | KEEP | #1 for client state, ~1.5 KB |
+| Tailwind CSS v4 | KEEP | Rust engine, 100× faster incremental |
+| react-i18next | KEEP | i18n standard, ~3 KB |
+| Vitest + RTL + MSW + Playwright | KEEP | Industry-standard test stack; E2E 8 flows + visual regression in CI |
+| React Router v7 | **REMOVED** | Only one route; saved ~14 KB |
+| framer-motion | **RENAMED** | Now `motion` |
+| axios | **REMOVED** | No JWT, fetch wrapper is enough; saved ~13 KB |
 
-| 기술 | 판정 | 근거 |
-|------|------|------|
-| React 19 + Vite 6 | KEEP | 프론트엔드 표준 조합 |
-| TypeScript strict | KEEP | TS 6.0이 strict 기본값 채택 |
-| TanStack Query v5 | KEEP | 서버 상태 관리 1위, SWR 추월 |
-| Zustand v5 | KEEP | 클라이언트 상태 1위, ~1.5KB |
-| Tailwind CSS v4 | KEEP | Rust 엔진, 100배 빠른 증분 빌드 |
-| react-i18next | KEEP | i18n 표준, 번들 ~3KB |
-| Vitest + RTL + MSW + Playwright | KEEP | 테스트 스택 업계 표준 (E2E 8 flows + visual regression CI wired) |
-| React Router v7 | **REMOVE** | 단일 루트만 사용 — 불필요 (~14KB 절감) |
-| framer-motion | **RENAME** | `motion`으로 리브랜딩 완료 |
-| axios | **REMOVED** | JWT 없는 프로젝트에서 과잉 — fetch 래퍼로 전환 완료 (~13KB 절감) |
-
-**주목할 업계 변화:**
-- TypeScript 6.0 (2026.03.17 정식): strict 기본값 — 영향 없음
-- TypeScript 7.0 (Go 컴파일러): 빌드 10배 빠름 — 2026 중반 자동 적용
-- TanStack Router 성장 중: 라우팅 재도입 시 대안 검토
+Industry notes:
+- TypeScript 6.0 (2026-03-17): strict is default now — no impact.
+- TypeScript 7.0 (Go compiler): ~10× faster builds — pick up mid-2026.
+- TanStack Router is growing — consider it if routing returns.
 
 ---
 
-*마지막 업데이트: 2026-03-09*
+_Last updated: 2026-04-19_
