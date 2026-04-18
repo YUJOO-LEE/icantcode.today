@@ -33,8 +33,8 @@ This repo enforces security in three layers. All three are required — each cov
 | Layer | What it checks | Can it be bypassed? |
 |---|---|---|
 | **Local pre-push hook** (`.githooks/pre-push`) | typecheck, lint, unit tests | Yes (`git push --no-verify`). Developer ergonomics only — never trust as a gate. |
-| **GitHub Actions CI** (`.github/workflows/`) | `audit` (npm audit, high+), `typecheck`, `lint`, `test` (coverage ≥97%), `e2e` (Playwright), `build` (SEO smoke), `CodeQL` (JS/TS static analysis) | No — authoritative gate. |
-| **GitHub repository settings** (maintainer configures in UI) | Secret scanning, Push protection, Dependabot, Branch protection | No — set once, enforced always. |
+| **GitHub Actions CI** (`.github/workflows/`) | `audit` (npm audit, high+), `typecheck`, `lint`, `test` (coverage ≥97%), `e2e` (Playwright), `build` (SEO smoke) | No — authoritative gate. |
+| **GitHub repository settings** (maintainer configures in UI) | Secret scanning, Push protection, Dependabot, CodeQL default setup (weekly), Branch protection ruleset | No — set once, enforced always. |
 
 ### Repository Settings Checklist (maintainer)
 
@@ -46,18 +46,18 @@ One-time GitHub UI configuration. Re-verify after any org/repo setting change.
 - [ ] Secret scanning: **ON** (default for public repos)
 - [ ] **Push protection: ON** (blocks commits containing detected secrets)
 - [ ] Private vulnerability reporting: **ON** (enables the advisory link above)
+- [ ] **CodeQL default setup: Configured** (weekly scan over `javascript-typescript`, `typescript`, `actions`). Do not add a custom `codeql.yml` workflow — it conflicts with default setup.
 
 **Settings → Rules → Rulesets** (target: `master`)
 - [ ] Restrict deletions
 - [ ] Block force pushes
-- [ ] Require status checks to pass:
+- [ ] Require status checks to pass (from `deploy.yml`):
   - `audit`
   - `typecheck`
   - `lint`
   - `test`
   - `e2e`
   - `build`
-  - `Analyze (javascript-typescript)` (from CodeQL workflow)
 
 ### Vite Bundle Exposure — Important
 

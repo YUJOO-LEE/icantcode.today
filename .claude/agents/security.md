@@ -77,7 +77,7 @@ npm run build && grep -riE "secret|private[-_]?key|sk_live|sk_test|BEGIN RSA" di
 | Dependabot alerts | ON |
 | Dependabot security updates | ON (취약 의존성 자동 PR) |
 | Private vulnerability reporting | ON (SECURITY.md 흐름과 연동) |
-| CodeQL code scanning | `.github/workflows/codeql.yml` 존재 확인 |
+| CodeQL default setup | Settings → Code security → "Default setup" 구성 확인 (weekly). **custom `codeql.yml` 추가 금지** (default setup과 충돌) |
 | **Branch Protection Ruleset** (master) | Block force pushes, Restrict deletions, Require status checks (`audit`, `typecheck`, `lint`, `test`, `e2e`, `build`, `Analyze`) |
 
 ### D. 세션 보안 (프로젝트 특화)
@@ -123,7 +123,7 @@ npm run build && grep -riE "secret|private[-_]?key|sk_live|sk_test|BEGIN RSA" di
 
 ### 인프라 / CI 레벨
 - [ ] 의존성에 high/critical 취약점이 없는가? (`npm audit --audit-level=high`)
-- [ ] **CI(`.github/workflows/`)에 audit, CodeQL, typecheck, lint, test, e2e 스텝이 모두 있는가?**
+- [ ] **CI(`.github/workflows/`)에 audit, typecheck, lint, test, e2e 스텝이 모두 있는가?** (CodeQL은 default setup으로 별도 동작)
 - [ ] `.env`, 생성 파일이 `.gitignore`에 포함되는가?
 - [ ] `npm ci` 사용으로 lockfile 무결성 유지되는가?
 - [ ] GitHub Actions `uses:` 버전이 메이저 태그(@v4) 또는 SHA로 고정되는가?
@@ -134,7 +134,7 @@ npm run build && grep -riE "secret|private[-_]?key|sk_live|sk_test|BEGIN RSA" di
 - [ ] Dependabot alerts + security updates ON
 - [ ] Private vulnerability reporting ON
 - [ ] master 브랜치 Ruleset: force push 금지 + required status checks 설정
-- [ ] CodeQL workflow 존재 및 성공 이력 확인
+- [ ] CodeQL default setup configured (`gh api /repos/{owner}/{repo}/code-scanning/default-setup` → `state: configured`)
 
 ### 세션/입력 레벨 (프로젝트 특화)
 - [ ] `crypto.randomUUID()` 사용
