@@ -21,6 +21,7 @@ import sharp from 'sharp';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const svgPath = resolve(__dirname, '../public/og.svg');
 const pngPath = resolve(__dirname, '../public/og.png');
+const fontPath = resolve(__dirname, '../public/fonts/MulmaruMono.woff2');
 const cacheDir = resolve(__dirname, '../.cache');
 const htmlPath = resolve(cacheDir, 'og.html');
 const tmpPngPath = resolve(cacheDir, 'og-raw.png');
@@ -37,6 +38,7 @@ if (!existsSync(CHROME_PATH)) {
 if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
 
 const svg = readFileSync(svgPath, 'utf-8');
+const fontBase64 = readFileSync(fontPath).toString('base64');
 
 const html = `<!DOCTYPE html>
 <html><head>
@@ -44,7 +46,7 @@ const html = `<!DOCTYPE html>
 <style>
   @font-face {
     font-family: 'MulmaruMono';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-4@1.1/MulmaruMono.woff2') format('woff2');
+    src: url(data:font/woff2;base64,${fontBase64}) format('woff2');
     font-display: block;
   }
   html, body { margin: 0; padding: 0; background: #121519; overflow: hidden; line-height: 0; }
