@@ -171,9 +171,17 @@ not wait for the user to say "ralph".
 
 - Commit messages: Conventional Commits (`feat:`, `fix:`, `docs:`, `style:`,
   `refactor:`, `test:`, `chore:`, `perf:`, `ci:`).
-- Branch names: `feature/…`, `fix/…`, `docs/…`.
+- **Never push directly to `master`.** Master is protected by a branch
+  ruleset that requires 6 CI checks (`audit`, `typecheck`, `lint`, `test`,
+  `e2e`, `build`) plus CodeQL `Analyze` via default setup. Direct pushes
+  fail with `GH013`. Always branch, push the branch, and open a PR.
+- Branch names match the commit type: `feat/…`, `fix/…`, `docs/…`,
+  `perf/…`, `chore/…`, `test/…`, `ci/…`.
+- **One concern per PR.** Keep code changes and doc-only changes in
+  separate PRs unless the docs strictly describe the same diff.
 - Never add `Co-Authored-By` lines (global rule).
-- Commit only when the user explicitly asks.
+- Commit only when the user explicitly asks. Push only when the user
+  explicitly asks.
 
 ## Design tokens
 
