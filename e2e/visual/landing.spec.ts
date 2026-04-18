@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
   await page.clock.install({ time: new Date('2026-04-01T00:00:00Z') });
 });
 
-test('landing-ko', async ({ page }) => {
+test('시각 스냅샷: 랜딩 화면 (한국어)', async ({ page }) => {
   await stubApi(page, { status: 'up' });
   await page.goto('/');
   // Wait for the static footnote (not animated) so the typewriter area is settled.
@@ -18,7 +18,7 @@ test('landing-ko', async ({ page }) => {
   await expect(page).toHaveScreenshot('landing-ko.png', { fullPage: true });
 });
 
-test('landing-en', async ({ page }) => {
+test('시각 스냅샷: 랜딩 화면 (영어)', async ({ page }) => {
   await stubApi(page, { status: 'up' });
   await page.goto('/');
   await page.getByRole('button', { name: /English로 전환/ }).click();
@@ -26,7 +26,7 @@ test('landing-en', async ({ page }) => {
   await expect(page).toHaveScreenshot('landing-en.png', { fullPage: true });
 });
 
-test('theme-light', async ({ page }) => {
+test('시각 스냅샷: 라이트 테마 랜딩', async ({ page }) => {
   await stubApi(page, { status: 'up' });
   await page.goto('/');
   await page.getByRole('button', { name: /밝게 모드로 전환/ }).click();

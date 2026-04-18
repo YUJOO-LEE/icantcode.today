@@ -1,6 +1,6 @@
 import { test, expect, stubApi } from './helpers/api';
 
-test('shows the landing view and hides the feed when API is normal', async ({ page }) => {
+test('API 정상 시 랜딩 화면만 보이고 피드는 숨겨진다', async ({ page }) => {
   await stubApi(page, { status: 'up' });
 
   await page.goto('/');

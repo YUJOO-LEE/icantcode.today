@@ -1,6 +1,6 @@
 import { test, expect, stubApi } from './helpers/api';
 
-test('does not re-prompt for a nickname after the first submit succeeds', async ({ page }) => {
+test('한 세션 안에서는 닉네임을 재입력하지 않는다', async ({ page }) => {
   await stubApi(page, { status: 'down', posts: [] });
 
   await page.goto('/');

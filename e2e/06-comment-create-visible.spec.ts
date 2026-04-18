@@ -1,6 +1,6 @@
 import { test, expect, stubApi, buildPost } from './helpers/api';
 
-test('creates a comment and shows it under the post', async ({ page }) => {
+test('댓글을 작성하면 게시글 아래에 표시된다', async ({ page }) => {
   await stubApi(page, {
     status: 'down',
     posts: [buildPost({ id: 1, content: 'thread parent', author: 'alice' })],

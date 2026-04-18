@@ -1,6 +1,6 @@
 import { test, expect, stubApi } from './helpers/api';
 
-test('opens nickname prompt inline when submitting without a nickname', async ({ page }) => {
+test('닉네임 없이 게시글 제출하면 인라인 닉네임 프롬프트가 뜬다', async ({ page }) => {
   await stubApi(page, { status: 'down', posts: [] });
 
   await page.goto('/');

@@ -1,6 +1,6 @@
 import { test, expect, stubApi } from './helpers/api';
 
-test('toggles between dark and light theme', async ({ page }) => {
+test('다크 ↔ 라이트 테마를 전환할 수 있다', async ({ page }) => {
   await stubApi(page, { status: 'up' });
   await page.goto('/');
 

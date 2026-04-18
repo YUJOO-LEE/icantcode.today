@@ -1,6 +1,6 @@
 import { test, expect, stubApi, buildPost } from './helpers/api';
 
-test('switches to feed + [ERR] banner when API is down', async ({ page }) => {
+test('API 장애 시 [ERR] 배너와 피드가 표시된다', async ({ page }) => {
   await stubApi(page, {
     status: 'down',
     posts: [buildPost({ id: 1, content: 'outage chat', author: 'alice' })],

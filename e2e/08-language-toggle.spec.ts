@@ -1,6 +1,6 @@
 import { test, expect, stubApi } from './helpers/api';
 
-test('toggles UI language between ko and en', async ({ page }) => {
+test('UI 언어를 한국어 ↔ 영어로 전환할 수 있다', async ({ page }) => {
   await stubApi(page, { status: 'up' });
   await page.goto('/');
 

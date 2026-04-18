@@ -9,14 +9,14 @@ test.beforeEach(async ({ page }) => {
   await page.clock.install({ time: new Date('2026-04-01T00:00:00Z') });
 });
 
-test('feed-down-empty', async ({ page }) => {
+test('시각 스냅샷: 장애 시 피드 (게시글 없음)', async ({ page }) => {
   await stubApi(page, { status: 'down', posts: [] });
   await page.goto('/');
   await expect(page.getByText(/아직 게시글이 없습니다/)).toBeVisible();
   await expect(page).toHaveScreenshot('feed-down-empty.png', { fullPage: true });
 });
 
-test('feed-down-with-posts', async ({ page }) => {
+test('시각 스냅샷: 장애 시 피드 (게시글 2개)', async ({ page }) => {
   await stubApi(page, {
     status: 'down',
     posts: [

@@ -1,6 +1,6 @@
 import { test, expect, stubApi, buildPost } from './helpers/api';
 
-test('reads the feed without setting a nickname first', async ({ page }) => {
+test('닉네임 없이도 피드를 읽을 수 있다', async ({ page }) => {
   await stubApi(page, {
     status: 'down',
     posts: [
