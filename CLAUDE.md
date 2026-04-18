@@ -88,7 +88,7 @@ Claude Code API 장애 시에만 활성화되는 개발자 커뮤니티 SNS. CLI
 - Vitest + React Testing Library
 - 컴포넌트 테스트 필수
 - API mock: MSW 사용
-- E2E: Playwright (도입 예정)
+- E2E: Playwright (도입 완료 — `e2e/` 폴더, `npm run e2e`)
 
 ### 인증 방식 (익명 세션 + 닉네임 지연 입력)
 - 로그인/회원가입 없음

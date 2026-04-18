@@ -71,6 +71,7 @@ $ icantcode --features
 | Animation | motion |
 | Font | MulmaruMono (물마루 Mono) |
 | Testing | Vitest + React Testing Library + MSW |
+| E2E | Playwright |
 | Accessibility | vitest-axe |
 
 <br />
@@ -87,6 +88,7 @@ src/
 │   ├── status/     # Status indicators
 │   ├── layout/     # Layout wrappers
 │   └── common/     # Shared components
+├── constants/      # App constants (names, shortcuts)
 ├── hooks/          # Custom hooks
 ├── lib/            # Utilities (i18n, constants, helpers)
 ├── locales/        # i18n translations (ko/en)
@@ -116,10 +118,10 @@ src/
 
 ## Built with AI Agent Teams / AI 에이전트 팀으로 개발
 
-This project was built entirely with Claude Code, using 9 custom local agents
+This project was built entirely with Claude Code, using 10 custom local agents
 working in parallel teams.
 
-이 프로젝트는 Claude Code와 9개의 커스텀 로컬 에이전트 팀으로 개발되었습니다.
+이 프로젝트는 Claude Code와 10개의 커스텀 로컬 에이전트 팀으로 개발되었습니다.
 
 ```
 $ ls .claude/agents/
@@ -133,6 +135,7 @@ $ ls .claude/agents/
   accessibility      WCAG 2.1 AA compliance
   qa                 Test strategy & quality assurance
   security           Security review & vulnerability check
+  seo-geo            SEO & GEO (LLM crawler) optimization
 ```
 
 <br />

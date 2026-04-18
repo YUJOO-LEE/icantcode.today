@@ -370,7 +370,7 @@ GitHub Repository
 | Zustand v5 | KEEP | 클라이언트 상태 1위, ~1.5KB |
 | Tailwind CSS v4 | KEEP | Rust 엔진, 100배 빠른 증분 빌드 |
 | react-i18next | KEEP | i18n 표준, 번들 ~3KB |
-| Vitest + RTL + MSW | KEEP | 테스트 스택 업계 표준 (Playwright 도입 예정) |
+| Vitest + RTL + MSW + Playwright | KEEP | 테스트 스택 업계 표준 (E2E 8 flows + visual regression CI wired) |
 | React Router v7 | **REMOVE** | 단일 루트만 사용 — 불필요 (~14KB 절감) |
 | framer-motion | **RENAME** | `motion`으로 리브랜딩 완료 |
 | axios | **REMOVED** | JWT 없는 프로젝트에서 과잉 — fetch 래퍼로 전환 완료 (~13KB 절감) |

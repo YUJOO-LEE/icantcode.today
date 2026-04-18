@@ -53,7 +53,7 @@
 ### 프로젝트 설정
 - Vite 설정, TypeScript 설정
 - Tailwind CSS 설정, PostCSS
-- Vitest 설정, Playwright 설정 (도입 예정)
+- Vitest 설정, Playwright 설정 (`playwright.config.ts` — webServer via vite preview on 4173)
 - ESLint, Prettier
 
 ### 테스트 인프라

@@ -64,8 +64,15 @@ Claude Code API 장애 시 활성화되는 개발자 커뮤니티. CLI 터미널
 ### 🧪 QA Agent
 - **파일**: `.claude/agents/qa.md`
 - **역할**: 테스트 전략, 품질 보증, E2E 테스트
-- **핵심 원칙**: Vitest + RTL + MSW, 상태 전환 테스트 필수 (Playwright 도입 예정)
+- **핵심 원칙**: Vitest + RTL + MSW + Playwright E2E, 상태 전환 테스트 필수
 - **개입 시점**: 기능 완료 후 테스트, PR 리뷰, 릴리스 전 QA
+
+### 🔍 SEO & GEO Agent
+- **파일**: `.claude/agents/seo-geo.md`
+- **역할**: 검색 엔진 최적화 + LLM 크롤러 대응(GPTBot/ClaudeBot/PerplexityBot)
+- **핵심 원칙**: static-first explainability — JS 없이 `index.html`만으로 서비스 설명 가능해야 함
+- **담당**: 정적 메타(title/og/twitter/hreflang), JSON-LD, `robots.txt`/`sitemap.xml`/`llms.txt`, `useDocumentMeta` 훅 스펙
+- **개입 시점**: 서비스 슬로건 변경, 신규 URL/페이지, OG 자산 교체, 메타 관련 CI 가드
 
 ## 개발자 에이전트 협업 프로토콜
 

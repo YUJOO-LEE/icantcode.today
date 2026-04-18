@@ -19,7 +19,7 @@
 | MSW v2 (msw/node) | API 모킹 (노드 환경) |
 | vitest-axe | 접근성 자동 검사 (axe-core 기반) |
 | jsdom 26 | DOM 환경 (vitest `environment: 'jsdom'`) |
-| Playwright (도입 예정) | E2E 테스트 |
+| Playwright v1.59 | E2E 테스트 (Chromium, `e2e/` 폴더, `npm run e2e`) |
 
 ## 테스트 인프라 주의사항
 
@@ -66,7 +66,7 @@ function createWrapper() {
 - 상태 기반 화면 전환
 - 세션 기반 게시글 권한 (본인 세션만 수정/삭제 가능)
 
-### E2E 테스트 (Playwright — 도입 예정)
+### E2E 테스트 (Playwright)
 - 핵심 사용자 플로우:
   1. 첫 접속 → 피드 즉시 읽기 가능 (닉네임 불필요)
   2. API 정상 → 랜딩 화면 표시 (단일 루트, 라우트 분리 없음)
@@ -137,7 +137,7 @@ function createWrapper() {
 - `src/lib/i18n.ts` / `src/lib/constants.ts` — `??` / `?.startsWith` nullish 짧은 가지 (분기 0%로 집계되지만 실제 런타임 양쪽 다 도달)
 
 ### 향후 확장 (별도 트랙)
-- **Playwright E2E**: 여전히 도입 예정. qa.md E2E 섹션 8개 플로우가 타깃
+- **Playwright E2E**: 도입 완료 — 8개 플로우 + visual regression CI wired (2026-04)
 - **시각 회귀** (Chromatic / Percy): 아직 미도입
 - **Lint 게이트**: pre-push 에 eslint 단계 추가 고려
 

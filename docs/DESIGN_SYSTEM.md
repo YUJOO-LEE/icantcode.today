@@ -111,19 +111,37 @@ Info               #6BB5FF   ████  일반 정보
 픽셀 도트 스타일의 모노스페이스 폰트. SIL 오픈 폰트 라이선스(OFL 1.1).
 
 ```css
-/* 웹폰트 로딩 */
+/* 웹폰트 로딩 — self-host (LCP 최적화, 2026-04-19) */
 @font-face {
     font-family: 'MulmaruMono';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-4@1.1/MulmaruMono.woff2') format('woff2');
+    src: url('/fonts/MulmaruMono.woff2') format('woff2');
     font-weight: normal;
     font-display: swap;
 }
 
-font-family: 'MulmaruMono', 'Courier New', monospace;
+/* 메트릭 조정 fallback — swap 시 CLS 최소화 */
+@font-face {
+    font-family: 'MulmaruMono Fallback';
+    src: local('Menlo'), local('Consolas'), local('Courier New');
+    font-display: swap;
+    size-adjust: 100%;
+    ascent-override: 90%;
+    descent-override: 25%;
+    line-gap-override: 0%;
+}
+
+font-family: 'MulmaruMono', 'MulmaruMono Fallback', monospace;
+```
+
+`index.html` 에 preload 필수:
+```html
+<link rel="preload" href="/fonts/MulmaruMono.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
 ```
 
 - 폰트 출처: https://noonnu.cc/font_page/1764
+- 원 저장소: https://github.com/mushsooni/mulmaru
 - 제작: Mushsooni
+- 라이선스: SIL Open Font License 1.1 (`public/fonts/LICENSE_OFL.txt`)
 - 일반 sans-serif 폰트는 사용하지 않는다. 서비스 전체가 터미널처럼 보여야 한다.
 
 ### 3.2 타입 스케일
