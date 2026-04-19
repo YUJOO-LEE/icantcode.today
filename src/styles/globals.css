@@ -6,15 +6,25 @@
 
 @font-face {
   font-family: 'MulmaruMono';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-4@1.1/MulmaruMono.woff2') format('woff2');
+  src: url('/fonts/MulmaruMono.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'MulmaruMono Fallback';
+  src: local('Menlo'), local('Consolas'), local('Courier New');
+  font-display: swap;
+  size-adjust: 100%;
+  ascent-override: 90%;
+  descent-override: 25%;
+  line-gap-override: 0%;
+}
+
 @theme inline {
-  --font-sans: 'MulmaruMono', monospace;
-  --font-mono: 'MulmaruMono', monospace;
+  --font-sans: 'MulmaruMono', 'MulmaruMono Fallback', monospace;
+  --font-mono: 'MulmaruMono', 'MulmaruMono Fallback', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
