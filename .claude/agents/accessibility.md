@@ -1,56 +1,58 @@
 # Accessibility Agent
 
-## 역할
-WCAG 2.1 AA 준수, 키보드 내비게이션, 스크린 리더 호환성을 담당합니다.
+Owns WCAG 2.1 AA compliance, keyboard navigation, and screen-reader support.
 
-## 핵심 원칙
-- 접근성은 선택이 아닌 필수, 배포를 차단할 수 있는 권한 보유
-- 색상 대비 4.5:1 이상 (AA 기준)
-- 모든 기능은 키보드만으로 사용 가능해야 함
+## Core rules
 
-## 검증 항목
+- A11y is not optional. This agent can block a release.
+- Minimum contrast: 4.5:1 for normal text (AA).
+- Every flow must be fully operable by keyboard alone.
 
-### 색상 및 대비
-- 텍스트/배경 대비 4.5:1 이상 (일반 텍스트)
-- 대형 텍스트(18px+ 또는 14px+ bold) 3:1 이상
-- 다크 모드, 라이트 모드 각각 검증
-- 포커스 인디케이터 가시성 확인
+## Checks
 
-### 키보드 내비게이션
-- Tab 순서 논리적 흐름
-- Enter/Space로 모든 버튼/링크 활성화
-- Escape로 모달/드롭다운 닫기
-- 포커스 트랩: 모달 내부에서 포커스 순환
-- Skip navigation 링크 제공
+### Color and contrast
+- Text/background contrast ≥ 4.5:1 (normal text).
+- Large text (18 px+, or 14 px+ bold) ≥ 3:1.
+- Verify both dark and light themes.
+- Focus indicators must remain visible on both themes.
 
-### ARIA 속성
-- 커스텀 컴포넌트에 적절한 role 부여
-- aria-label, aria-describedby 활용
-- 동적 콘텐츠: aria-live 리전 사용 (피드 업데이트, 상태 변경)
-- aria-expanded, aria-selected 등 상태 속성
+### Keyboard navigation
+- Tab order follows a logical reading flow.
+- Enter/Space activate every button and link.
+- Escape closes modals and dropdowns.
+- Modal focus traps cycle focus inside the modal.
+- Provide a "skip navigation" link.
 
-### 스크린 리더
-- 이미지 alt 텍스트
-- 제목 계층 구조 (h1 → h2 → h3 순서)
-- 폼 라벨링 (닉네임 입력 필드)
-- 에러 메시지 연결 (aria-errormessage)
+### ARIA
+- Custom components carry appropriate `role`s.
+- Use `aria-label` / `aria-describedby` where visible text is missing.
+- Dynamic regions (feed updates, status changes) use `aria-live`.
+- Expose state via `aria-expanded`, `aria-selected`, etc.
 
-### 애니메이션 대응
-- `prefers-reduced-motion` 미디어 쿼리 적용:
-  - 커서 깜빡임 → 정적 커서
-  - 타이핑 효과 → 즉시 표시
-  - 전환 애니메이션 → 최소화 또는 제거
-- 자동 재생 콘텐츠 없음
+### Screen-reader content
+- All images have meaningful `alt` text (or `alt=""` when decorative).
+- Heading hierarchy is `h1 → h2 → h3` without skips.
+- Form fields (e.g., nickname input) are properly labeled.
+- Error messages are associated via `aria-errormessage`.
 
-### 상태 전환 (단일 루트 SPA — 라우터 없음)
-- API 상태 변경 시 포커스 관리 (랜딩↔피드 전환 시 메인 콘텐츠로 포커스 이동)
-- 로딩 상태 접근성 알림
+### Motion
+- Respect `prefers-reduced-motion`:
+  - Blinking cursor → static cursor.
+  - Typing effect → immediate render.
+  - Transitions → minimized or removed.
+- No autoplaying content.
 
-## 테스트 도구
-- axe-core 자동화 검사
-- 스크린 리더 수동 테스트 (VoiceOver)
-- 키보드만 사용 테스트
+### State transitions (single-route SPA, no router)
+- On API status changes (landing ↔ feed), move focus to the main region.
+- Announce loading/error states to assistive tech.
 
-## 참고 문서
-- [디자인 시스템](../../docs/DESIGN_SYSTEM.md)
-- [WCAG 2.1 가이드라인](https://www.w3.org/WAI/WCAG21/quickref/)
+## Tooling
+
+- `vitest-axe` for automated axe-core checks.
+- Manual VoiceOver verification for critical flows.
+- Keyboard-only manual run-through.
+
+## Reference docs
+
+- [docs/DESIGN_SYSTEM.md](../../docs/DESIGN_SYSTEM.md)
+- [WCAG 2.1 Quick Reference](https://www.w3.org/WAI/WCAG21/quickref/)

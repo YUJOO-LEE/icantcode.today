@@ -1,325 +1,265 @@
-# SERVICE_PLAN.md — icantcode.today 서비스 기획서
+# SERVICE_PLAN — icantcode.today
 
-> "Claude Code API가 죽었을 때, 코더들이 모이는 곳"
+> "Where coders gather when the Claude Code API dies."
 
----
+## 1. Overview
 
-## 1. 프로젝트 개요
-
-### 서비스명
-
+### Service name
 **icantcode.today**
 
-### 한 줄 소개
+### One-liner
+A developer community SNS that activates only when the Claude Code API is
+down.
 
-Claude Code API 장애 시에만 활성화되는 개발자 커뮤니티 SNS.
-
-### 핵심 컨셉
+### Core concept
 
 ```
-API 정상  →  랜딩 페이지 (정보 제공, 커뮤니티 잠금)
-API 장애  →  커뮤니티 피드 오픈 (자유 게시판, 실시간 소통)
+API normal  →  landing page (community locked)
+API down    →  community feed opens (anonymous posting and commenting)
 ```
 
-코드를 짤 수 없을 때, 대신 여기 와서 같은 처지의 개발자들과 이야기를 나눈다.
-터미널 감성의 UI로 비개발자가 보면 "저 사람 코딩하고 있나?"라고 생각하게 만드는 것이 목표다.
+Users come here when they can't code. The terminal-inspired UI is deliberate:
+to a non-developer looking over your shoulder, it should look like you're
+working.
 
-### 프로젝트 성격
+### Project nature
 
-- 개인/커뮤니티 프로젝트 (수익화 없음)
-- 오픈소스 지향
-- Claude Code 사용자를 위한, Claude Code 사용자에 의한 서비스
+- Personal/community project. No monetization.
+- Open-source by intent.
+- Built by Claude Code users, for Claude Code users.
+
+## 2. Audience
+
+### Primary target
+- Claude Code users who hit outages in the middle of their work.
+
+### Persona
+
+```
+Name: Kim Dev (32, backend engineer)
+Situation: Deadline tomorrow, Claude Code API just died.
+Question: Is it just me? How long? How are others handling it?
+Action:    Open icantcode.today → check peers venting, joking, and sharing tips.
+```
+
+## 3. Core mechanics
+
+### 3.1 API-status gating
+
+Access flips based on Claude Code API state.
+
+| API state | Experience |
+|---|---|
+| `normal` | Landing page only. Feed is fully hidden (no component render). "Get back to work" message. |
+| `down` | Feed opens. Free posting, reading, commenting. |
+| `checking` | Status-check animation. Re-checks every 30 s. |
+
+> The code-level enum lives in `src/types/api.ts` as
+> `type ApiStatus = 'normal' | 'down' | 'checking'`. A `degraded` state is
+> not implemented yet — if/when added, it should open the feed like
+> `down`.
+
+### 3.2 CLI aesthetic
+
+- Box-drawing characters (`┌─┐`, `│`, `└─┘`).
+- Prompt symbols (`>`, `$`, `#`).
+- Blinking cursor.
+- Typing effect on status messages.
+- MulmaruMono (self-hosted).
+
+**Goal**: a non-developer glances at the screen and assumes "they're doing
+something serious."
+
+## 4. User flow
+
+### 4.1 Single-route model
+
+```
+/  (root — the only route)
+    ↓
+  API status poll (every 30 s)
+    ↓
+  ├── normal → landing view
+  └── down   → same URL swaps to feed view
+```
+
+- No separate `/feed` path. State-based conditional rendering.
+- Normal ↔ down toggles the UI without any URL change.
+
+### 4.2 End-to-end flow
+
+```
+User lands
+  ↓
+API status poll (30 s interval)
+  ↓
+  ├─ normal ──────────────────────────────────────────────┐
+  │                                                       │
+  │   Landing (at /)                                      │
+  │   - "You can code right now" message                  │
+  │   - Service intro (community opens only during outage)│
+  │   - Past outage log / recent activity preview         │
+  │                                                       ◄── re-check every 30 s
+  └─ down ─────────────────────────────────────────────────┐
+                                                           │
+     Feed renders immediately (reading is free, no nickname)│
+     │                                                     │
+     ├── scroll / read / like → no nickname required       │
+     └── post / comment click → nickname check             │
+          │                                                │
+          ├── nickname present → direct write              │
+          └── nickname absent → inline nickname prompt     │
+               (set once, reused for the whole session)    │
+                                                           │
+          └─────────────────────────────────────────────►┘
+```
+
+### 4.3 Delayed nickname entry
+
+**Rule: the nickname must never block feed reading.**
+
+```
+Outage detected → feed renders (read free, no nickname)
+  ↓
+  Click "new post" or "comment"
+  ↓
+  ├─ nickname present → write immediately
+  └─ nickname absent → inline prompt
+       ↓
+       Store in sessionStore (memory only)
+       ↓
+       Reused until refresh
+```
+
+- No nickname? → scroll, read, like still work.
+- Write actions are the only trigger for the nickname check.
+- Once set, the nickname lives for the session (until refresh).
+
+### 4.4 Returning user (during outage)
+
+```
+Outage detected → visit icantcode.today
+  ↓
+Feed renders immediately (no nickname prompt)
+  ↓
+  ├─ Scroll the timeline (peers in the same boat)
+  ├─ Read / like (no nickname needed)
+  ├─ Post → if nickname unset, inline prompt
+  ├─ Comment → if nickname unset, inline prompt
+  └─ On recovery → banner: "API is back! Go code."
+```
+
+> Reloads issue a new UUID. Previous posts are read-only for the new
+> session. Nickname also clears. Intentional — lightweight anonymous
+> participation.
+
+## 5. Features and priorities
+
+### P0 — MVP (must ship)
+
+#### 5.1 API status monitoring
+- Poll the Claude Code API every 30 s.
+- Status values (see `src/types/api.ts`): `normal` | `down` | `checking`.
+- UI updates immediately on status change.
+- Distinguish transient network blips from real outages.
+
+#### 5.2 State-based screen transitions
+- No separate route — conditional render at `/`.
+- Normal → landing, feed not mounted.
+- Down → feed view replaces landing in place.
+- Smooth transition animation.
+- Tab title reflects state (e.g., `[DOWN] icantcode.today`).
+
+#### 5.3 Feed
+- Post (text, up to 500 chars).
+- Timeline (newest first).
+
+#### 5.4 Comments
+- Per-post create / read.
+- Show comment count.
+
+#### 5.5 Anonymous session + delayed nickname
+- No signup.
+- `userCode` (UUID) generated on load via `generateUUID()` which wraps
+  `crypto.randomUUID()` (see `src/lib/utils.ts`).
+- Nickname requested only on first write.
+- Once set, reused per-session.
+- Refresh = new `userCode` + cleared nickname → old posts read-only.
+- Neither `userCode` nor the nickname is persisted to localStorage.
+
+### P1 — Post-MVP
+
+- **5.6 Infinite scroll** (IntersectionObserver).
+- **5.7 Likes / reactions** (toggle, live count).
+- **5.8 Dark/light mode** (system default, manual toggle, `localStorage`).
+- **5.9 i18n** (ko default, en, react-i18next, preference in `localStorage`).
+
+### P2 — Expansion
+
+- **5.10 Post delete** (own posts, current session only).
+- **5.11 User profile** (own posts, optional bio).
+- **5.12 Notifications** (comment-on-my-post, optional Web Push).
+
+## 6. Non-functional requirements
+
+### Performance
+- First contentful paint ≤ 3 s on 3G.
+- Polling pauses when tab is hidden (`visibilitychange`).
+- Text-only feed keeps things fast.
+
+### Accessibility
+- WCAG 2.1 AA.
+- Full keyboard support.
+- Screen-reader friendly (ARIA).
+- `prefers-reduced-motion` respected.
+
+### Security
+- XSS defenses (escape all user input, i18n `escapeValue: true`).
+- CSRF token if and when cookie-based auth is added.
+- Rate limiting on the backend.
+
+### Responsiveness
+- Mobile-first.
+- Breakpoints: xs 320 px · sm 640 px · md 768 px · lg 1024 px · xl 1280 px.
+
+## 7. Monetization
+
+**None.** Pure community project.
+
+- No ads.
+- No paid tiers.
+- No data sale.
+
+If hosting costs become a problem, consider voluntary sponsorship (GitHub
+Sponsors, Buy Me a Coffee).
+
+## 8. Launch strategy
+
+### Phase 0 — MVP development
+- Ship all P0.
+- Apply base design system.
+- Recruit a few beta testers from Claude Code heavy users.
+
+### Phase 1 — Soft launch
+- Share in Claude Code communities (Discord, X/Twitter, Reddit).
+- Expect organic traffic on the next real outage.
+
+### Phase 2 — Feature expansion
+- Ship P1 incrementally.
+- UX improvements from user feedback.
+
+## 9. Success metrics
+
+| Metric | Target |
+|---|---|
+| MAU during an outage | 1,000+ |
+| Avg. session length | 5 min+ |
+| Posts per outage | 50+ |
+| Return rate | ≥ 40% |
+| GSC indexing | 1 URL indexed |
+| GSC impressions | Monthly impressions on "claude code down/outage" queries |
+| Lighthouse SEO | 100 (CI guard) |
 
 ---
 
-## 2. 대상 사용자
-
-### Primary Target
-
-- **Claude Code 사용자**: API 장애를 직접 경험하는 개발자
-- Claude Code로 업무/개인 프로젝트를 진행하는 모든 개발자
-
-### User Persona
-
-```
-이름: 김개발 (32세, 백엔드 개발자)
-상황: 마감 D-1인데 Claude Code API가 죽었다
-욕구: 지금 나만 이런가? 얼마나 걸리지? 다른 사람들은 어떻게 버티나?
-행동: icantcode.today 접속 → 피드에서 동료들의 푸념/유머/팁 확인
-```
-
----
-
-## 3. 핵심 컨셉 상세
-
-### 3.1 API 상태 연동 게이팅
-
-서비스의 핵심 메커니즘. Claude Code API 상태에 따라 서비스 접근성이 바뀐다.
-
-| API 상태 | 사용자 경험 |
-|----------|-------------|
-| **정상 (Normal)** | 랜딩 페이지만 노출. 커뮤니티 피드는 **완전 숨김** (리스트 미노출, 컴포넌트 미렌더링). "일하러 가세요!" 메시지만 표시 |
-| **장애 (Down/Degraded)** | 커뮤니티 피드 오픈. 자유롭게 게시물 작성/조회/댓글 가능 |
-| **확인 중 (Checking)** | 상태 확인 애니메이션. 30초마다 자동 재확인 |
-
-### 3.2 CLI 감성 디자인
-
-터미널/CLI 도구처럼 보이도록 디자인한다.
-
-- 모든 컴포넌트에 box-drawing 문자 활용 (`┌─┐`, `│`, `└─┘`)
-- 프롬프트 심볼 (`>`, `$`, `#`) 사용
-- 커서 깜빡임 애니메이션
-- 타이핑 효과 (서비스 상태 메시지 등)
-- MulmaruMono (물마루 Mono) 폰트 전체 적용
-
-**목표**: 비개발자가 화면을 보면 "저 사람 뭔가 전문적인 거 하고 있나봐"라고 느낄 것
-
----
-
-## 4. 사용자 플로우
-
-### 4.1 화면 구조 (단일 루트, 라우트 분리 없음)
-
-```
-/ (루트 경로 — 유일한 경로)
-  │
-  API 상태 확인 (30초 폴링)
-  │
-  ├── 정상 → 랜딩 화면 ("일하러 가세요!" 메시지만)
-  └── 장애 → 같은 화면이 피드로 전환 (별도 라우트 없음)
-```
-
-- `/feed` 같은 별도 경로 없음. 상태 기반 조건부 렌더링으로 화면 전환
-- 정상 ↔ 장애 전환 시 URL 변경 없이 같은 `/`에서 UI만 바뀜
-
-### 4.2 전체 플로우
-
-```
-사용자 접속
-     │
-     ▼
-API 상태 확인 (30초 폴링)
-     │
-     ├─── 정상 ──────────────────────────────────────────────────────┐
-     │                                                               │
-     │    랜딩 화면 (루트 경로 /)                                     │
-     │    - "지금은 코딩할 수 있어요!" 메시지                          │
-     │    - 서비스 소개 (장애 시 커뮤니티 오픈 안내)                   │
-     │    - 이전 장애 기록 / 최근 활동 미리보기 (읽기 전용)             │
-     │                                                               ◄──── 30초마다 재확인
-     └─── 장애/저하 ────────────────────────────────────────────────┐
-                                                                    │
-          피드 즉시 표시 (닉네임 없이도 읽기 자유)                     │
-          │                                                         │
-          ├── 스크롤, 읽기, 좋아요 → 닉네임 불필요                    │
-          └── 게시글/댓글 작성 클릭 → 닉네임 체크                      │
-               │                                                    │
-               ├── 닉네임 있음 → 바로 작성                            │
-               └── 닉네임 없음 → 인라인 닉네임 입력 → 설정 후 작성     │
-                    (세션 내 1회만 입력, 이후 재입력 불필요)            │
-                                                                    │
-               └──────────────────────────────────────────────────►┘
-```
-
-### 4.3 닉네임 지연 입력 플로우
-
-**핵심 원칙: 닉네임 입력이 피드 읽기를 막아서는 안 된다.**
-
-```
-장애 감지 → 피드 즉시 표시 (읽기 자유, 닉네임 불필요)
-  │
-  게시글/댓글 작성 클릭
-  │
-  ├─ 닉네임 있음 → 바로 작성
-  └─ 닉네임 없음 → 인라인 닉네임 입력 프롬프트
-       │
-       └─ 닉네임 입력 → sessionStore에 저장 (메모리)
-            │
-            └─ 세션 내 유지 (새로고침 전까지 재입력 불필요)
-```
-
-- 닉네임 미설정 상태에서도 피드 스크롤, 읽기, 좋아요 가능
-- 작성 액션(게시글, 댓글) 시에만 닉네임 체크
-- 한번 설정하면 해당 세션(새로고침 전까지)에서 재입력 불필요
-
-### 4.4 복귀 사용자 플로우 (API 장애 시)
-
-```
-장애 감지 → icantcode.today 접속
-  │
-  ▼
-피드 즉시 표시 (닉네임 입력 없이 바로 읽기 가능)
-  │
-  ├─ 타임라인 스크롤 (같은 처지 개발자들의 글)
-  ├─ 좋아요 등 읽기 액션 자유
-  ├─ 게시물 작성 시 → 닉네임 미설정이면 인라인 프롬프트
-  ├─ 댓글 참여 시 → 닉네임 미설정이면 인라인 프롬프트
-  └─ 장애 복구 감지 시 → 배너 표시 "API 복구됨! 이제 코딩하러 가세요"
-```
-
-> **참고**: 새로고침 시 새 UUID가 생성되어 이전 게시글은 수정/삭제할 수 없습니다.
-> 닉네임도 초기화되어 작성 시 다시 입력해야 합니다.
-> 이는 의도된 설계입니다 — 가벼운 익명 참여를 지향합니다.
-
----
-
-## 5. 기능 목록 및 우선순위
-
-### P0 — 핵심 기능 (MVP, 반드시 구현)
-
-#### 5.1 API 상태 모니터링
-
-- Claude Code API 엔드포인트 상태 폴링 (30초 간격)
-- 상태값: `normal` | `degraded` | `down` | `checking`
-- 상태 변경 시 UI 즉시 업데이트
-- 연속 실패 감지 로직 (단순 네트워크 이슈와 실제 장애 구분)
-
-#### 5.2 상태 기반 화면 전환
-
-- 별도 라우트 없음 — 루트 경로(`/`)에서 상태 기반 조건부 렌더링
-- API 정상 → 랜딩 화면 표시 / 피드 완전 숨김 (컴포넌트 미렌더링)
-- API 장애 → 같은 화면에서 피드로 전환 (닉네임 없이도 읽기 가능)
-- 상태 전환 시 부드러운 애니메이션 전환
-- 브라우저 탭 타이틀 상태 반영 (`[DOWN] icantcode.today`)
-
-#### 5.3 SNS 피드
-
-- 게시물 작성 (텍스트, 최대 500자)
-- 타임라인 조회 (최신순)
-
-#### 5.4 댓글 시스템
-
-- 게시물 당 댓글 작성/조회
-- 댓글 수 표시
-
-#### 5.5 익명 세션 + 닉네임 지연 입력
-
-- 로그인/회원가입 없음 (개인정보 수집 안 함)
-- 접속 시 메모리에 UUID 자동 생성 (`crypto.randomUUID()`)
-- **닉네임 지연 입력**: 피드 읽기는 자유, 게시글/댓글 작성 시에만 닉네임 요청
-- **세션 내 1회 입력**: 한번 설정하면 새로고침 전까지 재입력 불필요
-- 새로고침 시 새 UUID + 닉네임 초기화 → 이전 게시글 수정/삭제 불가
-- 세션 ID와 닉네임 모두 메모리에만 저장 (localStorage 저장 안 함)
-
----
-
-### P1 — 중요 기능 (MVP 이후 1차 릴리즈)
-
-#### 5.6 무한 스크롤
-
-- 피드 무한 스크롤 (IntersectionObserver 기반)
-
-#### 5.7 좋아요 / 반응
-
-- 게시물 좋아요 (토글)
-- 반응 수 실시간 표시
-
-#### 5.8 다크/라이트 모드
-
-- 시스템 설정 기본 연동
-- 수동 토글 (상단 고정)
-- 로컬스토리지 설정 저장
-
-#### 5.9 다국어 지원 (i18n)
-
-- 한국어 (기본)
-- 영어
-- react-i18next 활용
-- 언어 설정 로컬스토리지 저장
-
----
-
-### P2 — 확장 기능 (2차 릴리즈 이후)
-
-#### 5.10 게시물 삭제
-
-- 게시물 삭제 (본인 것만, 현재 세션에서만)
-- 댓글 삭제 (본인 것만)
-
-#### 5.11 사용자 프로필
-
-- 프로필 페이지 (작성 게시물 목록)
-- 프로필 이미지 / 소개 편집
-
-#### 5.12 알림
-
-- 내 게시물에 댓글 달렸을 때 알림
-- 브라우저 Push Notification (선택)
-
----
-
-## 6. 비기능 요구사항
-
-### 성능
-
-- 초기 로딩: 3G 환경에서 3초 이내 First Contentful Paint
-- API 폴링: 30초 간격, 탭 비활성 시 폴링 일시 중단 (visibilitychange 활용)
-- 이미지 없는 텍스트 중심 피드로 빠른 로딩 유지
-
-### 접근성
-
-- WCAG 2.1 AA 준수
-- 키보드 네비게이션 완전 지원
-- 스크린리더 지원 (aria 속성)
-- `prefers-reduced-motion` 미디어 쿼리 대응
-
-### 보안
-
-- XSS 방지 (사용자 입력 이스케이프)
-- CSRF 토큰
-- Rate Limiting (API 서버 측)
-
-### 반응형
-
-- Mobile First
-- 브레이크포인트: xs(320px) / sm(640px) / md(768px) / lg(1024px) / xl(1280px)
-
----
-
-## 7. 수익화
-
-**없음.** 순수 커뮤니티 프로젝트.
-
-- 광고 없음
-- 유료 플랜 없음
-- 데이터 판매 없음
-
-향후 서버 비용이 문제가 될 경우, 자발적 후원(GitHub Sponsors, Buy Me a Coffee) 고려.
-
----
-
-## 8. 런치 전략
-
-### Phase 0: MVP 개발
-
-- P0 기능 구현 완료
-- 기본 디자인 시스템 적용
-- 소수 베타 테스터 모집 (Claude Code 헤비유저)
-
-### Phase 1: 소프트 런치
-
-- Claude Code 커뮤니티(Discord, 트위터/X, Reddit) 공유
-- 첫 번째 실제 장애 시 자연스러운 트래픽 유입 기대
-
-### Phase 2: 기능 확장
-
-- P1 기능 순차 배포
-- 사용자 피드백 기반 UX 개선
-
----
-
-## 9. 성공 지표
-
-| 지표 | 목표 |
-|------|------|
-| 장애 발생 시 MAU | 1,000+ |
-| 평균 세션 시간 | 5분 이상 |
-| 장애당 게시물 수 | 50+ |
-| 재방문율 | 40% 이상 |
-| GSC 인덱싱 | 1개 URL 인덱싱 완료 |
-| GSC 노출 | "claude code down/outage" 쿼리 월 노출 발생 |
-| Lighthouse SEO | 100점 유지 (CI 가드) |
-
----
-
-*마지막 업데이트: 2026-04-17*
+_Last updated: 2026-04-19_
