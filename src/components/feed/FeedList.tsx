@@ -82,7 +82,7 @@ function FeedList() {
         <span className="text-foreground">$</span> ls -la ./posts/
       </div>
       <div className="text-xs text-muted-foreground mb-3">
-        {t('total', { count: posts.length })}
+        {t('total', { count: data?.pages[0]?.totalCount ?? 0 })}
       </div>
       <motion.div variants={listVariants} initial="initial" animate="animate">
         {posts.map((post) => (
