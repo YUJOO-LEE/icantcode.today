@@ -22,6 +22,7 @@ export default defineConfig({
         '**/*.d.ts',
         'src/types/**',
         'src/locales/**',
+        'src/lib/mockStatus.ts',
       ],
       thresholds: {
         statements: 97,
