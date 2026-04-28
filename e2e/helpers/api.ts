@@ -77,6 +77,13 @@ export { expect } from '@playwright/test';
 
 export interface StubOptions {
   status?: 'up' | 'down';
+  models?: Array<{ model: string; status: string; responseTimeMs: number }>;
+  statusPage?: {
+    indicator: 'none' | 'minor' | 'major' | 'critical' | 'maintenance';
+    description?: string;
+    message?: string | null;
+    components: Array<{ name: string; status: string }>;
+  };
   posts?: Array<{
     id: number;
     content: string;
@@ -120,16 +127,18 @@ export async function stubApi(page: Page, opts: StubOptions = {}): Promise<void>
     const method = route.request().method();
 
     if (path === '/can-i-code' && method === 'GET') {
-      return route.fulfill(
-        json({
-          canCode: status === 'up',
-          checkedAt: new Date().toISOString(),
-          statusMessage: status === 'up' ? 'All systems operational' : 'Down',
-          models: [
-            { model: 'claude-sonnet-4-6', status: 'HEALTHY', responseTimeMs: 1500 },
-          ],
-        }),
-      );
+      const body: Record<string, unknown> = {
+        canCode: status === 'up',
+        checkedAt: new Date().toISOString(),
+        statusMessage: status === 'up' ? 'All systems operational' : 'Down',
+        models: opts.models ?? [
+          { model: 'claude-sonnet-4-6', status: 'HEALTHY', responseTimeMs: 1500 },
+        ],
+      };
+      if (opts.statusPage !== undefined) {
+        body.statusPage = opts.statusPage;
+      }
+      return route.fulfill(json(body));
     }
 
     if (path === '/posts' && method === 'GET') {

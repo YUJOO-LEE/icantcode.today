@@ -1,19 +1,36 @@
 import { useTranslation } from 'react-i18next';
-import type { ApiStatus } from '@/types/api';
+import { useStatusStore } from '@/stores/statusStore';
+import type { ApiStatus, StatusPageIndicator } from '@/types/api';
 import ModelStatusLine from './ModelStatusLine';
+import StatusPageLine from './StatusPageLine';
 
 interface StatusBannerProps {
   status: ApiStatus;
 }
 
+const INDICATOR_BORDER: Record<StatusPageIndicator, string> = {
+  none: 'border-destructive',
+  minor: 'border-warning',
+  major: 'border-alert',
+  critical: 'border-destructive',
+  maintenance: 'border-info',
+};
+
 function StatusBanner({ status }: StatusBannerProps) {
   const { t } = useTranslation('status');
+  const statusPage = useStatusStore((s) => s.statusPage);
+  const models = useStatusStore((s) => s.models);
 
   if (status === 'normal' || status === 'checking') return null;
 
-  const { label, message, borderClass } = {
-    down: { label: 'ERR', message: t('apiDown'), borderClass: 'border-destructive' },
-  }[status];
+  const label = 'ERR';
+  const message = t('apiDown');
+  const hasModelFail = models.some((m) => m.status !== 'HEALTHY');
+  const borderClass = hasModelFail
+    ? 'border-destructive'
+    : statusPage
+      ? INDICATOR_BORDER[statusPage.indicator]
+      : 'border-destructive';
 
   return (
     <div
@@ -29,6 +46,9 @@ function StatusBanner({ status }: StatusBannerProps) {
       </div>
       <div className="mt-1">
         <ModelStatusLine />
+      </div>
+      <div className="mt-1">
+        <StatusPageLine />
       </div>
     </div>
   );

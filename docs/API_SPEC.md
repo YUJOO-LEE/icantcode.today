@@ -63,7 +63,12 @@ Anonymous session. The session ID is a UUID kept in memory only. See
 The authoritative source is the OpenAPI spec. This section is a quick
 reference and may drift — cross-check before implementing.
 
-- `can-i-code` — API status. Powers the outage poll.
+- `can-i-code` — API status. Powers the outage poll. Returns
+  `{ canCode, checkedAt, statusMessage, models, statusPage? }` where
+  `statusPage` mirrors `status.claude.com` (Atlassian Statuspage):
+  `indicator` (`none` | `minor` | `major` | `critical` | `maintenance`),
+  `description`, optional incident `message`, and a `components` array.
+  See `src/types/api.ts` for the canonical types.
 - `posts` — list / create.
 - `posts/:id/comments` — list / create comments on a post.
 
@@ -72,4 +77,4 @@ When a new endpoint is added, update both the type file
 
 ---
 
-_Last updated: 2026-04-19_
+_Last updated: 2026-04-28_
