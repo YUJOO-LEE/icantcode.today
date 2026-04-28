@@ -5,5 +5,14 @@
   "goWork": "지금은 코딩할 수 있어요.\n일하러 가세요!",
   "feedOnlyOnOutage": "피드는 장애 시에만 열립니다.",
   "apiStatusLabel": "API 상태:",
-  "modelStatus": "모델 상태"
+  "modelStatus": "모델 상태",
+  "statusPage": {
+    "openLink": "status.claude.com 새 탭에서 열기",
+    "indicator": {
+      "minor": "MINOR",
+      "major": "MAJOR",
+      "critical": "CRIT",
+      "maintenance": "MAINT"
+    }
+  }
 }
