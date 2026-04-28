@@ -24,7 +24,7 @@ function Header() {
     <header className="border-b border-border">
       <div className="mx-auto max-w-3xl px-4 py-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground sm:gap-2">
             <Logo size={16} />
             <span className="text-foreground">{username}@icantcode.today</span>
             <span>:</span>
@@ -34,7 +34,7 @@ function Header() {
           </div>
 
           <nav aria-label={t('siteNav')}>
-            <div className="flex items-center gap-2 text-[10px]">
+            <div className="flex items-center gap-1 text-[10px] sm:gap-2">
               <TerminalButton
                 onClick={toggleLanguage}
                 className="text-[10px]"

@@ -161,6 +161,18 @@ Write tests before production code.
 Test coverage bar: components, stores, hooks, and API integration all require
 tests. MSW is the default API mock layer for unit/integration tests.
 
+When the change touches UI/styling/responsive layout, design tokens, or
+adds a new component, add the corresponding regression coverage in the
+same change without waiting for a prompt:
+- Unit tests for new component behavior / new branches.
+- e2e visual baselines (`e2e/visual/*.spec.ts`) for screens that
+  visibly changed. Mobile-only changes need a `375x667` viewport spec.
+- Sync `docs/DESIGN_SYSTEM.md`, `docs/API_SPEC.md`, etc. when the
+  underlying contract or design system is updated.
+
+Run `npx playwright test e2e/visual --update-snapshots` to capture new
+baselines and commit the PNGs alongside the code change.
+
 ## Ralph auto-activation
 
 For complex implementations, multi-file work, or phase-level development,

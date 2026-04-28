@@ -307,8 +307,16 @@ Two signals can color the outage banner. Their priority is fixed:
 | `maintenance` | blue | `--info` |
 | `none` (or absent) | red (down fallback) | `--destructive` |
 
-`StatusPageLine` is rendered only when `indicator !== 'none'`. The
-`↗ status.claude.com` segment is the only clickable affordance and
+`StatusPageLine` is mounted on every screen (outage banner *and*
+landing) so the line behaves like `ModelStatusLine` — always visible
+when there is something to report.
+
+When `indicator === 'none'` the `[INDICATOR]` label is omitted and only
+the description renders (mirroring how a healthy model shows just its
+name without a `[HEALTHY]` badge). When the upstream payload is absent
+entirely the component returns `null`.
+
+The `↗ status.claude.com` segment is the only clickable affordance and
 opens the upstream status page in a new tab.
 
 ### Normal-state landing
