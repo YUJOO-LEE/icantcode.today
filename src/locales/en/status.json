@@ -5,5 +5,14 @@
   "goWork": "You can code right now.\nGet back to work!",
   "feedOnlyOnOutage": "Feed is only available during outages.",
   "apiStatusLabel": "API status:",
-  "modelStatus": "Model Status"
+  "modelStatus": "Model Status",
+  "statusPage": {
+    "openLink": "Open status.claude.com in a new tab",
+    "indicator": {
+      "minor": "MINOR",
+      "major": "MAJOR",
+      "critical": "CRIT",
+      "maintenance": "MAINT"
+    }
+  }
 }

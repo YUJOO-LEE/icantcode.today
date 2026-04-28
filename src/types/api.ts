@@ -6,11 +6,33 @@ export interface ModelStatus {
   responseTimeMs: number;
 }
 
+export type StatusPageIndicator = 'none' | 'minor' | 'major' | 'critical' | 'maintenance';
+
+export type StatusPageComponentStatus =
+  | 'operational'
+  | 'degraded_performance'
+  | 'partial_outage'
+  | 'major_outage'
+  | 'under_maintenance';
+
+export interface StatusPageComponent {
+  name: string;
+  status: StatusPageComponentStatus;
+}
+
+export interface StatusPage {
+  indicator: StatusPageIndicator;
+  description?: string;
+  message?: string | null;
+  components: StatusPageComponent[];
+}
+
 export interface CanICodeResponse {
   canCode: boolean;
   checkedAt: string;
   statusMessage: string;
   models: ModelStatus[];
+  statusPage?: StatusPage;
 }
 
 export interface PostSummaryResponse {
