@@ -16,6 +16,7 @@
   "switchTheme": "Switch to {{theme}} mode",
   "skipToContent": "Skip to content",
   "siteNav": "Site navigation",
+  "githubLink": "Open GitHub repository in a new tab",
 
   "seo": {
     "titleNormal": "icantcode.today — Claude Code outage community",

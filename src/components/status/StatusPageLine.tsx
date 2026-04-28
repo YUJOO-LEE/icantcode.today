@@ -16,14 +16,17 @@ function StatusPageLine() {
   const statusPage = useStatusStore((s) => s.statusPage);
   const models = useStatusStore((s) => s.models);
 
-  if (!statusPage || statusPage.indicator === 'none') return null;
+  if (!statusPage) return null;
 
-  const indicatorLabel = t(`statusPage.indicator.${statusPage.indicator}`);
+  const indicator = statusPage.indicator;
   const description = statusPage.description ?? '';
   const hasModelFail = models.some((m) => m.status !== 'HEALTHY');
-  const colorClass = hasModelFail
-    ? 'text-muted-foreground'
-    : INDICATOR_COLOR[statusPage.indicator];
+  const indicatorLabel =
+    indicator === 'none' ? null : t(`statusPage.indicator.${indicator}`);
+  const colorClass =
+    indicator === 'none' || hasModelFail
+      ? 'text-muted-foreground'
+      : INDICATOR_COLOR[indicator];
 
   return (
     <div className="text-xs text-muted-foreground">
@@ -31,9 +34,13 @@ function StatusPageLine() {
         <span>
           <span className="text-foreground">$</span> status --page
         </span>
-        <span className={colorClass}>
-          [{indicatorLabel}]{description ? ` ${description}` : ''}
-        </span>
+        {(indicatorLabel || description) && (
+          <span className={colorClass}>
+            {indicatorLabel && `[${indicatorLabel}]`}
+            {indicatorLabel && description && ' '}
+            {description}
+          </span>
+        )}
         <a
           href={STATUS_PAGE_URL}
           target="_blank"

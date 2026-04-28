@@ -26,7 +26,7 @@ describe('StatusPageLine', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders nothing when indicator is none', () => {
+  it('renders description only (no indicator label) when indicator is none', () => {
     useStatusStore.setState({
       statusPage: {
         indicator: 'none',
@@ -35,8 +35,13 @@ describe('StatusPageLine', () => {
         components: [],
       },
     });
-    const { container } = render(<StatusPageLine />, { wrapper: Wrapper });
-    expect(container.firstChild).toBeNull();
+    render(<StatusPageLine />, { wrapper: Wrapper });
+    expect(screen.getByText(/status --page/)).toBeInTheDocument();
+    expect(screen.getByText('All Systems Operational')).toBeInTheDocument();
+    // Healthy indicators must not surface a label, mirroring how
+    // ModelStatusLine omits a [HEALTHY] badge for healthy models.
+    expect(screen.queryByText(/\[OK\]/)).toBeNull();
+    expect(screen.queryByText(/\[NONE\]/)).toBeNull();
   });
 
   it('renders [MINOR] badge with description for minor indicator', () => {

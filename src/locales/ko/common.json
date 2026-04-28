@@ -16,6 +16,7 @@
   "switchTheme": "{{theme}} 모드로 전환",
   "skipToContent": "본문으로 건너뛰기",
   "siteNav": "사이트 탐색",
+  "githubLink": "GitHub 저장소 새 탭에서 열기",
 
   "seo": {
     "titleNormal": "icantcode.today — Claude Code outage community",
