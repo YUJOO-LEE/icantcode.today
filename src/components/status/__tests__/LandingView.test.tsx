@@ -17,6 +17,7 @@ describe('LandingView', () => {
       statusMessage: 'OK',
       checkedAt: new Date().toISOString(),
       models: [],
+      statusPage: null,
     });
   });
 
@@ -36,5 +37,19 @@ describe('LandingView', () => {
   it('renders the feed-only-on-outage footnote', () => {
     render(<LandingView />, { wrapper: Wrapper });
     expect(screen.getByText(/피드는 장애 시에만 열립니다/)).toBeInTheDocument();
+  });
+
+  it('mounts StatusPageLine when statusPage is present, even on the OK landing', () => {
+    useStatusStore.setState({
+      statusPage: {
+        indicator: 'none',
+        description: 'All Systems Operational',
+        message: null,
+        components: [],
+      },
+    });
+    render(<LandingView />, { wrapper: Wrapper });
+    expect(screen.getByText(/status --page/)).toBeInTheDocument();
+    expect(screen.getByText('All Systems Operational')).toBeInTheDocument();
   });
 });
