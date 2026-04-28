@@ -17,6 +17,7 @@ describe('StatusBanner', () => {
       statusMessage: 'down',
       checkedAt: new Date().toISOString(),
       models: [],
+      statusPage: null,
     });
   });
 
@@ -40,5 +41,61 @@ describe('StatusBanner', () => {
   it('renders nothing when status is checking', () => {
     const { container } = render(<StatusBanner status="checking" />, { wrapper: Wrapper });
     expect(container.firstChild).toBeNull();
+  });
+
+  it('uses indicator border when no model is FAIL (minor → border-warning)', () => {
+    useStatusStore.setState({
+      models: [{ model: 'sonnet', status: 'HEALTHY', responseTimeMs: 1 }],
+      statusPage: {
+        indicator: 'minor',
+        description: 'Partially Degraded Service',
+        message: null,
+        components: [],
+      },
+    });
+    render(<StatusBanner status="down" />, { wrapper: Wrapper });
+    expect(screen.getByRole('status')).toHaveClass('border-warning');
+  });
+
+  it('uses indicator border for major (border-alert) and maintenance (border-info)', () => {
+    useStatusStore.setState({
+      models: [{ model: 'sonnet', status: 'HEALTHY', responseTimeMs: 1 }],
+      statusPage: {
+        indicator: 'major',
+        description: 'Major Outage',
+        message: null,
+        components: [],
+      },
+    });
+    const { rerender } = render(<StatusBanner status="down" />, { wrapper: Wrapper });
+    expect(screen.getByRole('status')).toHaveClass('border-alert');
+
+    useStatusStore.setState({
+      statusPage: {
+        indicator: 'maintenance',
+        description: 'Scheduled Maintenance',
+        message: null,
+        components: [],
+      },
+    });
+    rerender(<StatusBanner status="down" />);
+    expect(screen.getByRole('status')).toHaveClass('border-info');
+  });
+
+  it('overrides indicator border with destructive when any model is FAIL', () => {
+    useStatusStore.setState({
+      models: [
+        { model: 'sonnet', status: 'HEALTHY', responseTimeMs: 1 },
+        { model: 'opus', status: 'DOWN', responseTimeMs: 0 },
+      ],
+      statusPage: {
+        indicator: 'minor',
+        description: 'Partially Degraded Service',
+        message: null,
+        components: [],
+      },
+    });
+    render(<StatusBanner status="down" />, { wrapper: Wrapper });
+    expect(screen.getByRole('status')).toHaveClass('border-destructive');
   });
 });

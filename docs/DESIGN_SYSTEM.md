@@ -46,12 +46,23 @@ Text muted      #9CA3AF
 ```
 
 ### 2.4 Semantic colors
-```
-Success / Normal    #ABC95B   API healthy (same as Primary)
-Error / Down        #FF6B6B   API outage
-Warning / Degraded  #FFD93D   reserved for degraded state (not wired up yet)
-Info                #6BB5FF   info banner
-```
+
+Authoritative tokens live in `src/styles/theme.css` as `oklch()`. The
+table below lists their semantic role.
+
+| Token | Tailwind utility | Role |
+|---|---|---|
+| `--primary` | `text-primary` / `bg-primary` | API healthy, CTA |
+| `--destructive` | `text-destructive` / `border-destructive` | API outage, `[ERR]`, `[FAIL]` model, `[CRIT]` indicator |
+| `--alert` | `text-alert` / `border-alert` | `[MAJOR]` status.claude.com indicator (orange) |
+| `--warning` | `text-warning` / `border-warning` | `[MINOR]` status.claude.com indicator (amber) |
+| `--info` | `text-info` / `border-info` | `[MAINT]` status.claude.com indicator (blue) |
+| `--muted-foreground` | `text-muted-foreground` | meta/secondary text, healthy model |
+
+The four severity tiers (`warning` → `alert` → `destructive`) mirror
+Atlassian Statuspage's `minor` / `major` / `critical` ladder so the
+left-side divider on the outage banner escalates color in step with
+`statusPage.indicator` from `/can-i-code`.
 
 ### 2.5 CSS custom properties (`src/styles/theme.css`)
 
@@ -268,9 +279,37 @@ no compose form, no post count. Nothing feed-related touches the DOM.
 | `down` | Outage banner + feed | Visible |
 | `checking` | Status-check animation | Hidden |
 
-> `src/types/api.ts` currently defines only three states. A `degraded`
-> state is reserved visually (warning color `#FFD93D`) but not implemented
-> in code yet.
+> `apiStatus` itself stays binary (`normal` / `down` / `checking`).
+> Severity granularity comes from the optional `statusPage` payload on
+> `/can-i-code`, which carries an Atlassian Statuspage indicator
+> (`minor` / `major` / `critical` / `maintenance`). The outage banner's
+> left-side divider color and the `[INDICATOR]` line on `StatusPageLine`
+> are driven by that field — see §5.0a below.
+
+### 5.0a Severity color — model status > statusPage
+
+Two signals can color the outage banner. Their priority is fixed:
+
+1. **Model healthcheck (highest).** If any entry in `models[]` has
+   `status !== 'HEALTHY'`, the banner divider is `--destructive` and
+   the `[INDICATOR] description` text on `StatusPageLine` drops to
+   `--muted-foreground` (matches the `$ status --page` prompt; no
+   double emphasis) — the red `[FAIL]` on the model line is already
+   the loudest signal.
+2. **`statusPage.indicator` (when no model is FAIL).** Divider and
+   `StatusPageLine` text both follow the indicator color below.
+
+| `indicator` | Color | Token |
+|---|---|---|
+| `minor` | amber | `--warning` |
+| `major` | orange | `--alert` |
+| `critical` | red | `--destructive` |
+| `maintenance` | blue | `--info` |
+| `none` (or absent) | red (down fallback) | `--destructive` |
+
+`StatusPageLine` is rendered only when `indicator !== 'none'`. The
+`↗ status.claude.com` segment is the only clickable affordance and
+opens the upstream status page in a new tab.
 
 ### Normal-state landing
 
@@ -686,4 +725,4 @@ No external icon library. Prefer text symbols and Unicode glyphs.
 
 ---
 
-_Last updated: 2026-04-19_
+_Last updated: 2026-04-28_

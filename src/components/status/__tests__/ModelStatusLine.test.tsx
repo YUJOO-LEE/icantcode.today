@@ -17,6 +17,7 @@ describe('ModelStatusLine', () => {
       statusMessage: '',
       checkedAt: null,
       models: [],
+      statusPage: null,
     });
   });
 

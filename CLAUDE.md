@@ -190,9 +190,11 @@ not wait for the user to say "ralph".
 | Primary | `#ABC95B` | CTA, success |
 | Dark background | `#121519` | Dark mode body |
 | Light background | `#F5F5F0` | Light mode body |
-| Error / outage | `#FF6B6B` | Outage banner, error state |
+| Error / destructive | `#FF6B6B` | Outage banner, `[CRIT]` indicator, `[FAIL]` model |
 | Success / normal | `#ABC95B` | Normal API status |
-| Warning | `#FFD93D` | Reserved for future degraded state (currently unused) |
+| Warning | `oklch(0.62 0.11 75)` | `[MINOR]` status.claude.com indicator |
+| Alert | `oklch(0.62 0.14 50)` | `[MAJOR]` status.claude.com indicator |
+| Info | `oklch(0.55 0.12 230)` | `[MAINT]` status.claude.com indicator |
 
 ## Reference docs
 
@@ -214,3 +216,8 @@ not wait for the user to say "ralph".
 | E2E | `npm run e2e` |
 | Production build | `npm run build` |
 | Dev server | `npm run dev` |
+
+> **Dev mock harness for `/can-i-code`** — append `?mock=<key>` in dev
+> to simulate outage / model-fail / statusPage indicator scenarios.
+> Available keys and what each simulates: see the JSDoc table at the
+> top of `src/lib/mockStatus.ts`. Disabled in production builds.
