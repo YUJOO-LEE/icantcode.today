@@ -13,12 +13,17 @@ updates:
     #     eslint-plugin-jsx-a11y don't yet declare ESLint 10 in their
     #     peer ranges (only an RC for plugin-react). Revisit once both
     #     ship a stable ESLint 10-compatible release.
-    #   @vitejs/plugin-react v6 — peer requires Vite 8; this project
-    #     is on Vite 6. Bump together with a Vite 8 migration.
+    #   vite v8 / @vitejs/plugin-react v6 — Vite 8 cascades through
+    #     the build/test toolchain (plugin-react, vitest config) and
+    #     should be planned as a coordinated migration, not a
+    #     standalone dep bump. plugin-react v6 already requires
+    #     Vite 8, so they're paired here.
     ignore:
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@vitejs/plugin-react"
         update-types: ["version-update:semver-major"]
