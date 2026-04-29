@@ -7,6 +7,21 @@ updates:
     # Bump open-PR limit so per-package major bumps don't get squeezed
     # out by the patch/minor groups below.
     open-pull-requests-limit: 10
+    # Skip ecosystem-blocked majors. Re-enable each entry when the
+    # blocker is resolved.
+    #   eslint / @eslint/js v10 — eslint-plugin-react and
+    #     eslint-plugin-jsx-a11y don't yet declare ESLint 10 in their
+    #     peer ranges (only an RC for plugin-react). Revisit once both
+    #     ship a stable ESLint 10-compatible release.
+    #   @vitejs/plugin-react v6 — peer requires Vite 8; this project
+    #     is on Vite 6. Bump together with a Vite 8 migration.
+    ignore:
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: ["version-update:semver-major"]
     groups:
       # Patch/minor only — safe to merge as a single weekly batch.
       # Major bumps fall outside both groups and arrive as individual
