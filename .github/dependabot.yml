@@ -4,14 +4,31 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    # Bump open-PR limit so per-package major bumps don't get squeezed
+    # out by the patch/minor groups below.
+    open-pull-requests-limit: 10
     groups:
-      dev-dependencies:
-        dependency-type: "development"
+      # Patch/minor only — safe to merge as a single weekly batch.
+      # Major bumps fall outside both groups and arrive as individual
+      # PRs so each one can be reviewed against its own migration guide
+      # (TS 6, Vite 8, Vitest 4, ESLint 10, etc.).
       prod-dependencies:
         dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        update-types:
+          - "minor"
+          - "patch"
