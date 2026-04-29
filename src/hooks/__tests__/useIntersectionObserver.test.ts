@@ -10,14 +10,14 @@ beforeEach(() => {
   observeMock = vi.fn();
   disconnectMock = vi.fn();
 
-  const MockIntersectionObserver = vi.fn((callback: IntersectionObserverCallback) => {
-    observerCallback = callback;
-    return {
-      observe: observeMock,
-      unobserve: vi.fn(),
-      disconnect: disconnectMock,
-    };
-  });
+  class MockIntersectionObserver {
+    observe = observeMock;
+    unobserve = vi.fn();
+    disconnect = disconnectMock;
+    constructor(callback: IntersectionObserverCallback) {
+      observerCallback = callback;
+    }
+  }
 
   window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
 });
