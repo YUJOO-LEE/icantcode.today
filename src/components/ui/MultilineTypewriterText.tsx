@@ -19,14 +19,18 @@ function MultilineTypewriterText({
   const filteredLines = useMemo(() => lines.filter(Boolean), [lines]);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
   const linesKey = JSON.stringify(filteredLines);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   // Reset when lines change (e.g. language switch)
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (prefersReducedMotion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on lines change
       setCurrentLineIndex(filteredLines.length - 1);
       onCompleteRef.current?.();
     } else {

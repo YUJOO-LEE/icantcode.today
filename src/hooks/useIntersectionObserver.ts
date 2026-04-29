@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 
 export function useIntersectionObserver(
   onIntersect: () => void,
@@ -7,8 +7,11 @@ export function useIntersectionObserver(
   const enabled = options?.enabled ?? true;
   const rootMargin = options?.rootMargin ?? '200px';
   const onIntersectRef = useRef(onIntersect);
-  onIntersectRef.current = onIntersect;
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  useEffect(() => {
+    onIntersectRef.current = onIntersect;
+  }, [onIntersect]);
 
   const callbackRef = useCallback(
     (node: HTMLDivElement | null) => {
