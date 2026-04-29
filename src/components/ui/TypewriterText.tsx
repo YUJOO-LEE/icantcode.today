@@ -12,13 +12,17 @@ function TypewriterText({ text, speed = 50, showCursor = true, onComplete }: Typ
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     // Check for reduced motion preference
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (prefersReducedMotion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync to full text on reduced motion
       setDisplayedText(text);
       setIsComplete(true);
       onCompleteRef.current?.();
