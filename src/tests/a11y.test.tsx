@@ -1,11 +1,11 @@
 import 'vitest-axe/extend-expect';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 import i18n from '@/lib/i18n';
+import { createTestWrapper } from '@/tests/wrappers';
 import { useSessionStore } from '@/stores/sessionStore';
 import Layout from '@/components/layout/Layout';
 import FeedList from '@/components/feed/FeedList';
@@ -21,18 +21,12 @@ vi.mock('@/lib/nicknameGenerator', () => ({
 }));
 
 function createWrapper() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return function Wrapper({ children }: { children: ReactNode }) {
-    return (
-      <QueryClientProvider client={client}>
-        <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
-      </QueryClientProvider>
-    );
-  };
+  return createTestWrapper({ withI18n: true }).Wrapper;
 }
 
+// Some a11y tests render components that don't touch the network at all
+// (Layout, NicknamePrompt in isolation, ErrorFallback). They only need
+// i18n — providing a QueryClient would just be noise.
 function SimpleWrapper({ children }: { children: ReactNode }) {
   return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>;
 }

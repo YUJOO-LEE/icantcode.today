@@ -1,24 +1,17 @@
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { describe, it, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/tests/mocks/server';
 import { API_BASE_URL } from '@/lib/constants';
+import { createTestWrapper } from '@/tests/wrappers';
 import {
   useInfinitePostsQuery,
   useCreatePost,
   usePostsPolling,
 } from '../usePosts';
-import type { ReactNode } from 'react';
 
 function createWrapper() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-  return { Wrapper, client };
+  return createTestWrapper();
 }
 
 describe('useInfinitePostsQuery', () => {

@@ -1,27 +1,15 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/tests/mocks/server';
+import { createTestWrapper } from '@/tests/wrappers';
 import { useStatusQuery } from '../useStatus';
 import { useStatusStore } from '@/stores/statusStore';
-import type { ReactNode } from 'react';
 
 import { API_BASE_URL } from '@/lib/constants';
 
 function createWrapper() {
-  const testClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false, gcTime: 0 },
-    },
-  });
-  return function Wrapper({ children }: { children: ReactNode }) {
-    return (
-      <QueryClientProvider client={testClient}>
-        {children}
-      </QueryClientProvider>
-    );
-  };
+  return createTestWrapper().Wrapper;
 }
 
 describe('useStatusQuery', () => {

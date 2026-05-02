@@ -1,27 +1,15 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
-import { I18nextProvider } from 'react-i18next';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/tests/mocks/server';
-import i18n from '@/lib/i18n';
+import { createTestWrapper } from '@/tests/wrappers';
 import { useSessionStore } from '@/stores/sessionStore';
 import CommentForm from '../CommentForm';
 import { API_BASE_URL } from '@/lib/constants';
-import type { ReactNode } from 'react';
 
 function createWrapper() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return function Wrapper({ children }: { children: ReactNode }) {
-    return (
-      <QueryClientProvider client={client}>
-        <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
-      </QueryClientProvider>
-    );
-  };
+  return createTestWrapper({ withI18n: true }).Wrapper;
 }
 
 describe('CommentForm', () => {
@@ -114,6 +102,171 @@ describe('CommentForm', () => {
     fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
     await new Promise((r) => setTimeout(r, 50));
     expect(called).toBe(false);
+  });
+
+  // The "submit-without-nickname → confirm nickname → auto-submit" flow used to
+  // fire the comment mutation twice (the second call was triggered by Enter
+  // key-repeat landing on the freshly remounted comment input, which had
+  // `autoFocus`). The fix keeps the comment input mounted for the entire prompt
+  // lifecycle and drives submission off a ref instead of a captured closure.
+  it('regression: nickname prompt confirmed via Enter submits exactly once and clears input', async () => {
+    let postCount = 0;
+    server.use(
+      http.post(`${API_BASE_URL}/posts/1/comments`, () => {
+        postCount += 1;
+        return HttpResponse.json({ id: postCount });
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<CommentForm postId={1} />, { wrapper: createWrapper() });
+    const input = screen.getByPlaceholderText(/댓글을 입력/) as HTMLInputElement;
+
+    // Type content, press Enter -> nickname prompt should appear
+    await user.type(input, 'hello{enter}');
+    const nicknameInput = await screen.findByPlaceholderText(/닉네임을 입력/) as HTMLInputElement;
+
+    // Type nickname, press Enter to confirm (this is the trigger of the original bug)
+    await user.type(nicknameInput, 'tester{enter}');
+
+    await waitFor(() => {
+      expect(postCount).toBeGreaterThanOrEqual(1);
+    });
+    // small grace window for any straggler request to (incorrectly) fire
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(postCount).toBe(1);
+    const reborn = screen.getByPlaceholderText(/댓글을 입력/) as HTMLInputElement;
+    expect(reborn.value).toBe('');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('regression: nickname prompt confirmed via mouse click submits exactly once and clears input', async () => {
+    let postCount = 0;
+    server.use(
+      http.post(`${API_BASE_URL}/posts/1/comments`, () => {
+        postCount += 1;
+        return HttpResponse.json({ id: postCount });
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<CommentForm postId={1} />, { wrapper: createWrapper() });
+    const input = screen.getByPlaceholderText(/댓글을 입력/) as HTMLInputElement;
+
+    await user.type(input, 'hello{enter}');
+    const nicknameInput = await screen.findByPlaceholderText(/닉네임을 입력/) as HTMLInputElement;
+    await user.clear(nicknameInput);
+    await user.type(nicknameInput, 'tester');
+    await user.click(screen.getByRole('button', { name: '[제출]' }));
+
+    await waitFor(() => {
+      expect(postCount).toBeGreaterThanOrEqual(1);
+    });
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(postCount).toBe(1);
+    const reborn = screen.getByPlaceholderText(/댓글을 입력/) as HTMLInputElement;
+    expect(reborn.value).toBe('');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('regression: Enter key-repeat during nickname confirm must not register the comment twice or surface an error', async () => {
+    let postCount = 0;
+    server.use(
+      http.post(`${API_BASE_URL}/posts/1/comments`, async () => {
+        // simulate small network latency so the key-repeat event lands while pending
+        await new Promise((r) => setTimeout(r, 30));
+        postCount += 1;
+        return HttpResponse.json({ id: postCount });
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<CommentForm postId={1} />, { wrapper: createWrapper() });
+    const input = screen.getByPlaceholderText(/댓글을 입력/) as HTMLInputElement;
+
+    await user.type(input, 'hello{enter}');
+    const nicknameInput = await screen.findByPlaceholderText(/닉네임을 입력/) as HTMLInputElement;
+    await user.clear(nicknameInput);
+    await user.type(nicknameInput, 'tester');
+
+    // Press Enter on nickname input -> triggers prompt confirm + mutation
+    fireEvent.keyDown(nicknameInput, { key: 'Enter' });
+
+    // Simulate a key-repeat Enter that lands on whichever input is now focused
+    // (after the prompt unmounts and the comment input remounts with autoFocus).
+    // In production this is what fires the second mutation attempt.
+    await new Promise((r) => setTimeout(r, 5));
+    const focused = document.activeElement as HTMLElement | null;
+    if (focused) {
+      fireEvent.keyDown(focused, { key: 'Enter' });
+    }
+
+    await waitFor(() => {
+      expect(postCount).toBeGreaterThanOrEqual(1);
+    });
+    await new Promise((r) => setTimeout(r, 200));
+
+    expect(postCount).toBe(1);
+    const reborn = screen.getByPlaceholderText(/댓글을 입력/) as HTMLInputElement;
+    expect(reborn.value).toBe('');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  // Mirror of the FeedComposer no-flicker contract: the prompt must stay
+  // visible for the entire in-flight mutation so the user does not see the
+  // comment input briefly reappear with the typed content between confirming
+  // the nickname and the network response settling.
+  it('regression: prompt stays visible for the entire in-flight mutation — no comment-input flicker', async () => {
+    let releaseRequest: (() => void) | null = null;
+    server.use(
+      http.post(`${API_BASE_URL}/posts/1/comments`, async () => {
+        await new Promise<void>((r) => {
+          releaseRequest = r;
+        });
+        return HttpResponse.json({ id: 1 });
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<CommentForm postId={1} />, { wrapper: createWrapper() });
+    const input = screen.getByPlaceholderText(/댓글을 입력/);
+    await user.type(input, 'no-flicker comment{enter}');
+    const nicknameInput = await screen.findByPlaceholderText(/닉네임을 입력/);
+    await user.clear(nicknameInput);
+    await user.type(nicknameInput, 'tester{enter}');
+
+    // Mutation parked. The prompt header must still be on screen.
+    expect(screen.getByText(/set-nickname/)).toBeInTheDocument();
+
+    releaseRequest!();
+
+    await waitFor(() => {
+      expect(screen.queryByText(/set-nickname/)).not.toBeInTheDocument();
+    });
+    const reborn = screen.getByPlaceholderText(/댓글을 입력/) as HTMLInputElement;
+    expect(reborn.value).toBe('');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('regression: when the comment mutation fails after a prompt-driven submit, the input reappears with the typed content + error', async () => {
+    server.use(
+      http.post(`${API_BASE_URL}/posts/1/comments`, () => new HttpResponse(null, { status: 500 })),
+    );
+
+    const user = userEvent.setup();
+    render(<CommentForm postId={1} />, { wrapper: createWrapper() });
+    const input = screen.getByPlaceholderText(/댓글을 입력/);
+    await user.type(input, 'will fail{enter}');
+    const nicknameInput = await screen.findByPlaceholderText(/닉네임을 입력/);
+    await user.clear(nicknameInput);
+    await user.type(nicknameInput, 'tester{enter}');
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(screen.queryByText(/set-nickname/)).not.toBeInTheDocument();
+    const reborn = screen.getByPlaceholderText(/댓글을 입력/) as HTMLInputElement;
+    expect(reborn.value).toBe('will fail');
   });
 
   it('does not submit whitespace-only content', async () => {

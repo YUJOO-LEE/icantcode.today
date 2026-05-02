@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useNicknameGuard } from '../useNicknameGuard';
 import { useSessionStore } from '@/stores/sessionStore';
 
@@ -14,112 +14,57 @@ describe('useNicknameGuard', () => {
     });
   });
 
-  it('returns nickname and userCode from store', () => {
+  it('returns nickname and userCode from the session store', () => {
     const { result } = renderHook(() => useNicknameGuard());
     expect(result.current.nickname).toBeNull();
     expect(result.current.userCode).toBe('test-uuid');
   });
 
-  it('guardAction shows prompt when no nickname', () => {
+  it('isPromptVisible starts false', () => {
     const { result } = renderHook(() => useNicknameGuard());
-    const action = vi.fn();
-
-    act(() => {
-      result.current.guardAction(action);
-    });
-
-    expect(action).not.toHaveBeenCalled();
-    expect(result.current.shouldRenderPrompt).toBe(true);
+    expect(result.current.isPromptVisible).toBe(false);
   });
 
-  it('guardAction calls action when nickname exists', () => {
-    useSessionStore.setState({ nickname: 'testuser' });
+  it('requestNickname flips isPromptVisible to true', () => {
     const { result } = renderHook(() => useNicknameGuard());
-    const action = vi.fn();
-
     act(() => {
-      result.current.guardAction(action);
+      result.current.requestNickname();
     });
-
-    expect(action).toHaveBeenCalledOnce();
-    expect(result.current.shouldRenderPrompt).toBe(false);
+    expect(result.current.isPromptVisible).toBe(true);
   });
 
-  it('dismissPrompt hides the prompt', () => {
+  it('dismissPrompt flips isPromptVisible back to false', () => {
     const { result } = renderHook(() => useNicknameGuard());
-
     act(() => {
-      result.current.guardAction(() => {});
+      result.current.requestNickname();
     });
-    expect(result.current.shouldRenderPrompt).toBe(true);
-
+    expect(result.current.isPromptVisible).toBe(true);
     act(() => {
       result.current.dismissPrompt();
     });
-    expect(result.current.shouldRenderPrompt).toBe(false);
+    expect(result.current.isPromptVisible).toBe(false);
   });
 
-  it('dismiss prevents reopen until next guardAction call', () => {
+  it('does not auto-hide the prompt when nickname becomes available — caller decides', () => {
+    // Visibility is decoupled from nickname state by design: the consumer
+    // (CommentForm / FeedComposer) is responsible for dismissing the prompt
+    // inside its own pendingBody effect after firing the mutation.
     const { result } = renderHook(() => useNicknameGuard());
-    const action = vi.fn();
-
-    // guardAction shows prompt
     act(() => {
-      result.current.guardAction(action);
+      result.current.requestNickname();
     });
-    expect(result.current.shouldRenderPrompt).toBe(true);
-
-    // dismiss hides prompt
     act(() => {
-      result.current.dismissPrompt();
+      useSessionStore.setState({ nickname: 'tester' });
     });
-    expect(result.current.shouldRenderPrompt).toBe(false);
-
-    // another guardAction re-shows prompt
-    act(() => {
-      result.current.guardAction(action);
-    });
-    expect(result.current.shouldRenderPrompt).toBe(true);
-    expect(action).not.toHaveBeenCalled();
+    expect(result.current.isPromptVisible).toBe(true);
+    expect(result.current.nickname).toBe('tester');
   });
 
-  it('shouldRenderPrompt is false after nickname is set', () => {
+  it('does not capture caller closures (no pending-action API)', () => {
     const { result } = renderHook(() => useNicknameGuard());
-
-    act(() => {
-      result.current.guardAction(() => {});
-    });
-    expect(result.current.shouldRenderPrompt).toBe(true);
-
-    act(() => {
-      useSessionStore.setState({ nickname: 'testuser' });
-    });
-    expect(result.current.shouldRenderPrompt).toBe(false);
-  });
-
-  it('completeWithNickname runs the pending action and hides prompt', () => {
-    const { result } = renderHook(() => useNicknameGuard());
-    const action = vi.fn();
-
-    act(() => {
-      result.current.guardAction(action);
-    });
-    expect(action).not.toHaveBeenCalled();
-    expect(result.current.shouldRenderPrompt).toBe(true);
-
-    act(() => {
-      result.current.completeWithNickname();
-    });
-    expect(action).toHaveBeenCalledOnce();
-    expect(result.current.shouldRenderPrompt).toBe(false);
-  });
-
-  it('completeWithNickname is a no-op when no action is pending', () => {
-    const { result } = renderHook(() => useNicknameGuard());
-    expect(() => {
-      act(() => {
-        result.current.completeWithNickname();
-      });
-    }).not.toThrow();
+    // Surface contract: state-driven, no closure-based action queue.
+    expect(result.current).not.toHaveProperty('guardAction');
+    expect(result.current).not.toHaveProperty('completeWithNickname');
+    expect(result.current).not.toHaveProperty('shouldRenderPrompt');
   });
 });

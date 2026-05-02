@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNicknameGuard } from '@/hooks/useNicknameGuard';
-import { useCreatePost } from '@/apis/queries/usePosts';
+import { useShallow } from 'zustand/react/shallow';
 import { useSessionStore } from '@/stores/sessionStore';
+import { usePromptedSubmit } from '@/hooks/usePromptedSubmit';
+import { useCreatePost } from '@/apis/queries/usePosts';
 import { MAX_POST_LENGTH } from '@/lib/constants';
 import NicknamePrompt from '@/components/common/NicknamePrompt';
 import TerminalButton from '@/components/ui/TerminalButton';
+import type { CreatePostRequest } from '@/types/api';
 
 interface FeedComposerProps {
   isOpen?: boolean;
@@ -14,63 +16,44 @@ interface FeedComposerProps {
 
 function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
   const { t } = useTranslation('feed');
-  const { userCode, guardAction, dismissPrompt, completeWithNickname, shouldRenderPrompt } = useNicknameGuard();
+  const userCode = useSessionStore(useShallow((s) => s.userCode));
   const [content, setContent] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const createPost = useCreatePost();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const isMutatingRef = useRef(false);
+
+  const { isPromptVisible, trySubmit, handlePromptComplete, handlePromptCancel } =
+    usePromptedSubmit<CreatePostRequest>({
+      isPending: createPost.isPending,
+      mutate: createPost.mutate,
+      buildVars: (authorName, body) => ({ content: body, author: authorName, userCode }),
+      onBeforeDispatch: () => setErrorMessage(''),
+      onSuccess: () => {
+        setContent('');
+        onToggle?.();
+      },
+      onError: () => setErrorMessage(t('submitError')),
+    });
 
   useEffect(() => {
-    if (isOpen && textareaRef.current) {
+    if (isOpen && !isPromptVisible && textareaRef.current) {
       textareaRef.current.focus();
     }
+    // Only refocus when the composer first opens. Refocusing on prompt
+    // dismissal would re-introduce the autoFocus key-event race.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
-
-  const handleSubmit = () => {
-    if (createPost.isPending || isMutatingRef.current) return;
-    setErrorMessage('');
-    guardAction(() => {
-      const currentNickname = useSessionStore.getState().nickname;
-      if (content.trim().length === 0 || !currentNickname) return;
-      if (isMutatingRef.current) return;
-      isMutatingRef.current = true;
-
-      createPost.mutate(
-        { content: content.trim(), author: currentNickname, userCode },
-        {
-          onSuccess: () => {
-            setContent('');
-            onToggle?.();
-          },
-          onError: () => setErrorMessage(t('submitError')),
-          onSettled: () => { isMutatingRef.current = false; },
-        },
-      );
-    });
-  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      handleSubmit();
+      trySubmit(content);
     }
     if (e.key === 'Escape') {
       onToggle?.();
     }
   };
-
-  if (shouldRenderPrompt) {
-    return (
-      <div className="mb-6">
-        <NicknamePrompt
-          onComplete={completeWithNickname}
-          onCancel={dismissPrompt}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="mb-6">
@@ -86,8 +69,19 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
         {!isOpen && <span className="cursor ml-1 text-primary">_</span>}
       </button>
 
+      {isOpen && isPromptVisible && (
+        <NicknamePrompt
+          onComplete={handlePromptComplete}
+          onCancel={handlePromptCancel}
+          isSubmitting={createPost.isPending}
+        />
+      )}
+
       {isOpen && (
-        <div>
+        // Textarea stays mounted while the prompt is up — only its visibility
+        // flips. This keeps key events away from a freshly-remounted textarea
+        // after the prompt closes.
+        <div hidden={isPromptVisible}>
           <div className="border border-border bg-card p-4">
             <div className="flex items-start gap-2">
               <span className="text-muted-foreground select-none pt-0.5 text-xs">&gt;</span>
@@ -101,7 +95,6 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
                 aria-label={t('placeholder')}
                 maxLength={MAX_POST_LENGTH}
                 disabled={createPost.isPending}
-
               />
             </div>
           </div>
@@ -114,19 +107,16 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
           <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
             <span aria-hidden="true">ctrl+enter: submit | esc: cancel</span>
             <div className="flex gap-2">
-              <TerminalButton
-                type="button"
-                onClick={onToggle}
-              >
+              <TerminalButton type="button" onClick={onToggle}>
                 {t('common:cancel')}
               </TerminalButton>
               <TerminalButton
                 type="button"
-                onClick={handleSubmit}
+                onClick={() => trySubmit(content)}
                 disabled={content.trim().length === 0 || createPost.isPending}
                 className="text-foreground"
               >
-                {createPost.isPending ? t('sending') : t('common:submit')}
+                {createPost.isPending ? t('common:submitting') : t('common:submit')}
               </TerminalButton>
             </div>
           </div>

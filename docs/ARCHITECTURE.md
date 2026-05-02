@@ -148,7 +148,12 @@ src/
 ├── hooks/
 │   ├── useDocumentMeta.ts       # sync <title>/meta to apiStatus + lang
 │   ├── useIntersectionObserver.ts
-│   └── useNicknameGuard.ts      # block write actions without a nickname
+│   ├── useNicknameGuard.ts      # state-based prompt visibility (nickname,
+│   │                            # userCode, isPromptVisible, requestNickname,
+│   │                            # dismissPrompt) — no closure-captured action
+│   └── usePromptedSubmit.ts     # cross-cutting "submit, capture nickname
+│                                # inline if missing, then mutate" lifecycle.
+│                                # Used by FeedComposer and CommentForm.
 │
 ├── stores/
 │   ├── themeStore.ts            # theme (persisted)
@@ -258,6 +263,43 @@ Feed UI (inside HomePage)
 See [SERVICE_PLAN.md §4.3](SERVICE_PLAN.md).
 UI spec: [DESIGN_SYSTEM.md §5](DESIGN_SYSTEM.md).
 
+### 5.4 Inline NicknamePrompt + mutation lifecycle (load-bearing invariants)
+
+When a user submits a post or comment without a nickname, the form swaps to
+the inline NicknamePrompt; once the user confirms the nickname, the original
+mutation fires automatically. Two non-obvious invariants govern this flow.
+Breaking either re-introduces real bugs that have been fixed before.
+
+**Invariant 1 — the form input must stay mounted for the entire prompt lifecycle.**
+The composer's `<input>` / `<textarea>` is rendered inside a `<div hidden={isPromptVisible}>`
+wrapper rather than being conditionally returned. If we instead unmount it
+while the prompt is up, the next render after prompt close re-mounts the
+input with `autoFocus`, which steals key events that were originally aimed
+at the NicknamePrompt — Enter key-repeat in particular lands on the freshly
+mounted input and fires a phantom second `mutate`. Keep the input mounted.
+
+**Invariant 2 — the prompt is dismissed exactly once, when the mutation settles.**
+`handlePromptComplete` (the prompt's `onComplete`) only calls `dispatch(mutate)`;
+it does NOT call `dismissPrompt` synchronously. The mutation's `onSuccess` /
+`onError` is the single place that calls `dismissPrompt`. This prevents a
+visible flicker where the form view briefly takes over between confirming the
+nickname and the network request resolving — the user sees the prompt
+straight through to "post registered + composer closed". On failure, the
+same `dismissPrompt` runs and returns the user to the form with the typed
+content + an error banner.
+
+This lifecycle is encapsulated in the `usePromptedSubmit` hook
+(`src/hooks/usePromptedSubmit.ts`). Both `FeedComposer` and `CommentForm`
+consume it, so any change to either invariant must be made in the hook,
+not the consumers. Regression coverage lives in:
+
+- `e2e/09-no-double-submit-after-nickname.spec.ts` (real-browser, both
+  flows).
+- `src/components/feed/__tests__/FeedComposer.test.tsx` and
+  `src/components/comment/__tests__/CommentForm.test.tsx` —
+  `regression: prompt stays visible for the entire in-flight mutation` and
+  `regression: when the … mutation fails after a prompt-driven submit, …`.
+
 ## 6. API integration pattern
 
 - fetch wrapper: `src/apis/client.ts`.
@@ -265,6 +307,26 @@ UI spec: [DESIGN_SYSTEM.md §5](DESIGN_SYSTEM.md).
 - API contract: OpenAPI spec (see `docs/API_SPEC.md`).
 - Types: `src/types/api.ts` — **hand-maintained** (no codegen pipeline).
   When the backend contract changes, update by hand.
+
+### 6.1 Cache update gotcha — `['posts']` matches two shapes
+
+A single query-key prefix can match multiple caches with different shapes,
+and `setQueriesData` will run the updater against each match. In this repo,
+**the `['posts']` prefix matches both the infinite-query cache used by the
+feed (`{ pages: PostListResponse[]; pageParams: number[] }`) and the
+polling cache used by `usePostsPolling` (`PostListResponse`)**.
+
+If a `setQueriesData` updater assumes only one shape, it throws on the
+other. A throw inside a mutation-level `onSuccess` causes react-query to
+deliver the result to the call-site `onError` — so a successful POST gets
+reported back as a failed mutation, the form stays full of stale content,
+and a phantom error banner appears. This was the root cause of the
+duplicate-submit bug fixed in `useCreateComment` (commit-history search
+term: "useCreateComment cache shape").
+
+Always shape-narrow before mutating the cache. See
+[CODE_CONVENTIONS.md §5 (TanStack Query: cache mutations)](CODE_CONVENTIONS.md)
+for the required pattern.
 
 ## 7. Performance
 
