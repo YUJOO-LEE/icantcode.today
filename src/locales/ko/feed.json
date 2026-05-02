@@ -6,7 +6,6 @@
   "noComments": "아직 댓글이 없습니다",
   "replies": "답글",
   "toggleComments": "댓글 {{count}}개 보기",
-  "sending": "전송 중...",
   "hideComments": "숨기기",
   "showComments": "보기",
   "loadError": "게시글을 불러오지 못했습니다",

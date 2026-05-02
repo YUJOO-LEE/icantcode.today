@@ -6,7 +6,6 @@
   "noComments": "No comments yet",
   "replies": "reply",
   "toggleComments": "Toggle {{count}} comments",
-  "sending": "sending...",
   "hideComments": "hide",
   "showComments": "show",
   "loadError": "Failed to load posts",

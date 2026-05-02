@@ -1,27 +1,15 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
-import { I18nextProvider } from 'react-i18next';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/tests/mocks/server';
-import i18n from '@/lib/i18n';
+import { createTestWrapper } from '@/tests/wrappers';
 import { useSessionStore } from '@/stores/sessionStore';
 import { API_BASE_URL } from '@/lib/constants';
 import FeedComposer from '../FeedComposer';
-import type { ReactNode } from 'react';
 
 function createWrapper() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return function Wrapper({ children }: { children: ReactNode }) {
-    return (
-      <QueryClientProvider client={client}>
-        <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
-      </QueryClientProvider>
-    );
-  };
+  return createTestWrapper({ withI18n: true }).Wrapper;
 }
 
 describe('FeedComposer', () => {
@@ -161,6 +149,165 @@ describe('FeedComposer', () => {
     fireEvent.keyDown(textarea, { key: 'Enter', ctrlKey: true, isComposing: true });
     await new Promise((r) => setTimeout(r, 50));
     expect(called).toBe(false);
+  });
+
+  // Regression coverage for the duplicate-submit / phantom-error bug:
+  // submitting without a nickname used to fire the post mutation twice once
+  // the user confirmed the inline NicknamePrompt — the second call was
+  // triggered by autoFocus / closure races around prompt teardown. The fix
+  // keeps the textarea mounted for the prompt lifecycle and drives the
+  // deferred mutation off a ref instead of a captured closure.
+  it('regression: nickname prompt confirmed via Enter submits exactly once and closes the composer', async () => {
+    let postCount = 0;
+    server.use(
+      http.post(`${API_BASE_URL}/posts`, () => {
+        postCount += 1;
+        return HttpResponse.json({ id: postCount });
+      }),
+    );
+
+    const onToggle = vi.fn();
+    const user = userEvent.setup();
+    render(<FeedComposer isOpen onToggle={onToggle} />, { wrapper: createWrapper() });
+    const textarea = screen.getByPlaceholderText(/무슨 일이 있나요/);
+    await user.type(textarea, 'first post');
+    await user.click(screen.getByText('[제출]'));
+
+    const nicknameInput = await screen.findByPlaceholderText(/닉네임을 입력/);
+    await user.clear(nicknameInput);
+    await user.type(nicknameInput, 'tester{enter}');
+
+    await waitFor(() => expect(postCount).toBeGreaterThanOrEqual(1));
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(postCount).toBe(1);
+    expect(onToggle).toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('regression: nickname prompt confirmed via click submits exactly once and closes the composer', async () => {
+    let postCount = 0;
+    server.use(
+      http.post(`${API_BASE_URL}/posts`, () => {
+        postCount += 1;
+        return HttpResponse.json({ id: postCount });
+      }),
+    );
+
+    const onToggle = vi.fn();
+    const user = userEvent.setup();
+    render(<FeedComposer isOpen onToggle={onToggle} />, { wrapper: createWrapper() });
+    const textarea = screen.getByPlaceholderText(/무슨 일이 있나요/);
+    await user.type(textarea, 'first post');
+    await user.click(screen.getByText('[제출]'));
+
+    const nicknameInput = await screen.findByPlaceholderText(/닉네임을 입력/);
+    await user.clear(nicknameInput);
+    await user.type(nicknameInput, 'tester');
+    // Click the prompt's [제출] button. There are now two — the prompt's and
+    // the (hidden but mounted) composer's. Pick the prompt's via proximity.
+    const [promptSubmit] = screen.getAllByRole('button', { name: '[제출]' });
+    await user.click(promptSubmit!);
+
+    await waitFor(() => expect(postCount).toBeGreaterThanOrEqual(1));
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(postCount).toBe(1);
+    expect(onToggle).toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('regression: cancelling the nickname prompt preserves typed content and fires no mutation', async () => {
+    let postCount = 0;
+    server.use(
+      http.post(`${API_BASE_URL}/posts`, () => {
+        postCount += 1;
+        return HttpResponse.json({ id: postCount });
+      }),
+    );
+
+    const user = userEvent.setup();
+    render(<FeedComposer isOpen onToggle={vi.fn()} />, { wrapper: createWrapper() });
+    const textarea = screen.getByPlaceholderText(/무슨 일이 있나요/) as HTMLTextAreaElement;
+    await user.type(textarea, 'draft body');
+    await user.click(screen.getByText('[제출]'));
+
+    const [promptCancel] = await screen.findAllByRole('button', { name: '[취소]' });
+    // The first cancel belongs to the visible NicknamePrompt.
+    await user.click(promptCancel!);
+
+    await new Promise((r) => setTimeout(r, 50));
+    expect(postCount).toBe(0);
+    // textarea is now visible again with its original content intact
+    expect((screen.getByPlaceholderText(/무슨 일이 있나요/) as HTMLTextAreaElement).value).toBe('draft body');
+  });
+
+  // Regression: between confirming the nickname prompt and the post mutation
+  // settling, the user must NOT see the textarea reappear with the typed
+  // content. Previously dismissPrompt() ran synchronously inside the prompt's
+  // onComplete callback, so the textarea flashed back into view for the
+  // duration of the network request before onSuccess closed the composer.
+  // The fix keeps the prompt up until the mutation actually settles.
+  it('regression: prompt stays visible for the entire in-flight mutation — no textarea flicker', async () => {
+    let releaseRequest: (() => void) | null = null;
+    server.use(
+      http.post(`${API_BASE_URL}/posts`, async () => {
+        await new Promise<void>((r) => {
+          releaseRequest = r;
+        });
+        return HttpResponse.json({ id: 1 });
+      }),
+    );
+
+    const onToggle = vi.fn();
+    const user = userEvent.setup();
+    render(<FeedComposer isOpen onToggle={onToggle} />, { wrapper: createWrapper() });
+    const textarea = screen.getByPlaceholderText(/무슨 일이 있나요/);
+    await user.type(textarea, 'no-flicker body');
+    await user.click(screen.getByText('[제출]'));
+
+    const nicknameInput = await screen.findByPlaceholderText(/닉네임을 입력/);
+    await user.clear(nicknameInput);
+    await user.type(nicknameInput, 'tester');
+    const [promptSubmit] = screen.getAllByRole('button', { name: '[제출]' });
+    await user.click(promptSubmit!);
+
+    // Mutation is parked. The prompt header must still be on screen — the
+    // textarea must NOT have taken over yet.
+    expect(screen.getByText(/set-nickname/)).toBeInTheDocument();
+    expect(onToggle).not.toHaveBeenCalled();
+
+    // Release the mutation and assert that NOW the prompt closes and the
+    // composer collapses.
+    releaseRequest!();
+
+    await waitFor(() => expect(onToggle).toHaveBeenCalled());
+    expect(screen.queryByText(/set-nickname/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('regression: when the post mutation fails after a prompt-driven submit, the textarea reappears with the typed content + error', async () => {
+    server.use(
+      http.post(`${API_BASE_URL}/posts`, () => new HttpResponse(null, { status: 500 })),
+    );
+
+    const onToggle = vi.fn();
+    const user = userEvent.setup();
+    render(<FeedComposer isOpen onToggle={onToggle} />, { wrapper: createWrapper() });
+    const textarea = screen.getByPlaceholderText(/무슨 일이 있나요/) as HTMLTextAreaElement;
+    await user.type(textarea, 'will fail');
+    await user.click(screen.getByText('[제출]'));
+
+    const nicknameInput = await screen.findByPlaceholderText(/닉네임을 입력/);
+    await user.clear(nicknameInput);
+    await user.type(nicknameInput, 'tester{enter}');
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    // Composer should NOT have closed on a failed submission.
+    expect(onToggle).not.toHaveBeenCalled();
+    // Prompt is gone, textarea is back with the typed content for retry.
+    expect(screen.queryByText(/set-nickname/)).not.toBeInTheDocument();
+    expect((screen.getByPlaceholderText(/무슨 일이 있나요/) as HTMLTextAreaElement).value).toBe('will fail');
   });
 
   it('does not submit when content is empty even on click', async () => {
