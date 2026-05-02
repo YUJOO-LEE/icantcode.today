@@ -143,7 +143,94 @@ almost never needed. Reserve `try/catch` for **async work outside Query**
 
 > Why: unnecessary `try/catch` swallows errors and hurts debugging.
 
-## 5. When to abstract
+## 5. TanStack Query: cache mutations
+
+### Prefer `invalidateQueries` first, `setQueriesData` only when worth it
+
+Default to `invalidateQueries` after a successful mutation. It marks
+matching queries stale and refetches them — simple, can't be wrong about
+shape, and the network cost is usually fine.
+
+Reach for `setQueriesData` only when an immediate optimistic update is
+visibly important (e.g. avoiding a flicker on a counter the user just
+incremented). The trade-off is that you become responsible for the cache
+shape, which is the next pitfall.
+
+### A query-key prefix can match multiple cache shapes
+
+`setQueriesData({ queryKey: ['posts'] }, updater)` runs the updater
+against **every** cache whose key starts with `['posts']`. In this repo
+that key prefix matches at least:
+
+- `['posts']` — the **infinite-query** cache: `{ pages, pageParams }`.
+- `['posts', 'poll']` — the **polling** cache: `PostListResponse`
+  (`{ list, totalCount }`).
+
+If the updater does `old?.map(...)` while assuming a flat array, it
+crashes against the infinite-query shape. A throw inside a mutation-level
+`onSuccess` is reported back to the call-site as `onError` — turning a
+successful POST into a phantom failure visible to the user.
+
+```ts
+// ❌ assumes only one shape
+queryClient.setQueriesData<PostSummaryResponse[]>(
+  { queryKey: ['posts'] },
+  (old) => old?.map((p) => /* … */),
+);
+
+// ✅ shape-narrow with `'pages' in old` / `'list' in old`
+queryClient.setQueriesData<InfinitePostsCache | PostListResponse>(
+  { queryKey: ['posts'] },
+  (old) => {
+    if (!old) return old;
+    if ('pages' in old) {
+      return {
+        ...old,
+        pages: old.pages.map((p) => ({
+          ...p,
+          list: bumpCommentCount(p.list, postId),
+        })),
+      };
+    }
+    if ('list' in old) {
+      return { ...old, list: bumpCommentCount(old.list, postId) };
+    }
+    return old;
+  },
+);
+```
+
+If you only need to update one of the matched caches, scope the predicate
+(`{ queryKey: ['posts'], exact: true }`) instead of relying on the
+updater to be a no-op for the others.
+
+> Why: a generic type passed to `setQueriesData<T>` is a *cast*, not a
+> runtime guarantee. The actual `old` value is whatever's in the cache.
+
+### Mutation-level callbacks must not throw
+
+A throw inside the mutation-level `onSuccess`/`onError` (the ones declared
+in `useMutation({ onSuccess: … })`) propagates to the per-call
+`onError` and surfaces as a "submit failed" UI state — even though the
+mutation itself succeeded.
+
+If you need work that *can* fail in the success handler, isolate it:
+
+```ts
+onSuccess: () => {
+  try {
+    riskyCacheTouch();
+  } catch (e) {
+    console.error('cache update failed', e);
+  }
+  // never let this layer throw
+},
+```
+
+> Why: the user-facing failure modes of an HTTP success and a JS
+> exception are completely different. Don't conflate them.
+
+## 6. When to abstract
 
 ### Accidental duplication
 
@@ -175,7 +262,7 @@ beat a premature abstraction.
 > Why: abstraction saves lines at the cost of dependencies. Dependencies
 > are change cost.
 
-## 6. Testing
+## 7. Testing
 
 ### No snapshot tests
 
@@ -218,7 +305,7 @@ internal state or specific function calls.
 > Why: implementation tests break on every refactor; behavior tests only
 > break when behavior changes.
 
-## 7. Performance
+## 8. Performance
 
 ### Measure first, optimize second
 
@@ -253,7 +340,7 @@ UUID.
 
 > Why: index keys cause incorrect DOM reuse when order changes.
 
-## 8. Left to developer discretion
+## 9. Left to developer discretion
 
 We do not write rules for matters of taste:
 
