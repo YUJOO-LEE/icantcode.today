@@ -4,6 +4,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useThemeStore } from '@/stores/themeStore';
 import TerminalButton from '@/components/ui/TerminalButton';
 import Logo from '@/components/ui/Logo';
+import Link from '@/components/common/Link';
 
 function Header() {
   const { t, i18n } = useTranslation('common');
@@ -24,17 +25,28 @@ function Header() {
     <header className="border-b border-border">
       <div className="mx-auto max-w-3xl px-4 py-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 text-xs text-muted-foreground sm:gap-2">
+          <Link
+            to="/"
+            aria-label={t('siteNavHome')}
+            className="flex items-center gap-1 text-xs text-muted-foreground sm:gap-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
+          >
             <Logo size={16} />
             <span className="text-foreground">{username}@icantcode.today</span>
             <span>:</span>
             <span className="text-foreground">~</span>
             <span>$</span>
             <span className="cursor">_</span>
-          </div>
+          </Link>
 
           <nav aria-label={t('siteNav')}>
             <div className="flex items-center gap-1 text-[10px] sm:gap-2">
+              <Link
+                to="/game"
+                className="text-[10px] text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60 focus-visible:text-foreground"
+              >
+                [{t('siteNavGame')}]
+              </Link>
+              <span aria-hidden="true" className="text-[10px] text-muted-foreground">│</span>
               <TerminalButton
                 onClick={toggleLanguage}
                 className="text-[10px]"

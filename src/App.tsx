@@ -8,9 +8,11 @@ import { useThemeStore } from '@/stores/themeStore';
 import { useStatusStore } from '@/stores/statusStore';
 import Layout from '@/components/layout/Layout';
 import HomePage from '@/pages/HomePage';
+import GamePage from '@/components/game/GamePage';
 import ErrorFallback from '@/components/common/ErrorFallback';
 import Cursor from '@/components/ui/Cursor';
 import Logo from '@/components/ui/Logo';
+import { useHashRoute } from '@/hooks/useHashRoute';
 
 function ThemeInitializer() {
   const initTheme = useThemeStore((s) => s.initTheme);
@@ -70,6 +72,14 @@ function LoadingFallback() {
   );
 }
 
+function Router() {
+  const path = useHashRoute();
+  if (path.startsWith('/game')) {
+    return <GamePage />;
+  }
+  return <HomePage />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -79,7 +89,7 @@ function App() {
         <ErrorBoundary>
           <Suspense fallback={<Layout><LoadingFallback /></Layout>}>
             <Layout>
-              <HomePage />
+              <Router />
             </Layout>
           </Suspense>
         </ErrorBoundary>
