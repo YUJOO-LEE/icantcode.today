@@ -1,0 +1,20 @@
+{
+  "catalog.subtitle": "follow the fall",
+  "labels.keys": "KEYS:",
+  "labels.death": "DEATH:",
+  "labels.best": "best:",
+  "labels.move": "←/→ move",
+  "death.timeout": "pushed off the top",
+  "death.segfault": "fell through all platforms",
+  "error.resize": "terminal window was resized",
+  "labels.error": "error:",
+  "actions.retry": "[ > retry ]",
+  "actions.home": "[ > exit ]",
+  "start.desktop": "press [Enter] to start_",
+  "start.mobile": "tap to start",
+  "catalog.heading": "ls -la /game/",
+  "catalog.moreComing": "(more coming...)",
+  "hud.score": "score",
+  "labels.score": "score:",
+  "labels.in": "in:"
+}
