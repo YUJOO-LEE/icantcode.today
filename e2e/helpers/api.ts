@@ -27,6 +27,24 @@ export async function stubCloudflareBeacon(page: Page): Promise<void> {
 }
 
 /**
+ * Google Tag Manager loads `gtm.js` and (server-side) GA4 tags fire from
+ * inside the container. Even on localhost the container loads fine and
+ * inflates GA Realtime counts. Block all GTM/GA hostnames in e2e.
+ */
+const ANALYTICS_GLOBS = [
+  '**/www.googletagmanager.com/**',
+  '**/www.google-analytics.com/**',
+  '**/analytics.google.com/**',
+  '**/region1.google-analytics.com/**',
+];
+
+export async function stubAnalytics(page: Page): Promise<void> {
+  for (const glob of ANALYTICS_GLOBS) {
+    await page.route(glob, (route) => route.fulfill({ status: 204, body: '' }));
+  }
+}
+
+/**
  * Wrapped `test` that fails a run on any unexpected console error or
  * page error. Import from this module in every spec instead of
  * @playwright/test directly.
@@ -51,8 +69,9 @@ export const test = baseTest.extend({
       pageErrors.push(err);
     });
 
-    // Always stub the beacon so tests don't have to remember.
+    // Always stub the beacon and analytics so tests don't have to remember.
     await stubCloudflareBeacon(page);
+    await stubAnalytics(page);
 
     await use(page);
 
