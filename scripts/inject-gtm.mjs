@@ -1,24 +1,19 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { readFile, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { findIndexHtmls } from './lib/walkDist.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const distIndex = resolve(__dirname, '../dist/index.html');
+const distDir = resolve(__dirname, '../dist');
 
 const HEAD_SLOT = /[ \t]*<!--\s*__GTM_HEAD_SLOT__\s*-->\s*\n?/;
 const BODY_SLOT = /[ \t]*<!--\s*__GTM_BODY_SLOT__\s*-->\s*\n?/;
 
 const id = process.env.VITE_GTM_ID?.trim();
 
-if (!existsSync(distIndex)) {
-  console.warn('⚠ dist/index.html not found — skipping GTM injection.');
-  process.exit(0);
-}
-
-const html = readFileSync(distIndex, 'utf-8');
-
-if (!HEAD_SLOT.test(html) || !BODY_SLOT.test(html)) {
-  console.warn('⚠ GTM slots not found in dist/index.html — skipping.');
+if (!existsSync(distDir)) {
+  console.warn('⚠ dist/ not found — skipping GTM injection.');
   process.exit(0);
 }
 
@@ -39,13 +34,23 @@ if (id) {
     `    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=${id}"\n` +
     `    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>\n` +
     `    <!-- End Google Tag Manager (noscript) -->\n`;
-  console.log(`✓ GTM (${id}) injected.`);
-} else {
-  console.log('✓ No VITE_GTM_ID set — GTM slots removed (no analytics).');
 }
 
-writeFileSync(
-  distIndex,
-  html.replace(HEAD_SLOT, headReplacement).replace(BODY_SLOT, bodyReplacement),
-  'utf-8',
-);
+const files = await findIndexHtmls(distDir);
+let touched = 0;
+for (const file of files) {
+  const html = await readFile(file, 'utf-8');
+  if (!HEAD_SLOT.test(html) && !BODY_SLOT.test(html)) continue;
+  await writeFile(
+    file,
+    html.replace(HEAD_SLOT, headReplacement).replace(BODY_SLOT, bodyReplacement),
+    'utf-8',
+  );
+  touched++;
+}
+
+if (id) {
+  console.log(`✓ GTM (${id}) injected (${touched} file(s)).`);
+} else {
+  console.log(`✓ No VITE_GTM_ID set — GTM slots removed (${touched} file(s)).`);
+}

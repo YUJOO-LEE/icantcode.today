@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import Link from '@/components/common/Link';
+import { Link } from 'react-router';
+import { ROUTES } from '@/constants/routes';
 import Cursor from '@/components/ui/Cursor';
 
 function CatalogPage() {
@@ -12,7 +13,7 @@ function CatalogPage() {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
           <span className="text-muted-foreground">-rwxr-xr-x</span>
           <Link
-            to="/game/fall-f"
+            to={ROUTES.GAME_FALL_F}
             className="text-primary underline-offset-2 hover:underline focus-visible:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
           >
             fall-f

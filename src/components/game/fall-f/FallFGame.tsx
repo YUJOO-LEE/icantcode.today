@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { navigate } from '@/hooks/useHashRoute';
+import { useNavigate, useSearchParams } from 'react-router';
+import { ROUTES } from '@/constants/routes';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import InitialScreen from './InitialScreen';
 import ResultScreen from './ResultScreen';
@@ -13,10 +14,6 @@ import { useTouchControls } from './useTouchControls';
 import { usePageHidden } from './useVisibility';
 import { defaultRNG, mulberry32 } from './rng';
 import type { InputState, Viewport } from './types';
-
-interface FallFGameProps {
-  seed?: number | null;
-}
 
 const MAX_FRAME_MS = 50;
 const FALLBACK_VIEWPORT: Viewport = { rows: 25, cols: 80 };
@@ -32,7 +29,12 @@ function viewportFromWidth(widthPx: number): Viewport {
   };
 }
 
-function FallFGame({ seed }: FallFGameProps) {
+function FallFGame() {
+  const [searchParams] = useSearchParams();
+  const seedRaw = searchParams.get('seed');
+  const seed = seedRaw !== null && /^\d+$/.test(seedRaw) ? Number(seedRaw) : null;
+
+  const navigate = useNavigate();
   const isCoarsePointer = useMediaQuery('(pointer: coarse)');
   const wrapperRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
@@ -46,36 +48,38 @@ function FallFGame({ seed }: FallFGameProps) {
     statusRef.current = state.status;
   }, [state.status]);
 
-  // Track the wrapper's actual rendered width so cols match what the user sees.
-  // While a run is in progress, treat resize as a fatal SIGWINCH error — the
+  // While the run is in progress, treat resize as a fatal SIGWINCH error — the
   // map is fixed at startNewRun and we don't want to recompute mid-run.
+  // We deliberately DO NOT measure on idle/dead screens: they don't render the
+  // grid, and the extra setState would create a post-hydrate commit that races
+  // with effects in the parent tree (e.g., the i18n LanguageInitializer).
   useEffect(() => {
+    if (state.status !== 'playing') return;
     const el = wrapperRef.current;
     if (!el) return;
-    const update = () => {
+    const ro = new ResizeObserver(() => {
       const widthPx = el.clientWidth;
       if (widthPx <= 0) return;
       const viewport = viewportFromWidth(widthPx);
       setState((prev) => {
+        if (prev.status !== 'playing') return prev;
         const sameSize =
           prev.viewport.cols === viewport.cols && prev.viewport.rows === viewport.rows;
         if (sameSize) return prev;
-        if (prev.status === 'playing') {
-          // Resize is an error termination, not a regular death — leave `best`
-          // untouched so the player's record isn't tainted by an unintended exit.
-          return { ...prev, status: 'dead-resize', viewport };
-        }
-        return { ...prev, viewport };
+        // Resize is an error termination, not a regular death — leave `best`
+        // untouched so the player's record isn't tainted by an unintended exit.
+        return { ...prev, status: 'dead-resize', viewport };
       });
-    };
-    update();
-    const ro = new ResizeObserver(update);
+    });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [state.status]);
 
   const handleStart = useCallback(() => {
-    setState((prev) => startNewRun(prev, performance.now()));
+    // Measure viewport at game-start, not on mount: idle screen doesn't need it.
+    const widthPx = wrapperRef.current?.clientWidth ?? 0;
+    const viewport = widthPx > 0 ? viewportFromWidth(widthPx) : FALLBACK_VIEWPORT;
+    setState((prev) => startNewRun({ ...prev, viewport }, performance.now()));
   }, []);
 
   const handleReturnToIdle = useCallback(() => {
@@ -84,8 +88,8 @@ function FallFGame({ seed }: FallFGameProps) {
 
   const handleHome = useCallback(() => {
     setState((prev) => ({ ...prev, status: 'idle' }));
-    navigate('/game');
-  }, []);
+    navigate(ROUTES.GAME);
+  }, [navigate]);
 
   const setInput = useCallback((input: InputState) => {
     setState((prev) => setPlayerInput(prev, input));

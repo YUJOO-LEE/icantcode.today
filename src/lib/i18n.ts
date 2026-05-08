@@ -13,8 +13,10 @@ import enAuth from '@/locales/en/auth.json';
 import enStatus from '@/locales/en/status.json';
 import enGame from '@/locales/en/game.json';
 
-const browserLang = navigator.language?.startsWith('en') ? 'en' : 'ko';
-
+// Always initialize with `en` so prerendered HTML is deterministic.
+// Korean speakers get a swap to `ko` client-side after hydration via the
+// LanguageInitializer effect in AppShell — keeps server and first-client
+// renders identical for SEO + crawlers, swaps to local language for users.
 i18n.use(initReactI18next).init({
   resources: {
     ko: {
@@ -32,8 +34,8 @@ i18n.use(initReactI18next).init({
       game: enGame,
     },
   },
-  lng: browserLang,
-  fallbackLng: 'ko',
+  lng: 'en',
+  fallbackLng: 'en',
   ns: ['common', 'feed', 'auth', 'status', 'game'],
   defaultNS: 'common',
   interpolation: {

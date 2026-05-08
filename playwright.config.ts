@@ -24,7 +24,11 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run preview -- --port 4173',
+    // Mimic GitHub Pages (directory-index + 404.html fallback) instead of
+    // `vite preview`, which falls back every unknown path to /index.html and
+    // breaks per-route prerender hydration.
+    command: 'node scripts/serve.mjs',
+    env: { PORT: '4173' },
     port: 4173,
     reuseExistingServer: !CI,
     stdout: 'ignore',
