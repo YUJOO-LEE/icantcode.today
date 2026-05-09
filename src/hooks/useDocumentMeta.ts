@@ -36,6 +36,19 @@ function setLink(rel: string, href: string) {
   el.setAttribute('href', href);
 }
 
+function setLinkAlternate(hreflang: string, href: string) {
+  let el = document.querySelector<HTMLLinkElement>(
+    `link[rel="alternate"][hreflang="${hreflang}"]`,
+  );
+  if (!el) {
+    el = document.createElement('link');
+    el.setAttribute('rel', 'alternate');
+    el.setAttribute('hreflang', hreflang);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('href', href);
+}
+
 export function useDocumentMeta({ route, lang, apiStatus }: DocumentMetaInput): void {
   useEffect(() => {
     const head = resolveHead(route, lang, apiStatus);
@@ -48,8 +61,12 @@ export function useDocumentMeta({ route, lang, apiStatus }: DocumentMetaInput): 
     setMeta('og:description', head.ogDescription, true);
     setMeta('og:url', head.ogUrl, true);
     setMeta('og:locale', lang === 'ko' ? 'ko_KR' : 'en_US', true);
+    setMeta('og:locale:alternate', lang === 'ko' ? 'en_US' : 'ko_KR', true);
     setMeta('twitter:title', head.twTitle);
     setMeta('twitter:description', head.twDescription);
     setLink('canonical', head.canonical);
+    setLinkAlternate('ko', head.canonical);
+    setLinkAlternate('en', head.canonical);
+    setLinkAlternate('x-default', head.canonical);
   }, [route, lang, apiStatus]);
 }

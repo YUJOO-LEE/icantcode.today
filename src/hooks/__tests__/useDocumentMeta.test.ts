@@ -27,9 +27,11 @@ describe('useDocumentMeta', () => {
           'meta[property="og:description"]',
           'meta[property="og:url"]',
           'meta[property="og:locale"]',
+          'meta[property="og:locale:alternate"]',
           'meta[name="twitter:title"]',
           'meta[name="twitter:description"]',
           'link[rel="canonical"]',
+          'link[rel="alternate"]',
         ].join(','),
       )
       .forEach((el) => el.remove());
@@ -157,6 +159,51 @@ describe('useDocumentMeta', () => {
       const fallFOg = getMeta('og:title');
       expect(homeOg).not.toBe(fallFOg);
       expect(fallFOg).toContain('fall-f');
+    });
+  });
+
+  describe('og:locale:alternate', () => {
+    it('ko: og:locale=ko_KR and og:locale:alternate=en_US', () => {
+      renderHook(() => useDocumentMeta({ route: 'home', lang: 'ko', apiStatus: 'normal' }));
+      expect(getMeta('og:locale')).toBe('ko_KR');
+      expect(getMeta('og:locale:alternate')).toBe('en_US');
+    });
+
+    it('en: og:locale=en_US and og:locale:alternate=ko_KR', () => {
+      renderHook(() => useDocumentMeta({ route: 'gameFallF', lang: 'en' }));
+      expect(getMeta('og:locale')).toBe('en_US');
+      expect(getMeta('og:locale:alternate')).toBe('ko_KR');
+    });
+  });
+
+  describe('hreflang link sync', () => {
+    function getAlternate(hreflang: string): string {
+      return (
+        document
+          .querySelector(`link[rel="alternate"][hreflang="${hreflang}"]`)
+          ?.getAttribute('href') ?? ''
+      );
+    }
+
+    it('all three hreflang links point at the current canonical', () => {
+      renderHook(() => useDocumentMeta({ route: 'gameFallF', lang: 'en' }));
+      const expected = `${SITE_BASE_URL}/game/fall-f`;
+      expect(getAlternate('ko')).toBe(expected);
+      expect(getAlternate('en')).toBe(expected);
+      expect(getAlternate('x-default')).toBe(expected);
+    });
+
+    it('hreflang updates when route changes', () => {
+      const { rerender } = renderHook(
+        ({ route }: { route: 'home' | 'game' }) =>
+          useDocumentMeta({ route, lang: 'ko', apiStatus: 'normal' }),
+        { initialProps: { route: 'home' } },
+      );
+      expect(getAlternate('ko')).toBe(`${SITE_BASE_URL}/`);
+      rerender({ route: 'game' });
+      expect(getAlternate('ko')).toBe(`${SITE_BASE_URL}/game`);
+      expect(getAlternate('en')).toBe(`${SITE_BASE_URL}/game`);
+      expect(getAlternate('x-default')).toBe(`${SITE_BASE_URL}/game`);
     });
   });
 });
