@@ -16,7 +16,7 @@ function CatalogPage() {
             to={ROUTES.GAME_FALL_F}
             className="text-primary underline-offset-2 hover:underline focus-visible:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
           >
-            fall-f
+            fall-f [beta]
           </Link>
           <span className="text-muted-foreground">2026-05</span>
           <span>{t('catalog.subtitle')}</span>
