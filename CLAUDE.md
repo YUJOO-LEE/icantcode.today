@@ -22,7 +22,7 @@ Production: https://icantcode.today
 | Client state | Zustand v5 | Stores in `src/stores/` |
 | Styling | Tailwind CSS v4 + CSS variables | No inline color hex |
 | i18n | react-i18next | Locales: `ko`, `en` |
-| Animation | `motion` (formerly framer-motion) | |
+| Animation | `motion` | |
 | Font | MulmaruMono (self-hosted) | `public/fonts/MulmaruMono.woff2`, OFL 1.1 |
 | HTTP | fetch wrapper at `src/apis/client.ts` | No axios |
 | Unit test | Vitest + React Testing Library + MSW | |
@@ -131,17 +131,23 @@ docs/             Design docs (SERVICE_PLAN, ARCHITECTURE, DESIGN_SYSTEM, API_SP
 - Build scripts → `scripts/`
 - Crawler/SEO static files → `public/` (`robots.txt`, `sitemap.xml`, `llms.txt`, `og.svg`)
 
-## SEO / GEO policy (added 2026-04)
+## SEO / GEO policy
 
 - **Static-first explainability**: `index.html` must explain the service
   without executing JS. Keep the `<div id="seo-root" hidden aria-hidden="true">`
   block factual and aligned with runtime behavior.
 - For any SEO/GEO-adjacent work, read `.claude/agents/seo-geo.md` first.
-- `src/hooks/useDocumentMeta.ts` syncs `<title>`, meta description, OG tags,
-  and `<html lang>` based on `apiStatus` and current language.
+- `src/constants/pageMeta.ts` is the single source of truth for per-route
+  head metadata (title, description, canonical, og:*, twitter:*, hreflang,
+  og:locale, JSON-LD additions). Both `useDocumentMeta` (runtime) and the
+  build-time path (`vite.config.ts` page-meta plugin →
+  `scripts/prerender.mjs` → `dist/<route>/index.html`) consume it via
+  `resolveHead(route, lang, apiStatus?)`.
 - `public/llms.txt` is the LLM-crawler-facing Markdown summary. Update it
   whenever service copy changes.
-- The CI build runs an SEO smoke check (`.github/workflows/deploy.yml`).
+- The CI build runs an SEO smoke check (`.github/workflows/deploy.yml`)
+  that verifies each prerendered route gets distinct head metadata and
+  the right per-route JSON-LD.
 
 ## CLI aesthetic rules
 

@@ -8,7 +8,7 @@
 - **SEO/GEO strategy**: static-first explainability. `index.html` is
   enriched with JSON-LD, `hreflang`, a hidden SEO body, `robots.txt`,
   `sitemap.xml`, and `llms.txt` — crawlers and LLMs can understand the
-  service without running JS. (Policy shift, 2026-04.)
+  service without running JS.
 - Static hosting (GitHub Pages) is enough.
 - SPA-fast transitions match the terminal aesthetic.
 - Vite's HMR is fast.
@@ -64,16 +64,13 @@ Alternatives ruled out:
 - The home page (`/`) uses state-based conditional rendering for the
   landing ↔ feed swap based on `apiStatus`.
 
-### 1.8 motion (formerly framer-motion)
+### 1.8 motion
 
 - Suits terminal-style motion (typewriter, cursor blink, page fades).
 - Declarative API keeps complex transitions simple.
 - `AnimatePresence` handles unmount animation cleanly.
 
-**Package rename (2026-03-08)**: `framer-motion` → `motion`. Only the
-import path changed; API is identical.
-
-### 1.9 fetch wrapper (instead of axios)
+### 1.9 fetch wrapper
 
 - No JWT → axios interceptors aren't needed.
 - A ~20-line fetch wrapper suffices.
@@ -92,7 +89,7 @@ import path changed; API is identical.
 | Client state | Zustand | v5 |
 | Styling | Tailwind CSS | v4 |
 | i18n | react-i18next | latest |
-| Animation | motion (ex-framer-motion) | latest |
+| Animation | motion | latest |
 | HTTP | fetch wrapper (`src/apis/client.ts`) | — |
 | Font | MulmaruMono (self-hosted) | OFL 1.1 |
 
@@ -267,14 +264,14 @@ UI spec: [DESIGN_SYSTEM.md §5](DESIGN_SYSTEM.md).
 When a user submits a post or comment without a nickname, the form swaps to
 the inline NicknamePrompt; once the user confirms the nickname, the original
 mutation fires automatically. Two non-obvious invariants govern this flow.
-Breaking either re-introduces real bugs that have been fixed before.
+Breaking either causes real bugs.
 
 **Invariant 1 — the form input must stay mounted for the entire prompt lifecycle.**
 The composer's `<input>` / `<textarea>` is rendered inside a `<div hidden={isPromptVisible}>`
-wrapper rather than being conditionally returned. If we instead unmount it
-while the prompt is up, the next render after prompt close re-mounts the
-input with `autoFocus`, which steals key events that were originally aimed
-at the NicknamePrompt — Enter key-repeat in particular lands on the freshly
+wrapper rather than being conditionally returned. If it unmounts while the
+prompt is up, the next render after prompt close re-mounts the input with
+`autoFocus`, which steals key events intended for the NicknamePrompt —
+Enter key-repeat in particular lands on the freshly
 mounted input and fires a phantom second `mutate`. Keep the input mounted.
 
 **Invariant 2 — the prompt is dismissed exactly once, when the mutation settles.**
@@ -395,31 +392,3 @@ GitHub repo
   │
   └── Backend API (separate service, out of scope)
 ```
-
-## 10. Tech-stack review log
-
-### 2026-03-08 — initial stack audit
-
-Stack matches 2026 industry norms; no anti-trend choices remain.
-
-| Item | Verdict | Rationale |
-|---|---|---|
-| React 19 + Vite 6 | KEEP | Industry-standard FE combo |
-| TypeScript strict | KEEP | TS 6.0 made strict default |
-| TanStack Query v5 | KEEP | #1 for server state, overtook SWR |
-| Zustand v5 | KEEP | #1 for client state, ~1.5 KB |
-| Tailwind CSS v4 | KEEP | Rust engine, 100× faster incremental |
-| react-i18next | KEEP | i18n standard, ~3 KB |
-| Vitest + RTL + MSW + Playwright | KEEP | Industry-standard test stack; E2E 8 flows + visual regression in CI |
-| React Router v7 | **REMOVED** | Only one route; saved ~14 KB |
-| framer-motion | **RENAMED** | Now `motion` |
-| axios | **REMOVED** | No JWT, fetch wrapper is enough; saved ~13 KB |
-
-Industry notes:
-- TypeScript 6.0 (2026-03-17): strict is default now — no impact.
-- TypeScript 7.0 (Go compiler): ~10× faster builds — pick up mid-2026.
-- TanStack Router is growing — consider it if routing returns.
-
----
-
-_Last updated: 2026-04-19_

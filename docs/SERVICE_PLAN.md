@@ -261,10 +261,6 @@ Sponsors, Buy Me a Coffee).
 | Avg. session length | 5 min+ |
 | Posts per outage | 50+ |
 | Return rate | ≥ 40% |
-| GSC indexing | 1 URL indexed |
+| GSC indexing | All prerendered routes indexed |
 | GSC impressions | Monthly impressions on "claude code down/outage" queries |
 | Lighthouse SEO | 100 (CI guard) |
-
----
-
-_Last updated: 2026-04-19_

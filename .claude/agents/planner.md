@@ -26,7 +26,7 @@ Owns prioritization, user stories, and sprint planning.
 - Basic feed (post CRUD timeline).
 - Anonymous session: UUID on load, nickname entered inline on first write.
 
-> **Backend API status (2026-03-08)**: Phase 1 backend done. 5 endpoints
+> **Backend API status**: Phase 1 backend done. 5 endpoints
 > confirmed. Anonymous session based. Contract in `docs/API_SPEC.md`.
 
 ### Phase 2 — User interaction

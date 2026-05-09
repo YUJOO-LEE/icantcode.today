@@ -66,8 +66,7 @@ TDD-first.
 - Colors: CSS variables or Tailwind theme tokens only. Never hex.
 - Dark mode: `dark:` variant and/or CSS-variable auto-switch.
 - Mobile-first; keep the terminal aesthetic at every breakpoint.
-- Animations via `motion` (formerly framer-motion). Always respect
-  `prefers-reduced-motion`.
+- Animations via `motion`. Always respect `prefers-reduced-motion`.
 
 ## A11y checks
 

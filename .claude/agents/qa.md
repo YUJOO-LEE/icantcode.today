@@ -146,7 +146,7 @@ fail the command.
 Locally, `.githooks/pre-push` runs the same `npm run test:run`. Bypass with
 `--no-verify` (emergencies only).
 
-## Coverage targets + current state (2026-04)
+## Coverage targets + current state
 
 | Area | Target | Current |
 |---|---|---|
@@ -159,7 +159,7 @@ Locally, `.githooks/pre-push` runs the same `npm run test:run`. Bypass with
 | Pages (`src/pages/*`) | 60%+ | **98.9%** |
 | **Overall** | — | **99.18% lines / 94.52% branch / 98.86% functions** |
 
-## Remaining coverage gaps (2026-04 audit, v8)
+## Remaining coverage gaps
 
 All high-priority gaps closed. Remainder are small branches or defensive
 paths:
@@ -172,9 +172,8 @@ paths:
   `??` / `?.startsWith` that both paths hit at runtime but v8 under-counts.
 
 ### Future work (separate tracks)
-- **Playwright E2E**: shipped — 8 flows + visual regression wired in CI
-  (2026-04).
-- **Visual regression** (Chromatic / Percy): not adopted yet.
+- **Playwright E2E**: shipped — 8 flows + visual regression wired in CI.
+- **Visual regression** (Chromatic / Percy): not adopted.
 - **Lint gate**: consider adding `eslint` to pre-push.
 
 ## Reference docs

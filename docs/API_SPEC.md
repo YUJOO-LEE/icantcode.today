@@ -74,7 +74,3 @@ reference and may drift — cross-check before implementing.
 
 When a new endpoint is added, update both the type file
 (`src/types/api.ts`) and this section.
-
----
-
-_Last updated: 2026-04-28_
