@@ -58,13 +58,12 @@ async function tryServe(res, filePath, status = 200) {
  * Resolve a request URL path to an absolute file path inside DIST_DIR_REAL,
  * or return null if the request escapes the root.
  *
- * Defence-in-depth checks: explicit `..` segment rejection, lexical
- * containment via `startsWith(DIST_DIR_REAL_PREFIX)`, and a realpath
- * containment re-check that catches symlink-based escapes. The `startsWith`
- * checks are inlined deliberately — CodeQL's `js/path-injection` query only
- * recognises a prefix-match guard as a barrier when it appears directly on
- * the tainted path expression; factoring it into a helper breaks barrier
- * detection.
+ * Pattern matches the canonical CodeQL `js/path-injection` sanitizer
+ * example: `realpath(path.resolve(ROOT, input))` followed by a single
+ * `result.startsWith(ROOT_WITH_SEP)` barrier. The root case is split out
+ * before any path operation so the unconditional barrier holds for every
+ * tainted-data path. Do not re-introduce the `&&` form — CodeQL's barrier
+ * detection misses combined conditions.
  */
 async function resolveSafePath(urlPath) {
   let decoded;
@@ -75,22 +74,23 @@ async function resolveSafePath(urlPath) {
   }
   if (decoded.includes('\0')) return null;
   if (decoded.split(/[/\\]/).some((seg) => seg === '..')) return null;
+  // Root / empty URL — serve the dist root itself; the server resolves it
+  // to index.html via the directory-index branch. Returned before the
+  // tainted string flows into any fs sink.
+  if (decoded === '/' || decoded === '') return DIST_DIR_REAL;
 
-  const lexical = resolve(join(DIST_DIR_REAL, decoded));
-  if (lexical !== DIST_DIR_REAL && !lexical.startsWith(DIST_DIR_REAL_PREFIX)) {
-    return null;
-  }
+  // Strip leading slashes so resolve() treats the input as relative to the
+  // dist root rather than the filesystem root.
+  const relativePath = decoded.replace(/^\/+/, '');
 
-  let real;
+  let candidate;
   try {
-    real = await realpath(lexical);
+    candidate = await realpath(resolve(DIST_DIR_REAL, relativePath));
   } catch {
     return null;
   }
-  if (real !== DIST_DIR_REAL && !real.startsWith(DIST_DIR_REAL_PREFIX)) {
-    return null;
-  }
-  return real;
+  if (!candidate.startsWith(DIST_DIR_REAL_PREFIX)) return null;
+  return candidate;
 }
 
 const server = createServer(async (req, res) => {
@@ -104,10 +104,10 @@ const server = createServer(async (req, res) => {
         const indexPath = join(candidate, 'index.html');
         // Re-validate after the directory-index join — the leaf is constant
         // ('index.html'), but we re-check the realpath to be safe against
-        // symlinks introduced under DIST_DIR. Inline `startsWith` for the
-        // same CodeQL barrier-recognition reason as in resolveSafePath.
+        // symlinks introduced under DIST_DIR. Single inline `startsWith`
+        // for the same CodeQL barrier-recognition reason as resolveSafePath.
         const realIndex = await realpath(indexPath);
-        if (realIndex === DIST_DIR_REAL || realIndex.startsWith(DIST_DIR_REAL_PREFIX)) {
+        if (realIndex.startsWith(DIST_DIR_REAL_PREFIX)) {
           await tryServe(res, realIndex);
           return;
         }
