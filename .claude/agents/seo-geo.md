@@ -32,7 +32,9 @@ within the CSR SPA constraint: the site must be explainable from
 ### Crawler directives (`public/`)
 - `robots.txt` — explicit allow for GPTBot, ClaudeBot, anthropic-ai,
   PerplexityBot, Google-Extended, Applebot-Extended.
-- `sitemap.xml` — single URL + `hreflang` alternates + dynamic `lastmod`.
+- `sitemap.xml` — one entry per prerendered route (`/`, `/game`,
+  `/game/fall-f`) with `hreflang` alternates and dynamic `lastmod`,
+  generated from `PAGE_META` in `scripts/prerender.mjs`.
 - `llms.txt` — Markdown summary for LLM crawlers (llmstxt.org format).
 
 ### Dynamic meta sync

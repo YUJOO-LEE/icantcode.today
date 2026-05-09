@@ -14,7 +14,7 @@
 - Vite's HMR is fast.
 
 Alternatives ruled out:
-- Next.js — needless complexity for a single-route app.
+- Next.js — overkill for a small set of prerendered routes.
 - Remix — over-engineered for this scope.
 - Astro — great for static content, but the feed is dynamic.
 
@@ -56,14 +56,13 @@ Alternatives ruled out:
 - Namespace-split translation files are easy to maintain.
 - Language detection + fallback.
 
-### 1.7 ~~React Router v7~~ — removed (2026-03-08)
+### 1.7 React Router v7
 
-Removed because:
-- Only a single route (`/`) is used; state-based conditional rendering is
-  enough.
-- Saves ~14 KB gzip.
-- If multi-route features (profile page) land later, reconsider. TanStack
-  Router is a viable alternative.
+- Each route in `PRERENDER_ROUTES` (`src/constants/routes.ts`) is
+  statically prerendered to its own `dist/<route>/index.html` via
+  `entry-server.tsx`.
+- The home page (`/`) uses state-based conditional rendering for the
+  landing ↔ feed swap based on `apiStatus`.
 
 ### 1.8 motion (formerly framer-motion)
 

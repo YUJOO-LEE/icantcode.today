@@ -1,8 +1,4 @@
-// Shared token-replacement logic used by:
-//   - scripts/prerender.mjs        (build-time per-route HTML)
-//   - vite.config.ts pageMeta plugin (dev/build source HTML defaults)
-//
-// Keeping it here as plain ESM lets both consumers import without a build step.
+// Token-replacement primitives shared by scripts/prerender.mjs and vite.config.ts.
 
 export const META_TOKENS = [
   'title',
@@ -79,12 +75,7 @@ function buildInner(token, head) {
   }
 }
 
-/**
- * Returns the full marker-wrapped block so the markers survive successive
- * passes — Vite plugin first (home defaults), then `scripts/prerender.mjs`
- * (per-route override). Without preserving markers, the second pass would
- * find nothing to replace.
- */
+// Output keeps the start/end markers so successive passes (vite plugin → prerender.mjs) can re-replace.
 export function buildBlock(token, head) {
   return `<!-- prerender:${token}:start -->${buildInner(token, head)}<!-- prerender:${token}:end -->`;
 }
@@ -94,8 +85,6 @@ export function applyHeadTokens(html, head) {
   for (const token of META_TOKENS) {
     out = out.replace(makeBlockPattern(token), buildBlock(token, head));
   }
-  // Single-marker slot for per-route JSON-LD. The marker is preserved on
-  // the line after the inserted content so prerender.mjs can replace again.
   out = out.replace(
     ROUTE_JSONLD_TOKEN,
     head.routeJsonLd ? `${head.routeJsonLd}\n    ${ROUTE_JSONLD_TOKEN}` : ROUTE_JSONLD_TOKEN,
