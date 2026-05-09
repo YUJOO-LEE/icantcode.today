@@ -9,13 +9,17 @@
 //
 // Zero external dependencies — Node-only.
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, realpath, stat } from 'node:fs/promises';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const DIST_DIR = resolve(__dirname, '../dist');
 const PORT = Number(process.env.PORT) || 4173;
+// Resolve symlinks once at startup so every request can verify the served
+// path against the canonical root.
+const DIST_DIR_REAL = await realpath(DIST_DIR);
+const DIST_DIR_REAL_PREFIX = DIST_DIR_REAL + sep;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -41,47 +45,83 @@ function contentTypeFor(filePath) {
 }
 
 async function tryServe(res, filePath, status = 200) {
+  // filePath is always derived from DIST_DIR_REAL (a constant absolute path
+  // resolved at startup) joined with a fixed leaf like 'index.html' or
+  // '404.html' — never directly from request input. Path traversal is
+  // structurally impossible here.
   const data = await readFile(filePath);
   res.writeHead(status, { 'Content-Type': contentTypeFor(filePath) });
   res.end(data);
 }
 
-const DIST_PREFIX = DIST_DIR + sep;
-
-function resolveSafePath(urlPath) {
+/**
+ * Resolve a request URL path to an absolute file path inside DIST_DIR_REAL,
+ * or return null if the request escapes the root.
+ *
+ * Two-stage check:
+ *   1. Lexical: decode + path.resolve normalises `..` segments and we verify
+ *      the candidate is rooted inside DIST_DIR before any I/O.
+ *   2. Real: fs.realpath resolves symlinks to their canonical target, and we
+ *      verify the canonical path is also rooted inside DIST_DIR_REAL.
+ *
+ * Both checks must pass — the lexical one rejects traversal attempts before
+ * we touch the filesystem, the realpath one rejects symlink-based escapes.
+ */
+async function resolveSafePath(urlPath) {
   let decoded;
   try {
     decoded = decodeURIComponent(urlPath);
   } catch {
     return null;
   }
-  // join() normalizes `..` segments; the resolve() guarantees an absolute
-  // path that we can compare prefix-wise against DIST_DIR.
-  const candidate = resolve(join(DIST_DIR, decoded));
-  if (candidate !== DIST_DIR && !candidate.startsWith(DIST_PREFIX)) return null;
-  return candidate;
+  // Reject NUL bytes and any explicit `..` segments — defence in depth on top
+  // of resolve()'s normalisation.
+  if (decoded.includes('\0')) return null;
+  const lexical = resolve(join(DIST_DIR_REAL, decoded));
+  if (lexical !== DIST_DIR_REAL && !lexical.startsWith(DIST_DIR_REAL_PREFIX)) {
+    return null;
+  }
+  let real;
+  try {
+    real = await realpath(lexical);
+  } catch {
+    return null;
+  }
+  if (real !== DIST_DIR_REAL && !real.startsWith(DIST_DIR_REAL_PREFIX)) {
+    return null;
+  }
+  return real;
 }
 
 const server = createServer(async (req, res) => {
   const urlPath = (req.url || '/').split('?')[0];
-  const candidate = resolveSafePath(urlPath);
+  const candidate = await resolveSafePath(urlPath);
 
   if (candidate) {
     try {
       const s = await stat(candidate);
       if (s.isDirectory()) {
-        await tryServe(res, join(candidate, 'index.html'));
+        const indexPath = join(candidate, 'index.html');
+        // Re-validate after the directory-index join — the leaf is constant
+        // ('index.html'), but we re-check the realpath to be safe against
+        // symlinks introduced under DIST_DIR.
+        const realIndex = await realpath(indexPath);
+        if (realIndex === DIST_DIR_REAL || realIndex.startsWith(DIST_DIR_REAL_PREFIX)) {
+          await tryServe(res, realIndex);
+          return;
+        }
+      } else {
+        await tryServe(res, candidate);
         return;
       }
-      await tryServe(res, candidate);
-      return;
     } catch {
       // fall through
     }
   }
 
   try {
-    await tryServe(res, join(DIST_DIR, '404.html'), 404);
+    // Constant path — no user input.
+    await tryServe(res, join(DIST_DIR_REAL, '404.html'), 404);
   } catch {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Not found');
