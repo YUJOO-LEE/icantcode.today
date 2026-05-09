@@ -1,6 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { createMemoryRouter } from 'react-router';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { routes as appRoutes } from '@/routes';
+import App from '../App';
 
 // Controllable HomePage mock — flip `mode` to exercise different App branches.
 const state = { mode: 'throw' as 'throw' | 'suspend' | 'ok' };
@@ -13,6 +16,11 @@ vi.mock('@/pages/HomePage', () => ({
   },
 }));
 
+function renderAppAt(path: string) {
+  const router = createMemoryRouter(appRoutes, { initialEntries: [path] });
+  return render(<App router={router} />);
+}
+
 describe('App ErrorBoundary', () => {
   let consoleError: ReturnType<typeof vi.spyOn>;
 
@@ -24,17 +32,15 @@ describe('App ErrorBoundary', () => {
     consoleError.mockRestore();
   });
 
-  it('renders ErrorFallback when a child throws', { timeout: 15000 }, async () => {
+  it('renders ErrorFallback when a child throws', { timeout: 15000 }, () => {
     state.mode = 'throw';
-    const { default: App } = await import('../App');
-    render(<App />);
+    renderAppAt('/');
     expect(screen.getByText(/오류가 발생했습니다/)).toBeInTheDocument();
   });
 
   it('recovers when retry is clicked', { timeout: 15000 }, async () => {
     state.mode = 'throw';
-    const { default: App } = await import('../App');
-    render(<App />);
+    renderAppAt('/');
     expect(screen.getByText(/오류가 발생했습니다/)).toBeInTheDocument();
 
     state.mode = 'ok';
@@ -45,10 +51,9 @@ describe('App ErrorBoundary', () => {
 });
 
 describe('App LoadingFallback', () => {
-  it('shows the loading fallback while a Suspense child is pending', { timeout: 15000 }, async () => {
+  it('shows the loading fallback while a Suspense child is pending', { timeout: 15000 }, () => {
     state.mode = 'suspend';
-    const { default: App } = await import('../App');
-    render(<App />);
+    renderAppAt('/');
     expect(screen.getByText(/loading/)).toBeInTheDocument();
   });
 });

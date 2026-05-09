@@ -59,8 +59,17 @@ Object.defineProperty(window, 'sessionStorage', {
   value: new MemoryStorage(),
 });
 
-// jsdom's navigator.language defaults to 'en-US', which makes i18n init to 'en'.
-// Tests are written against Korean strings, so force 'ko' for deterministic runs.
+// jsdom's navigator.language defaults to 'en-US', which makes i18n init to 'en'
+// AND triggers Layout's LanguageInitializer effect to swap to 'en' on mount.
+// Tests are written against Korean strings, so force ko-KR everywhere.
+Object.defineProperty(window.navigator, 'language', {
+  configurable: true,
+  value: 'ko-KR',
+});
+Object.defineProperty(window.navigator, 'languages', {
+  configurable: true,
+  value: ['ko-KR', 'ko'],
+});
 void i18n.changeLanguage('ko');
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));

@@ -1,12 +1,19 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
+import { createMemoryRouter } from 'react-router';
 import { server } from '@/tests/mocks/server';
 import { useStatusStore } from '@/stores/statusStore';
 import { queryClient } from '@/apis/queryClient';
+import { routes as appRoutes } from '@/routes';
 import App from './App';
 
 import { API_BASE_URL } from '@/lib/constants';
+
+function renderApp(path = '/') {
+  const router = createMemoryRouter(appRoutes, { initialEntries: [path] });
+  return render(<App router={router} />);
+}
 
 describe('App', () => {
   beforeEach(() => {
@@ -15,12 +22,12 @@ describe('App', () => {
   });
 
   it('renders app name in header', () => {
-    render(<App />);
+    renderApp();
     expect(screen.getAllByText(/icantcode\.today/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows checking view initially', () => {
-    render(<App />);
+    renderApp();
     expect(screen.getByText(/상태 확인 중/)).toBeInTheDocument();
   });
 
@@ -35,7 +42,7 @@ describe('App', () => {
       }),
     );
 
-    render(<App />);
+    renderApp();
     await waitFor(
       () => {
         expect(screen.getByText(/Claude Code API가 정상입니다/)).toBeInTheDocument();
@@ -55,14 +62,14 @@ describe('App', () => {
       }),
     );
 
-    render(<App />);
+    renderApp();
     await waitFor(() => {
       expect(screen.getByText('[ERR]')).toBeInTheDocument();
     });
   });
 
   it('has aria-live region for status announcements', () => {
-    render(<App />);
+    renderApp();
     const liveRegion = document.querySelector('[aria-live="polite"]');
     expect(liveRegion).toBeInTheDocument();
   });

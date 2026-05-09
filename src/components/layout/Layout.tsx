@@ -1,13 +1,12 @@
-import type { ReactNode } from 'react';
+import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Outlet } from 'react-router';
+import LanguageInitializer from '@/components/common/LanguageInitializer';
+import LoadingFallback from '@/components/common/LoadingFallback';
 import Header from './Header';
 import Footer from './Footer';
 
-interface LayoutProps {
-  children: ReactNode;
-}
-
-function Layout({ children }: LayoutProps) {
+function Layout() {
   const { t } = useTranslation('common');
 
   return (
@@ -20,7 +19,10 @@ function Layout({ children }: LayoutProps) {
       </a>
       <Header />
       <main id="main-content" className="mx-auto max-w-3xl px-4 py-6">
-        {children}
+        <Suspense fallback={<LoadingFallback />}>
+          <Outlet />
+          <LanguageInitializer />
+        </Suspense>
       </main>
       <Footer />
     </div>

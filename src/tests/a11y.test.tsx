@@ -2,6 +2,7 @@ import 'vitest-axe/extend-expect';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 import i18n from '@/lib/i18n';
@@ -31,49 +32,42 @@ function SimpleWrapper({ children }: { children: ReactNode }) {
   return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>;
 }
 
+function renderLayoutHarness() {
+  return render(
+    <MemoryRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="*" element={<p>content</p>} />
+        </Route>
+      </Routes>
+    </MemoryRouter>,
+    { wrapper: SimpleWrapper },
+  );
+}
+
 // --- Layout a11y ---
 describe('Layout accessibility', () => {
   it('has skip-to-content link', () => {
-    render(
-      <Layout>
-        <p>content</p>
-      </Layout>,
-      { wrapper: SimpleWrapper },
-    );
+    renderLayoutHarness();
     const skipLink = screen.getByText(/본문으로 건너뛰기|Skip to content/);
     expect(skipLink).toBeInTheDocument();
     expect(skipLink).toHaveAttribute('href', '#main-content');
   });
 
   it('has main landmark with id', () => {
-    render(
-      <Layout>
-        <p>content</p>
-      </Layout>,
-      { wrapper: SimpleWrapper },
-    );
+    renderLayoutHarness();
     const main = screen.getByRole('main');
     expect(main).toHaveAttribute('id', 'main-content');
   });
 
   it('has nav landmark', () => {
-    render(
-      <Layout>
-        <p>content</p>
-      </Layout>,
-      { wrapper: SimpleWrapper },
-    );
+    renderLayoutHarness();
     const nav = screen.getByRole('navigation');
     expect(nav).toHaveAttribute('aria-label');
   });
 
   it('passes axe automated checks', async () => {
-    const { container } = render(
-      <Layout>
-        <p>content</p>
-      </Layout>,
-      { wrapper: SimpleWrapper },
-    );
+    const { container } = renderLayoutHarness();
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });

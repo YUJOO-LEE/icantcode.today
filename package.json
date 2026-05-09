@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/generate-sitemap.mjs && tsc -b && vite build && node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/inject-cf-token.mjs && node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/inject-gtm.mjs",
+    "build": "tsc -b && vite build && vite build --ssr src/entry-server.tsx --outDir dist-server && node scripts/prerender.mjs && node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/inject-cf-token.mjs && node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/inject-gtm.mjs && node scripts/copy-404.mjs",
     "generate:og": "node scripts/generate-og.mjs",
     "preview": "vite preview",
     "test": "vitest",
@@ -25,6 +25,7 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-i18next": "^17.0.6",
+    "react-router": "^7.15.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

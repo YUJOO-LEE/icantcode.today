@@ -18,6 +18,9 @@
   "skipToContent": "Skip to content",
   "siteNav": "Site navigation",
   "githubLink": "Open GitHub repository in a new tab",
+  "siteNavGame": "GAME",
+  "siteNavHome": "HOME",
+  "siteNavBack": "BACK",
 
   "seo": {
     "titleNormal": "icantcode.today — Claude Code outage community",
