@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useDocumentMeta } from '../useDocumentMeta';
+import { PAGE_META, SITE_BASE_URL } from '@/constants/pageMeta';
 
 function getMeta(name: string): string {
   return (
@@ -10,91 +11,199 @@ function getMeta(name: string): string {
   );
 }
 
+function getCanonical(): string {
+  return document.querySelector('link[rel="canonical"]')?.getAttribute('href') ?? '';
+}
+
 describe('useDocumentMeta', () => {
   beforeEach(() => {
     document.title = '';
     document.documentElement.lang = '';
-    ['description', 'og:title', 'og:description'].forEach((key) => {
-      const selector = key.startsWith('og:')
-        ? `meta[property="${key}"]`
-        : `meta[name="${key}"]`;
-      document.querySelector(selector)?.remove();
-    });
+    document
+      .querySelectorAll(
+        [
+          'meta[name="description"]',
+          'meta[property="og:title"]',
+          'meta[property="og:description"]',
+          'meta[property="og:url"]',
+          'meta[property="og:locale"]',
+          'meta[property="og:locale:alternate"]',
+          'meta[name="twitter:title"]',
+          'meta[name="twitter:description"]',
+          'link[rel="canonical"]',
+          'link[rel="alternate"]',
+        ].join(','),
+      )
+      .forEach((el) => el.remove());
   });
 
-  describe('apiStatus=normal', () => {
-    it('ko: sets correct title and description', () => {
-      renderHook(() => useDocumentMeta({ apiStatus: 'normal', lang: 'ko' }));
+  describe('route=home, apiStatus=normal', () => {
+    it('ko: sets brand title and Korean+English description', () => {
+      renderHook(() => useDocumentMeta({ route: 'home', lang: 'ko', apiStatus: 'normal' }));
       expect(document.title).toContain('icantcode.today');
       expect(document.title).not.toContain('[DOWN]');
       expect(document.title).not.toContain('[...]');
       expect(getMeta('description')).toContain('Claude Code');
+      expect(getMeta('og:url')).toBe(`${SITE_BASE_URL}/`);
+      expect(getCanonical()).toBe(`${SITE_BASE_URL}/`);
+      expect(getMeta('og:locale')).toBe('ko_KR');
     });
 
-    it('en: sets English description', () => {
-      renderHook(() => useDocumentMeta({ apiStatus: 'normal', lang: 'en' }));
+    it('en: sets English description and en_US locale', () => {
+      renderHook(() => useDocumentMeta({ route: 'home', lang: 'en', apiStatus: 'normal' }));
       expect(document.title).toContain('icantcode.today');
-      expect(getMeta('description')).toMatch(/developer community/i);
+      expect(getMeta('description')).toMatch(/devs|Claude Code|terminal/i);
+      expect(getMeta('og:locale')).toBe('en_US');
     });
   });
 
-  describe('apiStatus=checking', () => {
-    it('ko: title contains checking indicator', () => {
-      renderHook(() => useDocumentMeta({ apiStatus: 'checking', lang: 'ko' }));
+  describe('route=home, apiStatus=checking overlay', () => {
+    it('ko: title contains [...]', () => {
+      renderHook(() => useDocumentMeta({ route: 'home', lang: 'ko', apiStatus: 'checking' }));
       expect(document.title).toContain('[...]');
+      expect(getMeta('description')).toMatch(/확인하는 중|살아 있는지/);
     });
 
-    it('en: title contains checking indicator', () => {
-      renderHook(() => useDocumentMeta({ apiStatus: 'checking', lang: 'en' }));
+    it('en: title contains [...]', () => {
+      renderHook(() => useDocumentMeta({ route: 'home', lang: 'en', apiStatus: 'checking' }));
       expect(document.title).toContain('[...]');
     });
   });
 
-  describe('apiStatus=down', () => {
-    it('ko: title contains [DOWN]', () => {
-      renderHook(() => useDocumentMeta({ apiStatus: 'down', lang: 'ko' }));
+  describe('route=home, apiStatus=down overlay', () => {
+    it('ko: title contains [DOWN] and description mentions outage', () => {
+      renderHook(() => useDocumentMeta({ route: 'home', lang: 'ko', apiStatus: 'down' }));
       expect(document.title).toContain('[DOWN]');
+      expect(getMeta('description')).toMatch(/장애|down/i);
     });
 
     it('en: title contains [DOWN]', () => {
-      renderHook(() => useDocumentMeta({ apiStatus: 'down', lang: 'en' }));
+      renderHook(() => useDocumentMeta({ route: 'home', lang: 'en', apiStatus: 'down' }));
       expect(document.title).toContain('[DOWN]');
     });
+  });
 
-    it('ko: description mentions outage', () => {
-      renderHook(() => useDocumentMeta({ apiStatus: 'down', lang: 'ko' }));
-      expect(getMeta('description')).toMatch(/장애|down/i);
+  describe('route=game (catalog)', () => {
+    it('ko: title is route-distinct and canonical points at /game', () => {
+      renderHook(() => useDocumentMeta({ route: 'game', lang: 'ko' }));
+      expect(document.title).toMatch(/Mini Games/i);
+      expect(getMeta('description')).toContain('터미널');
+      expect(getMeta('og:url')).toBe(`${SITE_BASE_URL}/game`);
+      expect(getCanonical()).toBe(`${SITE_BASE_URL}/game`);
+    });
+
+    it('en: title mentions Mini Games', () => {
+      renderHook(() => useDocumentMeta({ route: 'game', lang: 'en' }));
+      expect(document.title).toMatch(/mini games/i);
+      expect(getMeta('og:locale')).toBe('en_US');
+    });
+
+    it('apiStatus is ignored for non-home route — fall-through to byLang copy', () => {
+      renderHook(() => useDocumentMeta({ route: 'game', lang: 'ko', apiStatus: 'down' }));
+      expect(document.title).not.toContain('[DOWN]');
+      expect(document.title).toMatch(/Mini Games/i);
+    });
+  });
+
+  describe('route=gameFallF', () => {
+    it('ko: title contains fall-f and canonical points at /game/fall-f', () => {
+      renderHook(() => useDocumentMeta({ route: 'gameFallF', lang: 'ko' }));
+      expect(document.title).toContain('fall-f');
+      expect(getMeta('og:url')).toBe(`${SITE_BASE_URL}/game/fall-f`);
+      expect(getCanonical()).toBe(`${SITE_BASE_URL}/game/fall-f`);
+    });
+
+    it('en: title frames the game as a falling cursor', () => {
+      renderHook(() => useDocumentMeta({ route: 'gameFallF', lang: 'en' }));
+      expect(document.title).toContain('fall-f');
+      expect(document.title.toLowerCase()).toMatch(/cursor.*terminal|terminal.*cursor/);
+    });
+
+    it('apiStatus is ignored for non-home route', () => {
+      renderHook(() =>
+        useDocumentMeta({ route: 'gameFallF', lang: 'en', apiStatus: 'checking' }),
+      );
+      expect(document.title).not.toContain('[...]');
+      expect(document.title).toContain('fall-f');
     });
   });
 
   describe('html[lang] sync', () => {
     it('sets html lang to ko', () => {
-      renderHook(() => useDocumentMeta({ apiStatus: 'normal', lang: 'ko' }));
+      renderHook(() => useDocumentMeta({ route: 'home', lang: 'ko', apiStatus: 'normal' }));
       expect(document.documentElement.lang).toBe('ko');
     });
 
     it('sets html lang to en', () => {
-      renderHook(() => useDocumentMeta({ apiStatus: 'normal', lang: 'en' }));
+      renderHook(() => useDocumentMeta({ route: 'gameFallF', lang: 'en' }));
       expect(document.documentElement.lang).toBe('en');
     });
   });
 
-  describe('og meta tags', () => {
-    it('syncs og:title on status change', () => {
-      type ApiStatus = 'normal' | 'checking' | 'down';
-      type Lang = 'ko' | 'en';
+  describe('og + twitter mirror copy', () => {
+    it('og:title and twitter:title share the same value as document.title (or ogTitle override)', () => {
+      renderHook(() => useDocumentMeta({ route: 'gameFallF', lang: 'en' }));
+      const expected = PAGE_META.gameFallF.byLang.en.ogTitle ?? PAGE_META.gameFallF.byLang.en.title;
+      expect(getMeta('og:title')).toBe(expected);
+      expect(getMeta('twitter:title')).toBe(expected);
+    });
+
+    it('og:title swaps when route changes', () => {
       const { rerender } = renderHook(
-        ({ apiStatus, lang }: { apiStatus: ApiStatus; lang: Lang }) =>
-          useDocumentMeta({ apiStatus, lang }),
-        { initialProps: { apiStatus: 'normal' as ApiStatus, lang: 'ko' as Lang } }
+        ({ route }: { route: 'home' | 'gameFallF' }) =>
+          useDocumentMeta({ route, lang: 'ko', apiStatus: 'normal' }),
+        { initialProps: { route: 'home' } },
       );
-      const normalTitle = getMeta('og:title');
+      const homeOg = getMeta('og:title');
+      rerender({ route: 'gameFallF' });
+      const fallFOg = getMeta('og:title');
+      expect(homeOg).not.toBe(fallFOg);
+      expect(fallFOg).toContain('fall-f');
+    });
+  });
 
-      rerender({ apiStatus: 'down', lang: 'ko' });
-      const downTitle = getMeta('og:title');
+  describe('og:locale:alternate', () => {
+    it('ko: og:locale=ko_KR and og:locale:alternate=en_US', () => {
+      renderHook(() => useDocumentMeta({ route: 'home', lang: 'ko', apiStatus: 'normal' }));
+      expect(getMeta('og:locale')).toBe('ko_KR');
+      expect(getMeta('og:locale:alternate')).toBe('en_US');
+    });
 
-      expect(normalTitle).not.toBe(downTitle);
-      expect(downTitle).toContain('[DOWN]');
+    it('en: og:locale=en_US and og:locale:alternate=ko_KR', () => {
+      renderHook(() => useDocumentMeta({ route: 'gameFallF', lang: 'en' }));
+      expect(getMeta('og:locale')).toBe('en_US');
+      expect(getMeta('og:locale:alternate')).toBe('ko_KR');
+    });
+  });
+
+  describe('hreflang link sync', () => {
+    function getAlternate(hreflang: string): string {
+      return (
+        document
+          .querySelector(`link[rel="alternate"][hreflang="${hreflang}"]`)
+          ?.getAttribute('href') ?? ''
+      );
+    }
+
+    it('all three hreflang links point at the current canonical', () => {
+      renderHook(() => useDocumentMeta({ route: 'gameFallF', lang: 'en' }));
+      const expected = `${SITE_BASE_URL}/game/fall-f`;
+      expect(getAlternate('ko')).toBe(expected);
+      expect(getAlternate('en')).toBe(expected);
+      expect(getAlternate('x-default')).toBe(expected);
+    });
+
+    it('hreflang updates when route changes', () => {
+      const { rerender } = renderHook(
+        ({ route }: { route: 'home' | 'game' }) =>
+          useDocumentMeta({ route, lang: 'ko', apiStatus: 'normal' }),
+        { initialProps: { route: 'home' } },
+      );
+      expect(getAlternate('ko')).toBe(`${SITE_BASE_URL}/`);
+      rerender({ route: 'game' });
+      expect(getAlternate('ko')).toBe(`${SITE_BASE_URL}/game`);
+      expect(getAlternate('en')).toBe(`${SITE_BASE_URL}/game`);
+      expect(getAlternate('x-default')).toBe(`${SITE_BASE_URL}/game`);
     });
   });
 });

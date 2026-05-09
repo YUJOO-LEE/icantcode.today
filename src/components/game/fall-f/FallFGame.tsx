@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ROUTES } from '@/constants/routes';
+import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import InitialScreen from './InitialScreen';
 import ResultScreen from './ResultScreen';
@@ -30,6 +32,9 @@ function viewportFromWidth(widthPx: number): Viewport {
 }
 
 function FallFGame() {
+  const { i18n } = useTranslation();
+  useDocumentMeta({ route: 'gameFallF', lang: i18n.language === 'en' ? 'en' : 'ko' });
+
   const [searchParams] = useSearchParams();
   const seedRaw = searchParams.get('seed');
   const seed = seedRaw !== null && /^\d+$/.test(seedRaw) ? Number(seedRaw) : null;

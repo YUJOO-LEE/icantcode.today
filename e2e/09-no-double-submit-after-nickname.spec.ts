@@ -1,18 +1,15 @@
 import { test, expect, stubApi, buildPost } from './helpers/api';
 
 /**
- * Regression coverage for the duplicate-submit bug.
- *
- * Before the fix: submitting a post or comment without a nickname would queue
- * the action via a stale closure and remount the composer's input with
- * `autoFocus`. Confirming the inline nickname prompt fired the mutation, then
- * Enter key-repeat (or focus chain artefacts) landed on the freshly remounted
- * input and triggered a second `mutate` call. The user would see one item
- * registered server-side AND a "submission failed" error toast.
- *
- * After the fix: the composer's input stays mounted for the entire prompt
- * lifecycle, the deferred submission runs through a ref instead of a captured
- * closure, and the prompt-complete callback fires the mutation exactly once.
+ * Invariants verified end-to-end:
+ *  - Confirming the inline nickname prompt fires the create-post / create-comment
+ *    mutation exactly once.
+ *  - The composer's input stays mounted for the entire prompt lifecycle so
+ *    autoFocus + Enter key-repeat on a remounted input can't trigger a second
+ *    `mutate`.
+ *  - The deferred submission runs through a ref, not a captured closure, so
+ *    the in-flight value is stable across the prompt.
+ *  - No "submission failed" alert appears when the POST actually succeeded.
  */
 
 test('post: confirming the inline nickname prompt fires create-post exactly once and surfaces no error', async ({ page }) => {
@@ -84,9 +81,9 @@ test('comment: confirming the inline nickname prompt fires create-comment exactl
   await nicknameInput.press('Enter');
 
   await expect(page.getByText('regression comment')).toBeVisible();
-  // No phantom error must appear: previously the mutation-level onSuccess
-  // crashed inside `setQueriesData` (wrong cache shape), forcing a successful
-  // POST into the mutate-call-level onError path.
+  // No phantom error: the mutation-level `onSuccess` updater must handle
+  // both `['posts']` cache shapes so a successful POST never bubbles into
+  // the mutate-call-level `onError` path via a `setQueriesData` crash.
   await expect(page.getByRole('alert')).toHaveCount(0);
 
   await page.waitForTimeout(200);

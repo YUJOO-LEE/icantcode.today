@@ -42,9 +42,11 @@ Owns WCAG 2.1 AA compliance, keyboard navigation, and screen-reader support.
   - Transitions → minimized or removed.
 - No autoplaying content.
 
-### State transitions (single-route SPA, no router)
+### State transitions (landing ↔ feed on `/`)
 - On API status changes (landing ↔ feed), move focus to the main region.
 - Announce loading/error states to assistive tech.
+- Game routes (`/game`, `/game/fall-f`) use React Router; on navigation,
+  ensure focus moves to the main region of the new page.
 
 ## Tooling
 

@@ -1,12 +1,16 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import {
+  ROOT_SLOT,
+  applyHeadTokens,
+  assertTokensPresent,
+} from './prerenderTokens.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = resolve(__dirname, '../dist');
 const distServerDir = resolve(__dirname, '../dist-server');
 const serverEntry = resolve(distServerDir, 'entry-server.js');
-const SITE_BASE_URL = 'https://icantcode.today';
 
 function routeToOutputPath(route) {
   if (route === '/') return resolve(distDir, 'index.html');
@@ -16,18 +20,21 @@ function routeToOutputPath(route) {
 
 async function main() {
   const template = await readFile(resolve(distDir, 'index.html'), 'utf-8');
-  const { renderRoute, PRERENDER_ROUTES } = await import(pathToFileURL(serverEntry).href);
-
-  const ROOT_SLOT = '<div id="root"></div>';
+  assertTokensPresent(template);
   if (!template.includes(ROOT_SLOT)) {
     throw new Error(
       `prerender: ${ROOT_SLOT} slot not found in dist/index.html — Vite output may have changed`,
     );
   }
 
+  const { renderRoute, PRERENDER_ROUTES, PAGE_META, ROUTE_BY_PATH, SITE_BASE_URL } =
+    await import(pathToFileURL(serverEntry).href);
+
   for (const route of PRERENDER_ROUTES) {
-    const { html } = await renderRoute(route);
-    const out = template.replace(ROOT_SLOT, `<div id="root">${html}</div>`);
+    const { html, head } = await renderRoute(route);
+    let out = template.replace(ROOT_SLOT, `<div id="root">${html}</div>`);
+    out = applyHeadTokens(out, head);
+
     const outPath = routeToOutputPath(route);
     await mkdir(dirname(outPath), { recursive: true });
     await writeFile(outPath, out, 'utf-8');
@@ -36,12 +43,14 @@ async function main() {
 
   const lastmod = new Date().toISOString().split('T')[0];
   const urls = PRERENDER_ROUTES.map((route) => {
+    const routeKey = ROUTE_BY_PATH[route];
+    const meta = PAGE_META[routeKey];
     const loc = `${SITE_BASE_URL}${route === '/' ? '/' : route}`;
     return `  <url>
     <loc>${loc}</loc>
     <lastmod>${lastmod}</lastmod>
-    <changefreq>${route === '/' ? 'daily' : 'weekly'}</changefreq>
-    <priority>${route === '/' ? '1.0' : '0.7'}</priority>
+    <changefreq>${meta.changefreq}</changefreq>
+    <priority>${meta.priority.toFixed(1)}</priority>
     <xhtml:link rel="alternate" hreflang="ko" href="${loc}"/>
     <xhtml:link rel="alternate" hreflang="en" href="${loc}"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="${loc}"/>

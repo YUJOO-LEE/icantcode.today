@@ -54,7 +54,7 @@ function renderBootstrapError(err: unknown) {
   console.error('App bootstrap failed:', err);
   const rootEl = document.getElementById('root');
   if (!rootEl) return;
-  // Discard any partial server-rendered DOM — hydration is no longer viable.
+  // Discard any partial server-rendered DOM so we can mount the error fallback fresh.
   rootEl.innerHTML = '';
   const error = err instanceof Error ? err : new Error(String(err));
   ReactDOM.createRoot(rootEl).render(

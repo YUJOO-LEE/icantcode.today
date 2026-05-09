@@ -146,6 +146,42 @@ jobs:
           test -f dist/site.webmanifest || (echo "FAIL: site.webmanifest missing" && exit 1)
           grep -q 'robots.txt' dist/ -r || test -f dist/robots.txt || (echo "FAIL: robots.txt missing" && exit 1)
           grep -q 'sitemap.xml' dist/ -r || test -f dist/sitemap.xml || (echo "FAIL: sitemap.xml missing" && exit 1)
+
+          echo "Checking per-route prerendered HTML..."
+          test -f dist/game/index.html || (echo "FAIL: dist/game/index.html missing" && exit 1)
+          test -f dist/game/fall-f/index.html || (echo "FAIL: dist/game/fall-f/index.html missing" && exit 1)
+
+          # Each route must have its own canonical pointing at itself.
+          grep -q 'rel="canonical" href="https://icantcode.today/"' dist/index.html \
+            || (echo "FAIL: home canonical wrong" && exit 1)
+          grep -q 'rel="canonical" href="https://icantcode.today/game"' dist/game/index.html \
+            || (echo "FAIL: /game canonical wrong" && exit 1)
+          grep -q 'rel="canonical" href="https://icantcode.today/game/fall-f"' dist/game/fall-f/index.html \
+            || (echo "FAIL: /game/fall-f canonical wrong" && exit 1)
+
+          # Per-route JSON-LD additions land in the correct files only.
+          grep -q '"@type": "BreadcrumbList"' dist/game/index.html \
+            || (echo "FAIL: BreadcrumbList missing on /game" && exit 1)
+          grep -q '"@type": "VideoGame"' dist/game/fall-f/index.html \
+            || (echo "FAIL: VideoGame missing on /game/fall-f" && exit 1)
+          grep -q '"@type": "BreadcrumbList"' dist/game/fall-f/index.html \
+            || (echo "FAIL: BreadcrumbList missing on /game/fall-f" && exit 1)
+          ! grep -q '"@type": "BreadcrumbList"' dist/index.html \
+            || (echo "FAIL: BreadcrumbList should not appear on home" && exit 1)
+          ! grep -q '"@type": "VideoGame"' dist/index.html \
+            || (echo "FAIL: VideoGame should not appear on home" && exit 1)
+
+          # Sanity: titles must be route-distinct (no two routes share the same <title>).
+          home_title=$(grep -oE '<title>[^<]+</title>' dist/index.html | head -1)
+          game_title=$(grep -oE '<title>[^<]+</title>' dist/game/index.html | head -1)
+          fallf_title=$(grep -oE '<title>[^<]+</title>' dist/game/fall-f/index.html | head -1)
+          test "$home_title" != "$game_title" \
+            || (echo "FAIL: home and /game share the same <title>" && exit 1)
+          test "$game_title" != "$fallf_title" \
+            || (echo "FAIL: /game and /game/fall-f share the same <title>" && exit 1)
+          test "$home_title" != "$fallf_title" \
+            || (echo "FAIL: home and /game/fall-f share the same <title>" && exit 1)
+
           echo "✓ All SEO checks passed"
 
       - uses: actions/upload-pages-artifact@v5

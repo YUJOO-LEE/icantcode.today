@@ -16,15 +16,15 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-    "types": ["node"],
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "types": ["node"]
   },
   "include": [
     "vite.config.ts",
     "vitest.config.ts",
     "playwright.config.ts",
-    "e2e/**/*.ts"
+    "e2e/**/*.ts",
+    "scripts/prerenderTokens.d.mts",
+    "src/constants/pageMeta.ts",
+    "src/constants/routes.ts"
   ]
 }

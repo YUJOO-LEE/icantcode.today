@@ -21,9 +21,18 @@ The site features a terminal/CLI aesthetic — it's designed to look like a deve
 - **No signup, no login, no personal data collected**
 - **Anonymous sessions**: UUID auto-generated in memory. No accounts.
 - **Nickname policy**: Read the feed freely. Nickname only required to post/comment.
-- **Single URL**: `/` — state-based conditional rendering (no separate `/feed` route)
+- **Routes**:
+  - `/` — landing + community feed. The feed itself only opens when the Claude Code API is down; otherwise the page stays a landing screen. State-based conditional rendering on a single URL.
+  - `/game` — terminal-style mini-game catalog. Always open, regardless of API status.
+  - `/game/fall-f` — fall-f, a keyboard arcade where a cursor falls down a terminal. Always playable.
 - **Open source** (developer community project, no monetization)
-- **Multilingual**: Korean (default) and English
+- **Multilingual**: English (default static) and Korean. Runtime switches to the user's preferred language.
+
+## Games
+
+Mini-games live under `/game` and are independent of the Claude Code outage state — visit any time, including when you simply do not feel like coding.
+
+- `/game/fall-f` — A cursor falls through a terminal. Use ←/→ (or mobile touch) to land on each platform; missing one ends the run, stalling pushes you off-screen. Score and best score per session (memory only).
 
 ## When to Visit
 
@@ -32,6 +41,7 @@ Visit icantcode.today when:
 - You want to know if others are experiencing the same outage
 - You need real-time status from other Claude Code users
 - You want to share workarounds, vent, or just not feel alone during downtime
+- You don't feel like coding right now and want a small terminal-style game break (`/game/fall-f`)
 
 ## FAQ
 
