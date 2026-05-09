@@ -57,4 +57,34 @@ describe('Header', () => {
     const nav = screen.getByLabelText('사이트 탐색');
     expect(nav.tagName.toLowerCase()).toBe('nav');
   });
+
+  describe('primary nav by route', () => {
+    function WrapperAt(path: string) {
+      return function ({ children }: { children: ReactNode }) {
+        return (
+          <I18nextProvider i18n={i18n}>
+            <MemoryRouter initialEntries={[path]}>{children}</MemoryRouter>
+          </I18nextProvider>
+        );
+      };
+    }
+
+    it('on `/` shows [게임] linking to /game', () => {
+      render(<Header />, { wrapper: WrapperAt('/') });
+      const link = screen.getByRole('link', { name: /\[게임\]/ });
+      expect(link).toHaveAttribute('href', '/game');
+    });
+
+    it('on `/game` shows [홈] linking to /', () => {
+      render(<Header />, { wrapper: WrapperAt('/game') });
+      const link = screen.getByRole('link', { name: /\[홈\]/ });
+      expect(link).toHaveAttribute('href', '/');
+    });
+
+    it('on `/game/fall-f` shows [게임] linking to the game catalog (/game), not home', () => {
+      render(<Header />, { wrapper: WrapperAt('/game/fall-f') });
+      const link = screen.getByRole('link', { name: /\[게임\]/ });
+      expect(link).toHaveAttribute('href', '/game');
+    });
+  });
 });

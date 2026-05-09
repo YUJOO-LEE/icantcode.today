@@ -23,9 +23,14 @@ function Header() {
 
   const username = nickname || 'guest';
 
-  const inGameRoute = pathname === ROUTES.GAME || pathname.startsWith(`${ROUTES.GAME}/`);
-  const primaryNavTo = inGameRoute ? ROUTES.HOME : ROUTES.GAME;
-  const primaryNavKey = inGameRoute ? 'siteNavBack' : 'siteNavGame';
+  const inGameSubroute = pathname.startsWith(`${ROUTES.GAME}/`);
+  const inGameRoute = pathname === ROUTES.GAME || inGameSubroute;
+  const primaryNavTo = inGameSubroute
+    ? ROUTES.GAME
+    : inGameRoute
+      ? ROUTES.HOME
+      : ROUTES.GAME;
+  const primaryNavKey = primaryNavTo === ROUTES.HOME ? 'siteNavHome' : 'siteNavGame';
 
   return (
     <header className="border-b border-border">
