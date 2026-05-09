@@ -30,6 +30,19 @@ describe('renderLine', () => {
     expect(renderLine(line, 1, 5)).toBe('go...');
   });
 
+  it('fill-right: returns initial unchanged when total length ≤ 2', () => {
+    const line: FillRightLine = {
+      kind: 'fill-right',
+      initial: '[]',
+      periodSec: 2,
+      filled: '█',
+      empty: '░',
+    };
+    expect(renderLine(line, 0)).toBe('[]');
+    expect(renderLine(line, 1)).toBe('[]');
+    expect(renderLine(line, 5)).toBe('[]');
+  });
+
   it('fill-right: starts full and triangle-waves down then up', () => {
     const line: FillRightLine = {
       kind: 'fill-right',

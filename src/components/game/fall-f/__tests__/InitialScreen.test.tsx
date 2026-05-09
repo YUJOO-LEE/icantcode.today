@@ -39,4 +39,34 @@ describe('InitialScreen', () => {
     fireEvent.keyDown(window, { key: 'Enter' });
     expect(onStart).toHaveBeenCalledOnce();
   });
+
+  it('ignores non-Enter keys', () => {
+    const { onStart } = renderScreen();
+    fireEvent.keyDown(window, { key: 'a' });
+    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onStart).not.toHaveBeenCalled();
+  });
+
+  it('renders the mobile $ start button when pointer is coarse', () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = ((q: string) => ({
+      matches: q === '(pointer: coarse)',
+      media: q,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+    try {
+      const { onStart } = renderScreen();
+      const button = screen.getByRole('button');
+      fireEvent.click(button);
+      expect(onStart).toHaveBeenCalledOnce();
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
 });

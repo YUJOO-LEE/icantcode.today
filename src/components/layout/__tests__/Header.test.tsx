@@ -17,6 +17,14 @@ function Wrapper({ children }: { children: ReactNode }) {
   );
 }
 
+function GameRouteWrapper({ children }: { children: ReactNode }) {
+  return (
+    <I18nextProvider i18n={i18n}>
+      <MemoryRouter initialEntries={['/game']}>{children}</MemoryRouter>
+    </I18nextProvider>
+  );
+}
+
 describe('Header', () => {
   beforeEach(() => {
     useSessionStore.setState({ userCode: crypto.randomUUID(), nickname: null });
@@ -56,5 +64,17 @@ describe('Header', () => {
     render(<Header />, { wrapper: Wrapper });
     const nav = screen.getByLabelText('사이트 탐색');
     expect(nav.tagName.toLowerCase()).toBe('nav');
+  });
+
+  it('shows the [게임] primary nav link on the home route', () => {
+    render(<Header />, { wrapper: Wrapper });
+    const link = screen.getByRole('link', { name: '[게임]' });
+    expect(link).toHaveAttribute('href', '/game');
+  });
+
+  it('swaps the primary nav to [뒤로] → / when on a /game route', () => {
+    render(<Header />, { wrapper: GameRouteWrapper });
+    const link = screen.getByRole('link', { name: '[뒤로]' });
+    expect(link).toHaveAttribute('href', '/');
   });
 });

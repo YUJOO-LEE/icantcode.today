@@ -79,10 +79,22 @@ describe('applyHorizontal', () => {
 });
 
 describe('autoSlide', () => {
-  it('pulls player back inside the segment', () => {
+  it('pulls player back inside the segment from the right edge', () => {
     const player = makePlayer({ x: 12 });
     const segment = { startX: 0, endX: 8 };
     expect(autoSlide(player, segment).x).toBe(8);
+  });
+
+  it('pulls player back inside the segment from the left edge', () => {
+    const player = makePlayer({ x: 1 });
+    const segment = { startX: 5, endX: 10 };
+    expect(autoSlide(player, segment).x).toBe(5);
+  });
+
+  it('returns the same player when already inside the segment', () => {
+    const player = makePlayer({ x: 6 });
+    const segment = { startX: 5, endX: 10 };
+    expect(autoSlide(player, segment)).toBe(player);
   });
 });
 
