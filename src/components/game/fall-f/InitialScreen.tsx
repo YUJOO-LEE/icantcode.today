@@ -58,12 +58,17 @@ function InitialScreen({ best, hasBest, onStart }: InitialScreenProps) {
           <button
             type="button"
             onClick={onStart}
+            aria-label={t('start.mobile')}
             className="text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
           >
-            $ {t('start.mobile')}
+            <span aria-hidden="true">$ </span>
+            {t('start.mobile')}
           </button>
         ) : (
-          <span className="text-muted-foreground">$ {t('start.desktop')}</span>
+          <span className="text-muted-foreground">
+            <span aria-hidden="true">$ </span>
+            {t('start.desktop')}
+          </span>
         )}
       </p>
     </section>

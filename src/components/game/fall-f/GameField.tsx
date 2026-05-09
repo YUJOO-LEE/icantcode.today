@@ -6,6 +6,7 @@ import {
   ROW_HEIGHT_PX,
 } from './constants';
 import Player from './Player';
+import { GAP_GROUP_ID } from './gameState';
 import type { GameState } from './types';
 
 interface GameFieldProps {
@@ -45,7 +46,7 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
       />
 
       <div
-        aria-live="polite"
+        aria-hidden="true"
         className="absolute right-1 top-0 px-1 text-[10px] text-muted-foreground bg-background/70"
         style={{ height: `${ROW_HEIGHT_PX}px`, lineHeight: `${ROW_HEIGHT_PX}px` }}
       >
@@ -70,7 +71,7 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
             </div>
           )}
           <div
-            className={row.groupId === '__gap' ? '' : 'whitespace-pre text-foreground/90'}
+            className={row.groupId === GAP_GROUP_ID ? '' : 'whitespace-pre text-foreground/90'}
             style={{
               position: 'absolute',
               top: `${row.topRow * ROW_HEIGHT_PX}px`,

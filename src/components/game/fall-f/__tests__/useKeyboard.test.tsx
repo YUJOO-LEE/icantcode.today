@@ -97,6 +97,21 @@ describe('useKeyboard', () => {
     expect(press('a')).not.toHaveBeenCalled();
   });
 
+  it('clears held keys to "none" on window blur', () => {
+    renderHook(() => useKeyboard({ enabled: true, onInput, onStart }));
+    press('ArrowLeft');
+    expect(onInput).toHaveBeenLastCalledWith('left');
+    onInput.mockClear();
+    window.dispatchEvent(new Event('blur'));
+    expect(onInput).toHaveBeenLastCalledWith('none');
+  });
+
+  it('does not emit on blur if no key was held', () => {
+    renderHook(() => useKeyboard({ enabled: true, onInput, onStart }));
+    window.dispatchEvent(new Event('blur'));
+    expect(onInput).not.toHaveBeenCalled();
+  });
+
   it('detaches listeners when enabled flips to false', () => {
     const { rerender } = renderHook(
       ({ enabled }: { enabled: boolean }) =>
