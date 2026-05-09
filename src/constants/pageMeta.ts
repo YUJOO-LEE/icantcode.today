@@ -170,11 +170,12 @@ export const PAGE_META: Record<RouteKey, RouteMeta> = {
   },
 };
 
-export const ROUTE_BY_PATH: Record<string, RouteKey> = {
-  [ROUTES.HOME]: 'home',
-  [ROUTES.GAME]: 'game',
-  [ROUTES.GAME_FALL_F]: 'gameFallF',
-};
+export const ROUTE_BY_PATH: Record<string, RouteKey> = Object.fromEntries(
+  (Object.entries(PAGE_META) as [RouteKey, RouteMeta][]).map(([key, meta]) => [
+    meta.path,
+    key,
+  ]),
+);
 
 export interface ResolvedHead {
   title: string;
@@ -219,5 +220,10 @@ export function resolveHead(
 
 export function serializeRouteJsonLd(routeJsonLd: JsonLd[] | null): string {
   if (!routeJsonLd || routeJsonLd.length === 0) return '';
-  return `<script type="application/ld+json">\n${JSON.stringify(routeJsonLd, null, 2)}\n    </script>`;
+  // Escape `<` and `-->` so a future dynamic value can't break out of the
+  // surrounding `<script>` tag (e.g. via `</script>` or an HTML comment close).
+  const json = JSON.stringify(routeJsonLd, null, 2)
+    .replace(/</g, '\\u003c')
+    .replace(/-->/g, '--\\u003e');
+  return `<script type="application/ld+json">\n${json}\n    </script>`;
 }
