@@ -10,7 +10,7 @@
 // Zero external dependencies — Node-only.
 import { createServer } from 'node:http';
 import { readFile, realpath, stat } from 'node:fs/promises';
-import { extname, join, resolve, sep } from 'node:path';
+import { extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -19,7 +19,6 @@ const PORT = Number(process.env.PORT) || 4173;
 // Resolve symlinks once at startup so every request can verify the served
 // path against the canonical root.
 const DIST_DIR_REAL = await realpath(DIST_DIR);
-const DIST_DIR_REAL_PREFIX = DIST_DIR_REAL + sep;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -54,18 +53,19 @@ async function tryServe(res, filePath, status = 200) {
   res.end(data);
 }
 
+function isInsideRoot(p) {
+  if (p === DIST_DIR_REAL) return true;
+  const rel = relative(DIST_DIR_REAL, p);
+  return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel);
+}
+
 /**
  * Resolve a request URL path to an absolute file path inside DIST_DIR_REAL,
  * or return null if the request escapes the root.
  *
- * Two-stage check:
- *   1. Lexical: decode + path.resolve normalises `..` segments and we verify
- *      the candidate is rooted inside DIST_DIR before any I/O.
- *   2. Real: fs.realpath resolves symlinks to their canonical target, and we
- *      verify the canonical path is also rooted inside DIST_DIR_REAL.
- *
- * Both checks must pass — the lexical one rejects traversal attempts before
- * we touch the filesystem, the realpath one rejects symlink-based escapes.
+ * Defence-in-depth checks: explicit `..` segment rejection, lexical
+ * containment via path.relative, and a realpath containment re-check that
+ * catches symlink-based escapes.
  */
 async function resolveSafePath(urlPath) {
   let decoded;
@@ -74,22 +74,19 @@ async function resolveSafePath(urlPath) {
   } catch {
     return null;
   }
-  // Reject NUL bytes and any explicit `..` segments — defence in depth on top
-  // of resolve()'s normalisation.
   if (decoded.includes('\0')) return null;
+  if (decoded.split(/[/\\]/).some((seg) => seg === '..')) return null;
+
   const lexical = resolve(join(DIST_DIR_REAL, decoded));
-  if (lexical !== DIST_DIR_REAL && !lexical.startsWith(DIST_DIR_REAL_PREFIX)) {
-    return null;
-  }
+  if (!isInsideRoot(lexical)) return null;
+
   let real;
   try {
     real = await realpath(lexical);
   } catch {
     return null;
   }
-  if (real !== DIST_DIR_REAL && !real.startsWith(DIST_DIR_REAL_PREFIX)) {
-    return null;
-  }
+  if (!isInsideRoot(real)) return null;
   return real;
 }
 
@@ -106,7 +103,7 @@ const server = createServer(async (req, res) => {
         // ('index.html'), but we re-check the realpath to be safe against
         // symlinks introduced under DIST_DIR.
         const realIndex = await realpath(indexPath);
-        if (realIndex === DIST_DIR_REAL || realIndex.startsWith(DIST_DIR_REAL_PREFIX)) {
+        if (isInsideRoot(realIndex)) {
           await tryServe(res, realIndex);
           return;
         }
