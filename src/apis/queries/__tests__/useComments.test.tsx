@@ -70,12 +70,10 @@ describe('useCommentsQuery', () => {
 });
 
 describe('useCreateComment cache update', () => {
-  // Regression coverage: in production the `['posts']` cache is shaped by
-  // `useInfiniteQuery` ({ pages, pageParams }) rather than a flat array.
-  // The previous updater called `.map` on the wrong shape and threw inside
-  // setQueriesData, which react-query reported back to the caller as an
-  // onError — surfacing a "submission failed" alert despite the POST having
-  // succeeded server-side.
+  // Coverage: the `['posts']` cache is shaped by `useInfiniteQuery`
+  // (`{ pages, pageParams }`) in production. The updater has to branch on
+  // shape; running `.map` on the wrong shape throws inside `setQueriesData`
+  // and surfaces a successful POST as an onError on the mutation.
 
   it('does not throw when applied to the infinite-query posts cache', async () => {
     server.use(
