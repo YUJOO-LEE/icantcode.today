@@ -1,4 +1,10 @@
-import { LINE_RATE, FIRST_LINE_DELAY_MS, SOLVABILITY } from './constants';
+import {
+  FIRST_LINE_DELAY_MS,
+  LEVEL_DURATION_MS,
+  LEVEL_MAX,
+  LEVEL_RATES,
+  SOLVABILITY,
+} from './constants';
 import { lineSegmentsAt, renderLine } from './dynamicLine';
 import {
   applyGravity,
@@ -22,10 +28,15 @@ import { defaultRNG, type RNG } from './rng';
 
 export const GAP_GROUP_ID = '__gap';
 
+export function levelFromElapsed(elapsedMs: number): number {
+  if (elapsedMs <= 0) return 0;
+  return Math.min(LEVEL_MAX, Math.floor(elapsedMs / LEVEL_DURATION_MS));
+}
+
 export function currentLinesPerSec(elapsedMs: number): number {
-  if (elapsedMs <= LINE_RATE.phase1.untilMs) return LINE_RATE.phase1.linesPerSec;
-  if (elapsedMs <= LINE_RATE.phase2.untilMs) return LINE_RATE.phase2.linesPerSec;
-  return LINE_RATE.phase3.linesPerSec;
+  // `levelFromElapsed` clamps to [0, LEVEL_MAX] where LEVEL_MAX = LEVEL_RATES.length − 1,
+  // so the lookup is always defined; the `?? LINE_RATE_BASE` is a defensive fallback only.
+  return LEVEL_RATES[levelFromElapsed(elapsedMs)] ?? LEVEL_RATES[0];
 }
 
 function freshPlayer(viewport: Viewport): Player {
@@ -53,6 +64,8 @@ export function makeInitialState(viewport: Viewport): GameState {
     gapRowsRemaining: 0,
     recentGroups: [],
     lineCounter: 0,
+    level: 0,
+    levelUpAtMs: 0,
   };
 }
 
@@ -71,6 +84,8 @@ export function startNewRun(state: GameState, nowMs: number): GameState {
     gapRowsRemaining: 0,
     recentGroups: [],
     lineCounter: 0,
+    level: 0,
+    levelUpAtMs: 0,
   };
 }
 
@@ -147,6 +162,13 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
   const linesPerSec = currentLinesPerSec(elapsedMs);
   const cols = state.viewport.cols;
 
+  // Difficulty bumps every LEVEL_DURATION_MS. Stamping `levelUpAtMs` here
+  // keeps the FX trigger purely a function of game state — GameField just
+  // checks whether the stamp is still within the FX window.
+  const nextLevel = levelFromElapsed(elapsedMs);
+  const leveledUp = nextLevel > state.level;
+  const levelUpAtMs = leveledUp ? elapsedMs : state.levelUpAtMs;
+
   // 1. Scroll rows up.
   let rows: ScreenRow[] = state.rows.map((r) => ({
     ...r,
@@ -165,6 +187,8 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
   const next: GameState = {
     ...state,
     elapsedMs,
+    level: nextLevel,
+    levelUpAtMs,
     rows,
     spawnPendingMs: state.spawnPendingMs - dtMs,
   };
@@ -193,7 +217,8 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
 
     if (next.gapRowsRemaining > 0) {
       const isLast = next.gapRowsRemaining === 1;
-      const row = makeGapRow(bottomRow, isLast, 0);
+      next.lineCounter += 1;
+      const row = makeGapRow(bottomRow, isLast, next.lineCounter);
       next.rows = next.rows.concat(row);
       next.gapRowsRemaining -= 1;
       next.spawnPendingMs += 1000 / linesPerSec;

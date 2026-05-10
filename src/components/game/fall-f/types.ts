@@ -71,14 +71,16 @@ export interface RenderedLine {
 
 /**
  * One on-screen row. Each visible line of a group is its own ScreenRow.
- * Gap rows have empty segments, `groupId === '__gap'`, and `lineNumber === 0`.
+ * Gap rows have empty segments and `groupId === '__gap'`. They still occupy
+ * a position in the running line counter — terminals number every line,
+ * blank or not — so the gutter shows a number for them too.
  */
 export interface ScreenRow {
   id: string;
   groupId: string;
   isLastOfGroup: boolean;
   lineIndex: number;
-  /** 1-based ordinal of this line since the run started; 0 for gap rows. */
+  /** 1-based ordinal of this row since the run started, including gap rows. */
   lineNumber: number;
   source: Line | null;
   text: string;
@@ -107,4 +109,8 @@ export interface GameState {
   recentGroups: LineGroup[];
   /** Total non-gap lines spawned in this run; used to assign lineNumber. */
   lineCounter: number;
+  /** Discrete difficulty step. floor(elapsedMs / LEVEL_DURATION_MS), clamped to LEVEL_MAX. */
+  level: number;
+  /** elapsedMs at which `level` last advanced; 0 means never. Drives the brief level-up FX. */
+  levelUpAtMs: number;
 }

@@ -1,24 +1,71 @@
 import { describe, it, expect } from 'vitest';
 import {
   currentLinesPerSec,
+  levelFromElapsed,
   makeInitialState,
   startNewRun,
   tickGameState,
   setPlayerInput,
 } from '../gameState';
+import { LEVEL_MAX, LINE_RATE_MAX, PLAYER_GRAVITY_CELLS_PER_SEC } from '../constants';
 import { mulberry32 } from '../rng';
 
 const VIEWPORT = { rows: 25, cols: 80 };
 
+// Floating point comparison helper — LINE_RATE_BASE + LINE_RATE_STEP * level
+// can produce values like 1.1, 1.2 that round-trip through JS doubles.
+function approx(a: number, b: number, eps = 1e-9): boolean {
+  return Math.abs(a - b) < eps;
+}
+
+describe('levelFromElapsed', () => {
+  it('starts at level 0', () => {
+    expect(levelFromElapsed(0)).toBe(0);
+    expect(levelFromElapsed(9_999)).toBe(0);
+  });
+  it('advances one level per 10s', () => {
+    expect(levelFromElapsed(10_000)).toBe(1);
+    expect(levelFromElapsed(19_999)).toBe(1);
+    expect(levelFromElapsed(20_000)).toBe(2);
+    expect(levelFromElapsed(50_000)).toBe(5);
+    expect(levelFromElapsed(110_000)).toBe(11);
+  });
+  it('caps at LEVEL_MAX', () => {
+    expect(LEVEL_MAX).toBe(12);
+    expect(levelFromElapsed(120_000)).toBe(LEVEL_MAX);
+    expect(levelFromElapsed(10 * 60_000)).toBe(LEVEL_MAX);
+  });
+});
+
 describe('currentLinesPerSec', () => {
-  it('returns phase 1 rate near start', () => {
+  it('returns the base rate at the start', () => {
     expect(currentLinesPerSec(0)).toBe(1.0);
   });
-  it('returns phase 2 rate after 20s', () => {
-    expect(currentLinesPerSec(30_000)).toBe(1.3);
+  it('follows the discrete ease-in table — early bumps already > +0.1', () => {
+    // First step is +0.12 — bigger than the previous flat +0.1 curve so the
+    // very first level-up is perceptibly faster.
+    expect(approx(currentLinesPerSec(10_000), 1.12)).toBe(true);
+    expect(approx(currentLinesPerSec(20_000), 1.25)).toBe(true);
+    expect(approx(currentLinesPerSec(30_000), 1.4)).toBe(true);
+    expect(approx(currentLinesPerSec(60_000), 1.94)).toBe(true);
   });
-  it('returns phase 3 rate after 60s', () => {
-    expect(currentLinesPerSec(120_000)).toBe(1.6);
+  it('keeps accelerating past 60s — late game punishes the player', () => {
+    expect(approx(currentLinesPerSec(80_000), 2.4)).toBe(true);
+    expect(approx(currentLinesPerSec(100_000), 2.94)).toBe(true);
+    expect(approx(currentLinesPerSec(110_000), 3.24)).toBe(true);
+  });
+  it('caps at 3.5 line/sec once 120s has elapsed', () => {
+    expect(currentLinesPerSec(120_000)).toBe(3.5);
+    expect(currentLinesPerSec(180_000)).toBe(3.5);
+    expect(currentLinesPerSec(600_000)).toBe(3.5);
+  });
+
+  it('keeps LINE_RATE_MAX strictly below PLAYER_GRAVITY_CELLS_PER_SEC (game-balance invariant)', () => {
+    // If lines scrolled up faster than the player falls, the player on a
+    // platform could never reach a lower platform — the game would become
+    // unwinnable past the cap. Lock this in so future curve tweaks can't
+    // accidentally violate it.
+    expect(LINE_RATE_MAX).toBeLessThan(PLAYER_GRAVITY_CELLS_PER_SEC);
   });
 });
 
@@ -169,5 +216,46 @@ describe('tickGameState — long runs', () => {
     state = { ...state, player: { ...state.player, y: -2, falling: false } };
     state = tickGameState(state, 16, mulberry32(606));
     expect(state.status).toBe('dead-timeout');
+  });
+});
+
+describe('tickGameState — level progression', () => {
+  it('starts a fresh run at level 0 with no level-up stamp', () => {
+    const state = startNewRun(makeInitialState(VIEWPORT), 0);
+    expect(state.level).toBe(0);
+    expect(state.levelUpAtMs).toBe(0);
+  });
+
+  it('stamps levelUpAtMs the frame elapsed crosses a level boundary', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    state = { ...state, elapsedMs: 9_990 };
+    state = tickGameState(state, 16, mulberry32(700));
+    // 9_990 + 16 = 10_006 → level 1
+    expect(state.level).toBe(1);
+    expect(state.levelUpAtMs).toBe(10_006);
+  });
+
+  it('does not retrigger levelUpAtMs on subsequent same-level frames', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    state = { ...state, elapsedMs: 9_990 };
+    state = tickGameState(state, 16, mulberry32(701));
+    const stampedAt = state.levelUpAtMs;
+    state = tickGameState(state, 16, mulberry32(702));
+    expect(state.level).toBe(1);
+    expect(state.levelUpAtMs).toBe(stampedAt);
+  });
+
+  it('stops stamping past the cap', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    // Jump just before the cap; the next tick crosses 0 → LEVEL_MAX in one
+    // frame and stamps. Subsequent ticks must not re-stamp.
+    state = { ...state, elapsedMs: 120_000 - 16 };
+    state = tickGameState(state, 16, mulberry32(703));
+    expect(state.level).toBe(LEVEL_MAX);
+    const firstCapStamp = state.levelUpAtMs;
+    expect(firstCapStamp).toBeGreaterThan(0);
+    state = tickGameState(state, 16, mulberry32(704));
+    expect(state.level).toBe(LEVEL_MAX);
+    expect(state.levelUpAtMs).toBe(firstCapStamp);
   });
 });

@@ -551,6 +551,93 @@ E2E (`e2e/visual/fall-f.spec.ts`):
 A11y:
 - vitest-axe on InitialScreen and ResultScreen.
 
+### Phase 13 — Progressive levels & level-up FX
+
+Replace the 3-step `LINE_RATE` table with a discrete **10-second level
+system**. The curve is a **13-step ease-in table** (`LEVEL_RATES` in
+`constants.ts`) — step sizes themselves grow over time so early bumps
+are already perceptible (+12% on the first jump) and the cap (3.5
+line/sec, ≈ 3.5× base) only arrives at the 120s mark, giving a
+genuinely punishing late game. Stage numbers are intentionally not
+surfaced to the player — the spec explicitly avoids stage UI.
+
+Constants (`src/components/game/fall-f/constants.ts`):
+
+- `LEVEL_DURATION_MS = 10_000` — every 10s the level advances by 1.
+- `LEVEL_RATES = [1.0, 1.12, 1.25, 1.4, 1.56, 1.74, 1.94, 2.16, 2.4, 2.66, 2.94, 3.24, 3.5]`.
+- `LEVEL_MAX = LEVEL_RATES.length − 1 = 12` (cap reached at 120s).
+- `LINE_RATE_BASE = LEVEL_RATES[0]`, `LINE_RATE_MAX = LEVEL_RATES[LEVEL_MAX]`.
+- `LEVEL_UP_FX_DURATION_MS = 1_000` — must stay well under
+  `LEVEL_DURATION_MS` so consecutive triggers never overlap.
+- The pre-existing `LINE_RATE` object is removed; the table replaces it.
+
+Types (`src/components/game/fall-f/types.ts`):
+
+- `GameState.level: number` — 0..LEVEL_MAX.
+- `GameState.levelUpAtMs: number` — 0 means "never leveled up". Set to
+  the post-tick `elapsedMs` on the frame the level advances. Drives
+  `GameField`'s FX gating.
+
+State transitions (`src/components/game/fall-f/gameState.ts`):
+
+- New helper `levelFromElapsed(elapsedMs)` clamps to `LEVEL_MAX`.
+- `currentLinesPerSec(elapsedMs)` becomes a table lookup:
+  `LEVEL_RATES[levelFromElapsed(elapsedMs)]`.
+- `makeInitialState` / `startNewRun` initialize `level: 0`,
+  `levelUpAtMs: 0`.
+- `tickGameState` computes the new level after applying `dtMs`. If the
+  new level exceeds `state.level`, stamp `levelUpAtMs = elapsedMs`.
+
+Rendering (`src/components/game/fall-f/GameField.tsx`):
+
+- `isLevelUp = state.levelUpAtMs > 0 && elapsedMs - levelUpAtMs ∈ [0, LEVEL_UP_FX_DURATION_MS]`.
+- Add a 1-row primary band at `top: 0` (height = `ROW_HEIGHT_PX`) that
+  toggles between `opacity-40` (during FX) and `opacity-0`. CSS
+  transition handles fade. `pointer-events-none`, `aria-hidden`.
+- HUD `score` div swaps `text-muted-foreground` ↔ `text-primary` while
+  `isLevelUp`. Uses Tailwind `transition-colors`.
+- Left edge (`atLeftEdge ? bg-destructive : isLevelUp ? bg-primary/60 : bg-border`).
+  Destructive (player at x=0) keeps priority — invariant from MVP.
+- No new keyframes / no `terminal.css` changes — only Tailwind utility
+  transitions, so the global `prefers-reduced-motion` rule already
+  applies (transitions clipped to 0.01ms).
+
+Tests added:
+
+- `__tests__/gameState.test.ts`
+  - `levelFromElapsed` — boundary at 0, 9_999, 10_000, 19_999, cap.
+  - `currentLinesPerSec` — gradual values 1.0/1.1/1.2/.../1.6.
+  - `tickGameState — level progression` — fresh run starts at level 0
+    with no stamp; crossing a boundary stamps `levelUpAtMs`; same-level
+    frames don't restamp; cap stops further progression.
+- `__tests__/GameField.test.tsx`
+  - Level-up band: hidden by default, visible inside FX window, hidden
+    after window expires.
+  - Left-edge / HUD-score tinting during level-up; destructive edge
+    overrides level-up tint when player is at x=0.
+
+i18n / e2e:
+
+- No new strings — level numbers are not surfaced.
+- e2e visual baselines at `e2e/visual/fall-f.spec.ts` stay valid because
+  `InitialScreen` and `CatalogPage` are unchanged. Mid-game baselines
+  remain deferred (NOTES §8).
+
+Gutter line numbers for gap rows:
+
+- Terminals number every line, blank or not, so the gutter now displays
+  a number for gap rows too. `tickGameState` bumps `lineCounter` for the
+  gap-spawn branch the same way it does for content-line spawns.
+- `ScreenRow.lineNumber` JSDoc updated: `1-based ordinal of this row
+  since the run started, including gap rows`.
+- Score is still "highest line number the player has actually stepped
+  on"; gap rows have empty segments so they can never become the
+  supporting row, and `score` semantics are unchanged. The numeric value
+  of `score` will simply be larger than before because every row now
+  consumes a counter slot.
+- The `row.lineNumber > 0` guard in `GameField.tsx` is kept as a defensive
+  check; with the new logic, runtime rows always have a positive number.
+
 ## 7. Determinism for tests
 
 Inject a seeded RNG into game module:

@@ -67,12 +67,25 @@ describe('GameField', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
-  it('omits the line-number gutter for gap rows (lineNumber === 0)', () => {
+  it('renders the line-number gutter for gap rows too (terminals number every line)', () => {
     const state = makeState({
-      rows: [makeRow({ id: 'gap', groupId: '__gap', text: '', lineNumber: 0, topRow: 0 })],
+      rows: [
+        makeRow({ id: 'r1', text: 'first', lineNumber: 1, topRow: 0 }),
+        makeRow({ id: 'gap', groupId: '__gap', text: '', lineNumber: 2, topRow: 1 }),
+        makeRow({ id: 'r3', text: 'third', lineNumber: 3, topRow: 2 }),
+      ],
     });
     render(<GameField state={state} />, { wrapper: Wrapper });
-    // No "0" line number rendered (gap rows omit the gutter entirely).
+    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('3')).toBeInTheDocument();
+  });
+
+  it('still skips the gutter when a row has lineNumber === 0 (defensive guard)', () => {
+    const state = makeState({
+      rows: [makeRow({ id: 'r0', text: 'zero', lineNumber: 0, topRow: 0 })],
+    });
+    render(<GameField state={state} />, { wrapper: Wrapper });
     expect(screen.queryByText(/^0$/)).not.toBeInTheDocument();
   });
 
@@ -111,5 +124,72 @@ describe('GameField', () => {
     render(<GameField ref={ref} state={makeState()} />, { wrapper: Wrapper });
     expect(ref.current).not.toBeNull();
     expect(ref.current?.getAttribute('role')).toBe('application');
+  });
+
+  it('uses muted color for line numbers when no level-up is active', () => {
+    const state = makeState({
+      elapsedMs: 5_000,
+      level: 0,
+      levelUpAtMs: 0,
+      rows: [makeRow({ id: 'r1', text: 'hello', lineNumber: 1, topRow: 0 })],
+    });
+    render(<GameField state={state} />, { wrapper: Wrapper });
+    const [first] = screen.getAllByTestId('ff-line-number');
+    expect(first!.className).toContain('text-muted-foreground/70');
+    expect(first!.className).not.toContain('text-primary');
+  });
+
+  it('pulses line numbers to primary during the FX window after a level-up', () => {
+    // 200 ms after the stamp; well inside LEVEL_UP_FX_DURATION_MS = 1000.
+    const state = makeState({
+      elapsedMs: 10_200,
+      level: 1,
+      levelUpAtMs: 10_000,
+      rows: [makeRow({ id: 'r1', text: 'hello', lineNumber: 1, topRow: 0 })],
+    });
+    render(<GameField state={state} />, { wrapper: Wrapper });
+    const [first] = screen.getAllByTestId('ff-line-number');
+    expect(first!.className).toContain('text-primary');
+  });
+
+  it('restores muted line-number color after the FX window expires', () => {
+    // 1500 ms after the stamp; outside the FX window.
+    const state = makeState({
+      elapsedMs: 11_500,
+      level: 1,
+      levelUpAtMs: 10_000,
+      rows: [makeRow({ id: 'r1', text: 'hello', lineNumber: 1, topRow: 0 })],
+    });
+    render(<GameField state={state} />, { wrapper: Wrapper });
+    const [first] = screen.getAllByTestId('ff-line-number');
+    expect(first!.className).toContain('text-muted-foreground/70');
+    expect(first!.className).not.toContain('text-primary');
+  });
+
+  it('tints the HUD score with primary during level-up and keeps left edge border color', () => {
+    const state = makeState({
+      elapsedMs: 10_200,
+      level: 1,
+      levelUpAtMs: 10_000,
+      player: { x: 4, y: 0, falling: false, input: 'none' },
+      rows: [makeRow({ id: 'r1', text: 'hello', lineNumber: 1, topRow: 0 })],
+    });
+    render(<GameField state={state} />, { wrapper: Wrapper });
+    // Left edge stays bg-border during level-up (no more primary/60 tint).
+    expect(screen.getByTestId('ff-left-edge').className).toContain('bg-border');
+    expect(screen.getByTestId('ff-left-edge').className).not.toContain('bg-primary');
+    // HUD score wrapper should carry text-primary, not text-muted-foreground.
+    expect(screen.getByTestId('ff-hud-score').className).toContain('text-primary');
+  });
+
+  it('keeps the destructive left edge during level-up when the player is at x=0', () => {
+    const state = makeState({
+      elapsedMs: 10_200,
+      level: 1,
+      levelUpAtMs: 10_000,
+      player: { x: 0, y: 0, falling: false, input: 'none' },
+    });
+    render(<GameField state={state} />, { wrapper: Wrapper });
+    expect(screen.getByTestId('ff-left-edge').className).toContain('bg-destructive');
   });
 });
