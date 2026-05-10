@@ -136,3 +136,9 @@ git push origin vX.Y.(Z+1)
 - [ ] GitHub Actions secrets에 `VITE_API_BASE_URL`, `VITE_CF_BEACON_TOKEN`,
       `VITE_GTM_ID` 등록 확인
 - [ ] Settings → Pages → Source: GitHub Actions
+- [ ] **`github-pages` environment의 deployment branch policy에 `v*.*.*` tag
+      정책 추가** (Settings → Environments → github-pages → Deployment branch
+      policy → "Add deployment branch or tag rule" → name: `v*.*.*`, type: `tag`).
+      environment 보호는 *워크플로우 트리거 ref* 를 보기 때문에, 태그가
+      master HEAD를 가리키더라도 tag 정책이 따로 없으면 release-deploy가
+      step 0에서 차단됨.
