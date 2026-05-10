@@ -13,7 +13,20 @@
 | **minor** | 신규 기능, 신규 페이지/섹션, 신규 외부 연동 등 사용자에게 의미있는 큰 변경. |
 | **patch** | 버그 픽스, 스타일 미세 조정, 카피 수정, 동작 변화 없는 리팩터, 의존성 bump, CI/설정 변경. 모호하면 기본값. |
 
+### 누적 변경 → 최대 bump 적용
+
+bump 결정 단위는 **"마지막 태그 이후 master에 누적된 모든 변경"** 입니다 — 이번
+release commit의 *직접 사유* 가 아님. patch성 변경 5개 + minor성 변경 1개가
+섞여 있다면 그 release는 **minor** 입니다 (semver 관행). 즉:
+
+- 마지막 태그가 v1.0.0이고, 그 이후 master에 신규 페이지(minor) + 의존성 bump
+  3건(patch)이 들어가 있는 상태에서 alert fix(patch)를 사유로 release하면
+  → **v1.1.0** (누적 안에 minor 변경이 있으므로).
+- 누적 변경이 모두 patch성이면 → patch (`v1.0.1`).
+
 `CHANGELOG.md`는 운영하지 않음 — git 태그와 커밋 히스토리가 정식 출처.
+누적 변경 검토는 `git log $(git describe --tags --abbrev=0)..HEAD --oneline`
+한 줄로 충분.
 
 ---
 
