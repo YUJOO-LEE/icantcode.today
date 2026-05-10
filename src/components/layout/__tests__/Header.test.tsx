@@ -17,14 +17,6 @@ function Wrapper({ children }: { children: ReactNode }) {
   );
 }
 
-function GameRouteWrapper({ children }: { children: ReactNode }) {
-  return (
-    <I18nextProvider i18n={i18n}>
-      <MemoryRouter initialEntries={['/game']}>{children}</MemoryRouter>
-    </I18nextProvider>
-  );
-}
-
 describe('Header', () => {
   beforeEach(() => {
     useSessionStore.setState({ userCode: crypto.randomUUID(), nickname: null });
@@ -66,15 +58,33 @@ describe('Header', () => {
     expect(nav.tagName.toLowerCase()).toBe('nav');
   });
 
-  it('shows the [게임] primary nav link on the home route', () => {
-    render(<Header />, { wrapper: Wrapper });
-    const link = screen.getByRole('link', { name: '[게임]' });
-    expect(link).toHaveAttribute('href', '/game');
-  });
+  describe('primary nav by route', () => {
+    function WrapperAt(path: string) {
+      return function ({ children }: { children: ReactNode }) {
+        return (
+          <I18nextProvider i18n={i18n}>
+            <MemoryRouter initialEntries={[path]}>{children}</MemoryRouter>
+          </I18nextProvider>
+        );
+      };
+    }
 
-  it('swaps the primary nav to [뒤로] → / when on a /game route', () => {
-    render(<Header />, { wrapper: GameRouteWrapper });
-    const link = screen.getByRole('link', { name: '[뒤로]' });
-    expect(link).toHaveAttribute('href', '/');
+    it('on `/` shows [게임] linking to /game', () => {
+      render(<Header />, { wrapper: WrapperAt('/') });
+      const link = screen.getByRole('link', { name: /\[게임\]/ });
+      expect(link).toHaveAttribute('href', '/game');
+    });
+
+    it('on `/game` shows [홈] linking to /', () => {
+      render(<Header />, { wrapper: WrapperAt('/game') });
+      const link = screen.getByRole('link', { name: /\[홈\]/ });
+      expect(link).toHaveAttribute('href', '/');
+    });
+
+    it('on `/game/fall-f` shows [게임] linking to the game catalog (/game), not home', () => {
+      render(<Header />, { wrapper: WrapperAt('/game/fall-f') });
+      const link = screen.getByRole('link', { name: /\[게임\]/ });
+      expect(link).toHaveAttribute('href', '/game');
+    });
   });
 });
