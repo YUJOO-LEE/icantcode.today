@@ -18,7 +18,11 @@ function HomePage() {
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const [showComposer, setShowComposer] = useState(false);
   useStatusQuery();
-  useDocumentMeta({ apiStatus, lang: i18n.language === 'en' ? 'en' : 'ko' });
+  useDocumentMeta({
+    route: 'home',
+    lang: i18n.language === 'en' ? 'en' : 'ko',
+    apiStatus,
+  });
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

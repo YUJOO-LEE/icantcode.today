@@ -72,19 +72,24 @@ something serious."
 
 ## 4. User flow
 
-### 4.1 Single-route model
+### 4.1 Routing model
 
 ```
-/  (root — the only route)
-    ↓
-  API status poll (every 30 s)
-    ↓
-  ├── normal → landing view
-  └── down   → same URL swaps to feed view
+/                    landing ↔ feed (state-based on apiStatus)
+/game                terminal mini-game catalog (always open)
+/game/fall-f         fall-f arcade game (always open)
 ```
 
-- No separate `/feed` path. State-based conditional rendering.
-- Normal ↔ down toggles the UI without any URL change.
+- The community **feed/landing** invariant is preserved on `/`: API status
+  polling every 30 s swaps the same URL between landing (normal) and feed
+  (down). No separate `/feed` path.
+- Game routes (`/game`, `/game/fall-f`) are independent of the outage —
+  they exist as content the user can reach any time, including when they
+  simply don't feel like coding.
+- Each route gets its own prerendered HTML with route-specific head meta
+  (title, description, canonical, og:*, twitter:*) so crawlers and
+  share-card renderers see distinct pages without JS. See
+  `src/constants/pageMeta.ts` for the single source of truth.
 
 ### 4.2 End-to-end flow
 
@@ -256,10 +261,6 @@ Sponsors, Buy Me a Coffee).
 | Avg. session length | 5 min+ |
 | Posts per outage | 50+ |
 | Return rate | ≥ 40% |
-| GSC indexing | 1 URL indexed |
+| GSC indexing | All prerendered routes indexed |
 | GSC impressions | Monthly impressions on "claude code down/outage" queries |
 | Lighthouse SEO | 100 (CI guard) |
-
----
-
-_Last updated: 2026-04-19_

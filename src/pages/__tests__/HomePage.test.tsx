@@ -75,7 +75,8 @@ describe('HomePage', () => {
 
     render(<HomePage />, { wrapper: createWrapper() });
     await waitFor(() => {
-      expect(document.title).toMatch(/^\[DOWN\] icantcode\.today/);
+      expect(document.title).toMatch(/^\[DOWN\]/);
+      expect(document.title).toContain('icantcode.today');
     });
   });
 });

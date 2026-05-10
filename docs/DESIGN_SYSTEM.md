@@ -622,7 +622,7 @@ xl  1280 px
 
 `TypewriterText` renders fully when reduced motion is requested.
 
-### 10.4 `motion` (formerly framer-motion) usage
+### 10.4 `motion` usage
 
 ```tsx
 // page transition
@@ -730,7 +730,3 @@ No external icon library. Prefer text symbols and Unicode glyphs.
 | Warning | `[WARN]` | `!` |
 | Loading | `...` / `▌` | three dots |
 | Settings | `[config]` | `⚙` |
-
----
-
-_Last updated: 2026-04-28_

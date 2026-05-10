@@ -47,6 +47,17 @@ describe('minGapBetween', () => {
   it('returns the cell gap for separated segments', () => {
     expect(minGapBetween([{ startX: 0, endX: 2 }], [{ startX: 8, endX: 10 }])).toBe(5);
   });
+
+  it('returns Infinity when either side has no segments', () => {
+    expect(minGapBetween([], [{ startX: 0, endX: 5 }])).toBe(Infinity);
+    expect(minGapBetween([{ startX: 0, endX: 5 }], [])).toBe(Infinity);
+    expect(minGapBetween([], [])).toBe(Infinity);
+  });
+
+  it('still returns the gap when b is to the left of a', () => {
+    // Forces the `sa.startX - sb.endX - 1` branch on line 53.
+    expect(minGapBetween([{ startX: 10, endX: 12 }], [{ startX: 0, endX: 2 }])).toBe(7);
+  });
 });
 
 describe('maxLineWidth', () => {

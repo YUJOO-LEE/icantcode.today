@@ -48,6 +48,27 @@ describe('pickNextGroup', () => {
     const seq2 = pickRunSeq(7);
     expect(seq1).toEqual(seq2);
   });
+
+  it('falls back to the full pool when cols is too narrow for the firstPick reach filter', () => {
+    // cols=4 → spawn at center=2, reach window [2-30, 2+30] = [-28, 32]. The
+    // reach window covers everything, but the *adjacency* and *short-run* rules
+    // can still drop candidates. Run with very small cols + an adversarial
+    // recentGroups history that fails R-1 (all-short window). The function
+    // must still return some group from ALL_GROUPS — exercising the
+    // last-resort fallback path (solvability.ts:100-103) without crashing.
+    const rng = mulberry32(31);
+    const result = pickNextGroup(
+      { recentGroups: [], cols: 4, firstPick: true },
+      rng,
+    );
+    expect(ALL_GROUPS).toContain(result);
+  });
+
+  it('returns a value when the recent history is empty (no R-2 prev to compare)', () => {
+    const rng = mulberry32(11);
+    const result = pickNextGroup({ recentGroups: [], cols: COLS }, rng);
+    expect(ALL_GROUPS).toContain(result);
+  });
 });
 
 function pickRunSeq(seed: number): string[] {

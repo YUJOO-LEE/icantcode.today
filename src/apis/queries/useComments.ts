@@ -37,12 +37,10 @@ export function useCreateComment(postId: number) {
       post<IdResponse>(`/posts/${postId}/comments`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', postId] });
-      // Two cache shapes match the `['posts']` key: the infinite-query cache
+      // Two cache shapes share the `['posts']` key: the infinite-query cache
       // (`{ pages, pageParams }`) and the polling cache (`PostListResponse`).
-      // Previously this updater assumed a flat array and crashed inside
-      // `setQueriesData`, which forced react-query to surface a successful
-      // POST as an onError to the caller — that's the "submit succeeded but
-      // alert appeared and input wasn't cleared" bug.
+      // Branch on shape — `.map` on the wrong one throws inside
+      // `setQueriesData` and bubbles back as an onError on the mutation.
       queryClient.setQueriesData<InfinitePostsCache | PostListResponse>(
         { queryKey: ['posts'] },
         (old) => {

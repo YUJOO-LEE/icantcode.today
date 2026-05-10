@@ -104,11 +104,11 @@ describe('CommentForm', () => {
     expect(called).toBe(false);
   });
 
-  // The "submit-without-nickname → confirm nickname → auto-submit" flow used to
-  // fire the comment mutation twice (the second call was triggered by Enter
-  // key-repeat landing on the freshly remounted comment input, which had
-  // `autoFocus`). The fix keeps the comment input mounted for the entire prompt
-  // lifecycle and drives submission off a ref instead of a captured closure.
+  // Invariant: the "submit-without-nickname → confirm nickname → auto-submit"
+  // flow fires exactly one mutation. The comment input stays mounted for the
+  // entire prompt lifecycle so a remount with `autoFocus` can't catch
+  // Enter key-repeat, and submission is driven off a ref to keep the in-flight
+  // value stable.
   it('regression: nickname prompt confirmed via Enter submits exactly once and clears input', async () => {
     let postCount = 0;
     server.use(

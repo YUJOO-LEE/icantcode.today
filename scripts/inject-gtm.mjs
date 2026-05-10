@@ -43,7 +43,7 @@ for (const file of files) {
   if (!HEAD_SLOT.test(html) && !BODY_SLOT.test(html)) continue;
   await writeFile(
     file,
-    html.replace(HEAD_SLOT, headReplacement).replace(BODY_SLOT, bodyReplacement),
+    html.replace(HEAD_SLOT, () => headReplacement).replace(BODY_SLOT, () => bodyReplacement),
     'utf-8',
   );
   touched++;

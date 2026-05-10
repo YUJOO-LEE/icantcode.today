@@ -2,9 +2,11 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ROUTES } from '@/constants/routes';
 import Cursor from '@/components/ui/Cursor';
+import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 
 function CatalogPage() {
-  const { t } = useTranslation('game');
+  const { t, i18n } = useTranslation('game');
+  useDocumentMeta({ route: 'game', lang: i18n.language === 'en' ? 'en' : 'ko' });
 
   return (
     <section className="font-mono text-xs">

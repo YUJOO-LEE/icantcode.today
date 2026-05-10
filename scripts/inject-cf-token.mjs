@@ -26,7 +26,7 @@ let touched = 0;
 for (const file of files) {
   const html = await readFile(file, 'utf-8');
   if (!SLOT_PATTERN.test(html)) continue;
-  await writeFile(file, html.replace(SLOT_PATTERN, replacement), 'utf-8');
+  await writeFile(file, html.replace(SLOT_PATTERN, () => replacement), 'utf-8');
   touched++;
 }
 

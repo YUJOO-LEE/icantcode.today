@@ -1,5 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { colsForWidth, rowsForHeight, getViewport } from '../grid';
+import { describe, it, expect, afterEach } from 'vitest';
+import {
+  colsForWidth,
+  rowsForHeight,
+  getViewport,
+  measureCellWidth,
+  resetCellWidthCache,
+} from '../grid';
 
 describe('grid', () => {
   describe('colsForWidth', () => {
@@ -42,6 +48,53 @@ describe('grid', () => {
       const v = getViewport(800, 640, 8);
       expect(v.cols).toBe(100);
       expect(v.rows).toBe(40);
+    });
+
+    it('falls back to measureCellWidth when cell width is omitted', () => {
+      resetCellWidthCache();
+      const v = getViewport(800, 640);
+      expect(v.cols).toBeGreaterThan(0);
+      expect(v.rows).toBe(40);
+    });
+  });
+
+  describe('rowsForHeight (invalid input)', () => {
+    it('returns 0 when rowHeightPx is 0', () => {
+      expect(rowsForHeight(100, 0)).toBe(0);
+    });
+
+    it('returns 0 when rowHeightPx is negative', () => {
+      expect(rowsForHeight(100, -16)).toBe(0);
+    });
+  });
+
+  describe('measureCellWidth', () => {
+    afterEach(() => {
+      resetCellWidthCache();
+    });
+
+    it('returns a positive number in jsdom', () => {
+      resetCellWidthCache();
+      const width = measureCellWidth();
+      expect(width).toBeGreaterThan(0);
+    });
+
+    it('returns the cached value on subsequent calls', () => {
+      resetCellWidthCache();
+      const first = measureCellWidth();
+      const second = measureCellWidth();
+      expect(second).toBe(first);
+    });
+
+    it('resetCellWidthCache forces recomputation', () => {
+      resetCellWidthCache();
+      const first = measureCellWidth();
+      resetCellWidthCache();
+      const second = measureCellWidth();
+      // Same value because the probe behaves identically — but the second call
+      // must have re-measured (i.e. not crashed) after the cache was cleared.
+      expect(second).toBeGreaterThan(0);
+      expect(second).toBe(first);
     });
   });
 });

@@ -9,12 +9,12 @@ interface ErrorScreenProps {
   onHome: () => void;
 }
 
-const TITLES: Record<ErrorKind, string> = {
-  resize: '[SIGWINCH] terminal resized (core dumped)',
+const TITLE_KEYS: Record<ErrorKind, string> = {
+  resize: 'error.titles.resize',
 };
 
-const FRAMES: Record<ErrorKind, string> = {
-  resize: 'fall_f::on_resize',
+const FRAME_KEYS: Record<ErrorKind, string> = {
+  resize: 'error.frames.resize',
 };
 
 const CAUSE_KEYS: Record<ErrorKind, string> = {
@@ -31,14 +31,14 @@ function ErrorScreen({ kind, onRetry, onHome }: ErrorScreenProps) {
 
   return (
     <section className="font-mono text-xs" role="alert" aria-live="assertive">
-      <p className="text-destructive whitespace-pre-wrap">{TITLES[kind]}</p>
+      <p className="text-destructive whitespace-pre-wrap">{t(TITLE_KEYS[kind])}</p>
 
       <div className="mt-3 ml-2 grid grid-cols-[auto_1fr] gap-x-2">
         <span className="text-muted-foreground">{t('labels.error')}</span>
         <span>{t(CAUSE_KEYS[kind])}</span>
 
         <span className="text-muted-foreground">{t('labels.in')}</span>
-        <span className="text-muted-foreground">{FRAMES[kind]}</span>
+        <span className="text-muted-foreground">{t(FRAME_KEYS[kind])}</span>
       </div>
 
       <div className="mt-4 flex gap-3">

@@ -193,8 +193,7 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
 
     if (next.gapRowsRemaining > 0) {
       const isLast = next.gapRowsRemaining === 1;
-      next.lineCounter += 1;
-      const row = makeGapRow(bottomRow, isLast, next.lineCounter);
+      const row = makeGapRow(bottomRow, isLast, 0);
       next.rows = next.rows.concat(row);
       next.gapRowsRemaining -= 1;
       next.spawnPendingMs += 1000 / linesPerSec;

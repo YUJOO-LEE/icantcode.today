@@ -151,12 +151,11 @@ describe('FeedComposer', () => {
     expect(called).toBe(false);
   });
 
-  // Regression coverage for the duplicate-submit / phantom-error bug:
-  // submitting without a nickname used to fire the post mutation twice once
-  // the user confirmed the inline NicknamePrompt — the second call was
-  // triggered by autoFocus / closure races around prompt teardown. The fix
-  // keeps the textarea mounted for the prompt lifecycle and drives the
-  // deferred mutation off a ref instead of a captured closure.
+  // Invariant: confirming the inline NicknamePrompt with Enter fires the
+  // post mutation exactly once. The textarea stays mounted for the entire
+  // prompt lifecycle so autoFocus / closure races during prompt teardown
+  // can't trigger a second submit, and the deferred mutation reads from
+  // a ref rather than a captured closure.
   it('regression: nickname prompt confirmed via Enter submits exactly once and closes the composer', async () => {
     let postCount = 0;
     server.use(
@@ -242,12 +241,12 @@ describe('FeedComposer', () => {
     expect((screen.getByPlaceholderText(/무슨 일이 있나요/) as HTMLTextAreaElement).value).toBe('draft body');
   });
 
-  // Regression: between confirming the nickname prompt and the post mutation
-  // settling, the user must NOT see the textarea reappear with the typed
-  // content. Previously dismissPrompt() ran synchronously inside the prompt's
-  // onComplete callback, so the textarea flashed back into view for the
-  // duration of the network request before onSuccess closed the composer.
-  // The fix keeps the prompt up until the mutation actually settles.
+  // Invariant: between confirming the nickname prompt and the post mutation
+  // settling, the textarea must NOT reappear with the typed content. The
+  // prompt only dismisses when the mutation actually settles (`onSuccess` /
+  // `onError`), not synchronously inside the prompt's `onComplete` callback —
+  // otherwise the textarea would flash back into view for the network
+  // request's duration.
   it('regression: prompt stays visible for the entire in-flight mutation — no textarea flicker', async () => {
     let releaseRequest: (() => void) | null = null;
     server.use(
