@@ -220,10 +220,13 @@ export function resolveHead(
 
 export function serializeRouteJsonLd(routeJsonLd: JsonLd[] | null): string {
   if (!routeJsonLd || routeJsonLd.length === 0) return '';
-  // Escape `<` and `-->` so a future dynamic value can't break out of the
-  // surrounding `<script>` tag (e.g. via `</script>` or an HTML comment close).
+  // Escape every `<` and `>` so a future dynamic value can't break out of the
+  // surrounding `<script>` tag. Covers `</script>`, `<!--`, `-->`, and `--!>`
+  // in one pass — a partial filter (e.g. only `-->`) leaves the alternative
+  // HTML-comment terminator `--!>` reachable, which CodeQL `js/bad-tag-filter`
+  // flags as high severity.
   const json = JSON.stringify(routeJsonLd, null, 2)
     .replace(/</g, '\\u003c')
-    .replace(/-->/g, '--\\u003e');
+    .replace(/>/g, '\\u003e');
   return `<script type="application/ld+json">\n${json}\n    </script>`;
 }

@@ -63,7 +63,7 @@ describe('serializeRouteJsonLd', () => {
     expect(out).toContain('"@type": "Thing"');
   });
 
-  it('escapes `<` so a `</script>` payload cannot break out of the script tag', () => {
+  it('escapes `<` and `>` so a `</script>` payload cannot break out of the script tag', () => {
     const out = serializeRouteJsonLd([
       { '@type': 'Thing', description: 'evil </script><script>alert(1)</script>' },
     ]);
@@ -72,13 +72,30 @@ describe('serializeRouteJsonLd', () => {
     expect(closingScripts).toHaveLength(1);
     // No additional `<script` opener can survive in the payload.
     expect(out.match(/<script\b/gi) ?? []).toHaveLength(1);
-    // Each `<` from the payload is unicode-escaped.
-    expect(out).toContain('\\u003c/script>\\u003cscript>alert(1)\\u003c/script>');
+    // Each `<` and `>` from the payload is unicode-escaped.
+    expect(out).toContain('\\u003c/script\\u003e\\u003cscript\\u003ealert(1)\\u003c/script\\u003e');
   });
 
   it('escapes HTML comment closers (`-->`) inside the payload', () => {
     const out = serializeRouteJsonLd([{ '@type': 'Thing', description: 'a --> b' }]);
     expect(out).not.toContain('-->');
     expect(out).toContain('--\\u003e');
+  });
+
+  it('escapes the alternative HTML comment closer `--!>` (CodeQL js/bad-tag-filter)', () => {
+    const out = serializeRouteJsonLd([{ '@type': 'Thing', description: 'a --!> b' }]);
+    expect(out).not.toContain('--!>');
+    expect(out).toContain('--!\\u003e');
+  });
+
+  it('escapes every `>` so no HTML-tag-like sequence survives in the payload', () => {
+    const out = serializeRouteJsonLd([
+      { '@type': 'Thing', description: '<!-- x --> y --!> z </script>' },
+    ]);
+    // Only the two literal `>` allowed are the opening `<script ...>` and the
+    // closing `</script>` that this function emits. Everything else from the
+    // payload must be unicode-escaped.
+    const literalGt = out.match(/>/g) ?? [];
+    expect(literalGt).toHaveLength(2);
   });
 });
