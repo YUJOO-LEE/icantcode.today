@@ -145,9 +145,10 @@ docs/             Design docs (SERVICE_PLAN, ARCHITECTURE, DESIGN_SYSTEM, API_SP
   `resolveHead(route, lang, apiStatus?)`.
 - `public/llms.txt` is the LLM-crawler-facing Markdown summary. Update it
   whenever service copy changes.
-- The CI build runs an SEO smoke check (`.github/workflows/deploy.yml`)
+- The CI build runs an SEO smoke check (`.github/workflows/ci.yml`)
   that verifies each prerendered route gets distinct head metadata and
-  the right per-route JSON-LD.
+  the right per-route JSON-LD. The release-deploy workflow re-runs a
+  trimmed version of the same check.
 
 ## CLI aesthetic rules
 
@@ -218,17 +219,24 @@ not wait for the user to say "ralph".
 
 - Commit messages: Conventional Commits (`feat:`, `fix:`, `docs:`, `style:`,
   `refactor:`, `test:`, `chore:`, `perf:`, `ci:`).
-- **Never push directly to `master`.** Master is protected by a branch
-  ruleset that requires 6 CI checks (`audit`, `typecheck`, `lint`, `test`,
-  `e2e`, `build`) plus CodeQL `Analyze` via default setup. Direct pushes
-  fail with `GH013`. Always branch, push the branch, and open a PR.
+- **Code changes go through a PR.** Master is protected by a branch ruleset
+  requiring `audit / typecheck / lint / test / build / e2e` + CodeQL
+  `Analyze`. Always branch, push, open a PR.
+- **Release commits (`chore(release): vX.Y.Z`) are the only exception** —
+  pushed directly to master via owner bypass (Settings → Rules → ruleset →
+  Bypass list). They contain only a `package.json` / `package-lock.json`
+  version bump plus the matching `vX.Y.Z` tag. PRs never touch
+  `package.json` themselves.
+- Tag push (`v*.*.*`) is what triggers production deploy via
+  `.github/workflows/release-deploy.yml`. master push by itself does not
+  deploy. See [docs/RELEASE.md](docs/RELEASE.md).
 - Branch names match the commit type: `feat/…`, `fix/…`, `docs/…`,
   `perf/…`, `chore/…`, `test/…`, `ci/…`.
 - **One concern per PR.** Keep code changes and doc-only changes in
   separate PRs unless the docs strictly describe the same diff.
 - Never add `Co-Authored-By` lines (global rule).
 - Commit only when the user explicitly asks. Push only when the user
-  explicitly asks.
+  explicitly asks. Tag and release-commit only on explicit request.
 
 ## Design tokens
 
@@ -250,6 +258,7 @@ not wait for the user to say "ralph".
 - [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) — visual system
 - [docs/API_SPEC.md](docs/API_SPEC.md) — API contract
 - [docs/CODE_CONVENTIONS.md](docs/CODE_CONVENTIONS.md) — code style
+- [docs/RELEASE.md](docs/RELEASE.md) — release policy & tag-based deploy flow
 - [AGENTS.md](AGENTS.md) — agent operations
 
 ## Verification commands
