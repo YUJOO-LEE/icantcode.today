@@ -19,14 +19,5 @@
   "siteNav": "사이트 탐색",
   "githubLink": "GitHub 저장소 새 탭에서 열기",
   "siteNavGame": "게임",
-  "siteNavHome": "홈",
-
-  "seo": {
-    "titleNormal": "icantcode.today — Claude Code outage community",
-    "titleChecking": "[...] icantcode.today — Claude Code 상태 확인 중",
-    "titleDown": "[DOWN] icantcode.today — Claude Code API 장애 중",
-    "descriptionNormal": "Claude Code API가 다운됐을 때 개발자들이 모이는 커뮤니티. A developer community that activates only when Claude Code goes down.",
-    "descriptionChecking": "Claude Code API 상태 확인 중... icantcode.today에서 실시간 상태를 확인하세요.",
-    "descriptionDown": "Claude Code API 장애 발생! 지금 icantcode.today에서 다른 개발자들과 소통하세요. Community feed is now open."
-  }
+  "siteNavHome": "홈"
 }
