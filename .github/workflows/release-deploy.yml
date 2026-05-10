@@ -1,0 +1,76 @@
+name: Release Deploy
+
+on:
+  push:
+    tags: ['v*.*.*']
+  # 임의 재배포(롤백 등)를 위해 수동 트리거 허용. ref에 기존 태그를 지정해 호출.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 같은 태그에 대한 재배포는 직렬 처리(상태 충돌 방지). cancel 안 함.
+concurrency:
+  group: release-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_CF_BEACON_TOKEN: ${{ secrets.VITE_CF_BEACON_TOKEN }}
+          VITE_GTM_ID: ${{ secrets.VITE_GTM_ID }}
+
+      - name: SEO smoke check
+        run: |
+          echo "Checking required SEO elements in dist/index.html..."
+          grep -q 'og:image' dist/index.html || (echo "FAIL: og:image missing" && exit 1)
+          grep -q 'og:image:type' dist/index.html || (echo "FAIL: og:image:type missing" && exit 1)
+          grep -q 'canonical' dist/index.html || (echo "FAIL: canonical missing" && exit 1)
+          grep -q 'application/ld+json' dist/index.html || (echo "FAIL: JSON-LD missing" && exit 1)
+          grep -q '"@type": "Organization"' dist/index.html || (echo "FAIL: Organization JSON-LD missing" && exit 1)
+          grep -q '"@type": "HowTo"' dist/index.html || (echo "FAIL: HowTo JSON-LD missing" && exit 1)
+          grep -q 'applicationSubCategory' dist/index.html || (echo "FAIL: WebApplication featureList not enriched" && exit 1)
+          grep -q 'hreflang' dist/index.html || (echo "FAIL: hreflang missing" && exit 1)
+          grep -q 'rel="manifest"' dist/index.html || (echo "FAIL: manifest link missing" && exit 1)
+          test -f dist/site.webmanifest || (echo "FAIL: site.webmanifest missing" && exit 1)
+          test -f dist/robots.txt || (echo "FAIL: robots.txt missing" && exit 1)
+          test -f dist/sitemap.xml || (echo "FAIL: sitemap.xml missing" && exit 1)
+
+          test -f dist/game/index.html || (echo "FAIL: dist/game/index.html missing" && exit 1)
+          test -f dist/game/fall-f/index.html || (echo "FAIL: dist/game/fall-f/index.html missing" && exit 1)
+
+          grep -q 'rel="canonical" href="https://icantcode.today/"' dist/index.html \
+            || (echo "FAIL: home canonical wrong" && exit 1)
+          grep -q 'rel="canonical" href="https://icantcode.today/game"' dist/game/index.html \
+            || (echo "FAIL: /game canonical wrong" && exit 1)
+          grep -q 'rel="canonical" href="https://icantcode.today/game/fall-f"' dist/game/fall-f/index.html \
+            || (echo "FAIL: /game/fall-f canonical wrong" && exit 1)
+
+          echo "✓ Release SEO smoke passed"
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
