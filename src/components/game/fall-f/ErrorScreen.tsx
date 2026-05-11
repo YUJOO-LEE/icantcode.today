@@ -1,27 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export type ErrorKind = 'resize';
-
 interface ErrorScreenProps {
-  kind: ErrorKind;
   onRetry: () => void;
   onHome: () => void;
 }
 
-const TITLE_KEYS: Record<ErrorKind, string> = {
-  resize: 'error.titles.resize',
-};
-
-const FRAME_KEYS: Record<ErrorKind, string> = {
-  resize: 'error.frames.resize',
-};
-
-const CAUSE_KEYS: Record<ErrorKind, string> = {
-  resize: 'error.resize',
-};
-
-function ErrorScreen({ kind, onRetry, onHome }: ErrorScreenProps) {
+function ErrorScreen({ onRetry, onHome }: ErrorScreenProps) {
   const { t } = useTranslation('game');
   const retryRef = useRef<HTMLButtonElement>(null);
 
@@ -31,14 +16,14 @@ function ErrorScreen({ kind, onRetry, onHome }: ErrorScreenProps) {
 
   return (
     <section className="font-mono text-xs" role="alert" aria-live="assertive">
-      <p className="text-destructive whitespace-pre-wrap">{t(TITLE_KEYS[kind])}</p>
+      <p className="text-destructive whitespace-pre-wrap">{t('error.titles.resize')}</p>
 
       <div className="mt-3 ml-2 grid grid-cols-[auto_1fr] gap-x-2">
         <span className="text-muted-foreground">{t('labels.error')}</span>
-        <span>{t(CAUSE_KEYS[kind])}</span>
+        <span>{t('error.resize')}</span>
 
         <span className="text-muted-foreground">{t('labels.in')}</span>
-        <span className="text-muted-foreground">{t(FRAME_KEYS[kind])}</span>
+        <span className="text-muted-foreground">{t('error.frames.resize')}</span>
       </div>
 
       <div className="mt-4 flex gap-3">

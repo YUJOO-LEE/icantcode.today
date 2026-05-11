@@ -1,24 +1,86 @@
 import { describe, it, expect } from 'vitest';
 import {
   currentLinesPerSec,
+  levelFromElapsed,
   makeInitialState,
+  requestDash,
+  requestJump,
   startNewRun,
   tickGameState,
   setPlayerInput,
 } from '../gameState';
+import {
+  COYOTE_TIME_MS,
+  DASH_COOLDOWN_MS,
+  DASH_DURATION_MS,
+  LEVEL_MAX,
+  LINE_RATE_MAX,
+  PLAYER_GRAVITY_CELLS_PER_SEC,
+  PLAYER_JUMP_VELOCITY_CELLS_PER_SEC,
+} from '../constants';
 import { mulberry32 } from '../rng';
 
 const VIEWPORT = { rows: 25, cols: 80 };
 
+// Floating point comparison helper — LINE_RATE_BASE + LINE_RATE_STEP * level
+// can produce values like 1.1, 1.2 that round-trip through JS doubles.
+function approx(a: number, b: number, eps = 1e-9): boolean {
+  return Math.abs(a - b) < eps;
+}
+
+describe('levelFromElapsed', () => {
+  it('starts at level 0', () => {
+    expect(levelFromElapsed(0)).toBe(0);
+    expect(levelFromElapsed(9_999)).toBe(0);
+  });
+  it('advances one level per 10s', () => {
+    expect(levelFromElapsed(10_000)).toBe(1);
+    expect(levelFromElapsed(19_999)).toBe(1);
+    expect(levelFromElapsed(20_000)).toBe(2);
+    expect(levelFromElapsed(50_000)).toBe(5);
+    expect(levelFromElapsed(110_000)).toBe(11);
+  });
+  it('caps at LEVEL_MAX', () => {
+    expect(LEVEL_MAX).toBe(20);
+    expect(levelFromElapsed(200_000)).toBe(LEVEL_MAX);
+    expect(levelFromElapsed(10 * 60_000)).toBe(LEVEL_MAX);
+  });
+});
+
 describe('currentLinesPerSec', () => {
-  it('returns phase 1 rate near start', () => {
+  it('returns the base rate at the start', () => {
     expect(currentLinesPerSec(0)).toBe(1.0);
   });
-  it('returns phase 2 rate after 20s', () => {
-    expect(currentLinesPerSec(30_000)).toBe(1.3);
+  it('follows the discrete ease-in table — early bumps already > +0.1', () => {
+    // First step is +0.12 — bigger than the previous flat +0.1 curve so the
+    // very first level-up is perceptibly faster.
+    expect(approx(currentLinesPerSec(10_000), 1.12)).toBe(true);
+    expect(approx(currentLinesPerSec(20_000), 1.25)).toBe(true);
+    expect(approx(currentLinesPerSec(30_000), 1.4)).toBe(true);
+    expect(approx(currentLinesPerSec(60_000), 1.94)).toBe(true);
   });
-  it('returns phase 3 rate after 60s', () => {
-    expect(currentLinesPerSec(120_000)).toBe(1.6);
+  it('keeps accelerating past 60s — late game punishes the player', () => {
+    expect(approx(currentLinesPerSec(80_000), 2.4)).toBe(true);
+    expect(approx(currentLinesPerSec(100_000), 2.94)).toBe(true);
+    expect(approx(currentLinesPerSec(110_000), 3.24)).toBe(true);
+  });
+  it('continues climbing past the old 120s plateau', () => {
+    expect(currentLinesPerSec(120_000)).toBe(3.5);
+    expect(currentLinesPerSec(150_000)).toBe(5.15);
+    expect(currentLinesPerSec(180_000)).toBe(7.25);
+  });
+  it('caps at 8.9 line/sec once 200s has elapsed', () => {
+    expect(currentLinesPerSec(200_000)).toBe(8.9);
+    expect(currentLinesPerSec(300_000)).toBe(8.9);
+    expect(currentLinesPerSec(600_000)).toBe(8.9);
+  });
+
+  it('keeps LINE_RATE_MAX strictly below PLAYER_GRAVITY_CELLS_PER_SEC (game-balance invariant)', () => {
+    // If lines scrolled up faster than the player falls, the player on a
+    // platform could never reach a lower platform — the game would become
+    // unwinnable past the cap. Lock this in so future curve tweaks can't
+    // accidentally violate it.
+    expect(LINE_RATE_MAX).toBeLessThan(PLAYER_GRAVITY_CELLS_PER_SEC);
   });
 });
 
@@ -169,5 +231,145 @@ describe('tickGameState — long runs', () => {
     state = { ...state, player: { ...state.player, y: -2, falling: false } };
     state = tickGameState(state, 16, mulberry32(606));
     expect(state.status).toBe('dead-timeout');
+  });
+});
+
+describe('requestJump / requestDash', () => {
+  it('flips pendingJump and is idempotent', () => {
+    const state = makeInitialState(VIEWPORT);
+    const once = requestJump(state);
+    expect(once.pendingJump).toBe(true);
+    expect(requestJump(once)).toBe(once); // already true → no churn
+  });
+
+  it('flips pendingDash and is idempotent', () => {
+    const state = makeInitialState(VIEWPORT);
+    const once = requestDash(state);
+    expect(once.pendingDash).toBe(true);
+    expect(requestDash(once)).toBe(once);
+  });
+});
+
+describe('tickGameState — jump', () => {
+  it('applies upward velocity to a supported player and clears the request', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    state = {
+      ...state,
+      player: { ...state.player, falling: false, velocityY: 0 },
+    };
+    state = requestJump(state);
+    state = tickGameState(state, 16, mulberry32(801));
+    expect(state.pendingJump).toBe(false);
+    // After one tick the velocity has been integrated by gravity once,
+    // so it sits between -PLAYER_JUMP_VELOCITY_CELLS_PER_SEC and zero.
+    expect(state.player.velocityY).toBeLessThan(0);
+    expect(state.player.velocityY).toBeGreaterThan(-PLAYER_JUMP_VELOCITY_CELLS_PER_SEC);
+    expect(state.player.falling).toBe(true);
+  });
+
+  it('drops the request when the player is airborne past coyote time', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    state = {
+      ...state,
+      player: { ...state.player, falling: true, fellAtMs: 0 },
+      elapsedMs: COYOTE_TIME_MS + 50,
+    };
+    state = requestJump(state);
+    state = tickGameState(state, 16, mulberry32(802));
+    expect(state.pendingJump).toBe(false);
+    // velocityY only got the regular gravity tick — no -PLAYER_JUMP_VELOCITY kick.
+    expect(state.player.velocityY).toBeGreaterThan(0);
+  });
+
+  it('honors a coyote jump within the grace window', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    state = {
+      ...state,
+      player: { ...state.player, falling: true, fellAtMs: 0, velocityY: 1 },
+      elapsedMs: COYOTE_TIME_MS - 20,
+    };
+    state = requestJump(state);
+    state = tickGameState(state, 16, mulberry32(803));
+    // Negative velocity means the jump kicked in.
+    expect(state.player.velocityY).toBeLessThan(0);
+    expect(state.player.fellAtMs).toBeNull();
+  });
+});
+
+describe('tickGameState — dash', () => {
+  it('starts a dash burst and clears the request', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    state = setPlayerInput(state, 'right');
+    state = requestDash(state);
+    state = tickGameState(state, 16, mulberry32(901));
+    expect(state.pendingDash).toBe(false);
+    // 16ms of the burst has been consumed already; the rest is still ticking.
+    expect(state.player.dashRemainingMs).toBe(DASH_DURATION_MS - 16);
+    expect(state.player.dashCooldownMs).toBe(DASH_COOLDOWN_MS - 16);
+    expect(state.player.dashDirection).toBe('right'); // pure horizontal regardless of falling
+  });
+
+  it('rejects a dash while cooldown is active', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    state = setPlayerInput(state, 'right');
+    state = requestDash(state);
+    state = tickGameState(state, 16, mulberry32(902));
+    // Now request a second dash immediately — cooldown should still be active.
+    state = requestDash(state);
+    const beforeRemaining = state.player.dashRemainingMs;
+    state = tickGameState(state, 16, mulberry32(903));
+    // dashRemainingMs is just decreasing, never reset to DASH_DURATION_MS.
+    expect(state.player.dashRemainingMs).toBeLessThan(beforeRemaining);
+  });
+
+  it('clears dashDirection once the burst ends', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    state = setPlayerInput(state, 'right');
+    state = requestDash(state);
+    // Tick enough to exceed DASH_DURATION_MS in one step.
+    state = tickGameState(state, DASH_DURATION_MS + 50, mulberry32(904));
+    expect(state.player.dashRemainingMs).toBe(0);
+    expect(state.player.dashDirection).toBeNull();
+  });
+});
+
+describe('tickGameState — level progression', () => {
+  it('starts a fresh run at level 0 with no level-up stamp', () => {
+    const state = startNewRun(makeInitialState(VIEWPORT), 0);
+    expect(state.level).toBe(0);
+    expect(state.levelUpAtMs).toBe(0);
+  });
+
+  it('stamps levelUpAtMs the frame elapsed crosses a level boundary', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    state = { ...state, elapsedMs: 9_990 };
+    state = tickGameState(state, 16, mulberry32(700));
+    // 9_990 + 16 = 10_006 → level 1
+    expect(state.level).toBe(1);
+    expect(state.levelUpAtMs).toBe(10_006);
+  });
+
+  it('does not retrigger levelUpAtMs on subsequent same-level frames', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    state = { ...state, elapsedMs: 9_990 };
+    state = tickGameState(state, 16, mulberry32(701));
+    const stampedAt = state.levelUpAtMs;
+    state = tickGameState(state, 16, mulberry32(702));
+    expect(state.level).toBe(1);
+    expect(state.levelUpAtMs).toBe(stampedAt);
+  });
+
+  it('stops stamping past the cap', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    // Jump just before the cap; the next tick crosses LEVEL_MAX-1 → LEVEL_MAX
+    // in one frame and stamps. Subsequent ticks must not re-stamp.
+    state = { ...state, elapsedMs: 200_000 - 16 };
+    state = tickGameState(state, 16, mulberry32(703));
+    expect(state.level).toBe(LEVEL_MAX);
+    const firstCapStamp = state.levelUpAtMs;
+    expect(firstCapStamp).toBeGreaterThan(0);
+    state = tickGameState(state, 16, mulberry32(704));
+    expect(state.level).toBe(LEVEL_MAX);
+    expect(state.levelUpAtMs).toBe(firstCapStamp);
   });
 });

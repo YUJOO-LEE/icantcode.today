@@ -8,7 +8,7 @@ function renderScreen() {
   const onRetry = vi.fn();
   const onHome = vi.fn();
   const { Wrapper } = createTestWrapper({ withI18n: true });
-  const view = render(<ErrorScreen kind="resize" onRetry={onRetry} onHome={onHome} />, {
+  const view = render(<ErrorScreen onRetry={onRetry} onHome={onHome} />, {
     wrapper: Wrapper,
   });
   return { ...view, onRetry, onHome };

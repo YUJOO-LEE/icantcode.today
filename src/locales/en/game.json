@@ -4,6 +4,8 @@
   "labels.death": "DEATH:",
   "labels.best": "best:",
   "labels.move": "←/→ move",
+  "labels.jump": "↑ jump",
+  "labels.dash": "Shift dash",
   "death.timeout": "pushed off the top",
   "death.segfault": "fell through all platforms",
   "result.titles.segfault": "[SEGFAULT] segmentation fault (core dumped)",

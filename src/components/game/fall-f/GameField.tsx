@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   FIELD_GUTTER_LEFT_PX,
   FIELD_GUTTER_RIGHT_PX,
+  LEVEL_UP_FX_DURATION_MS,
   ROW_HEIGHT_PX,
 } from './constants';
 import Player from './Player';
@@ -20,13 +21,12 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
 ) {
   const { t } = useTranslation('game');
   const heightPx = state.viewport.rows * ROW_HEIGHT_PX;
-  const dead =
-    state.status === 'dead-segfault'
-      ? 'segfault'
-      : state.status === 'dead-timeout'
-        ? 'timeout'
-        : null;
   const atLeftEdge = state.player.x <= 0;
+
+  // Brief level-up FX window. `levelUpAtMs === 0` means we're still on level 0.
+  const sinceLevelUpMs = state.elapsedMs - state.levelUpAtMs;
+  const isLevelUp =
+    state.levelUpAtMs > 0 && sinceLevelUpMs >= 0 && sinceLevelUpMs <= LEVEL_UP_FX_DURATION_MS;
 
   return (
     <div
@@ -42,12 +42,18 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
     >
       <div
         aria-hidden="true"
-        className={`pointer-events-none absolute inset-y-0 left-0 w-px transition-colors ${atLeftEdge ? 'bg-destructive' : 'bg-border'}`}
+        data-testid="ff-left-edge"
+        className={`pointer-events-none absolute inset-y-0 left-0 w-px transition-colors ${
+          atLeftEdge ? 'bg-destructive' : 'bg-border'
+        }`}
       />
 
       <div
         aria-hidden="true"
-        className="absolute right-1 top-0 px-1 text-[10px] text-muted-foreground bg-background/70"
+        data-testid="ff-hud-score"
+        className={`absolute right-1 top-0 px-1 text-[10px] bg-background/70 transition-colors ${
+          isLevelUp ? 'text-primary' : 'text-muted-foreground'
+        }`}
         style={{ height: `${ROW_HEIGHT_PX}px`, lineHeight: `${ROW_HEIGHT_PX}px` }}
       >
         {t('hud.score')} {state.score}
@@ -58,7 +64,10 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
           {row.lineNumber > 0 && (
             <div
               aria-hidden="true"
-              className="absolute text-[10px] text-muted-foreground/70 text-right pr-2"
+              data-testid="ff-line-number"
+              className={`absolute text-[10px] text-right pr-2 transition-colors duration-700 ${
+                isLevelUp ? 'text-primary' : 'text-muted-foreground/70'
+              }`}
               style={{
                 top: `${row.topRow * ROW_HEIGHT_PX}px`,
                 left: 0,
@@ -84,7 +93,13 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
           </div>
         </div>
       ))}
-      <Player x={state.player.x} y={state.player.y} input={state.player.input} dead={dead} />
+      <Player
+        x={state.player.x}
+        y={state.player.y}
+        input={state.player.input}
+        velocityY={state.player.velocityY}
+        dashDirection={state.player.dashDirection}
+      />
     </div>
   );
 });

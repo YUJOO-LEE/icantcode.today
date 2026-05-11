@@ -96,8 +96,9 @@ Drawing + Block Elements) 를 모두 커버함.
       안정화 권장. (CLAUDE.md TDD 섹션 권고대로 함께 커밋.)
 - [ ] mid-game 시각 스냅샷은 보류. 시드 주입은 가능하나 rAF 타이밍 차이로
       픽셀 단위 결정성을 보장하기 어려움. 현재는 카탈로그 + Initial 화면
-      4 개 (desktop/mobile × 2) 만 baseline. 사용자 검수 후 mid-game 스냅샷
-      도입 여부 결정.
+      4 개 (desktop/mobile × 2) 만 baseline. 레벨업 띠 / HUD 펄스 같은
+      mid-game 시각 효과는 단위 테스트(GameField.test.tsx)로만 커버하고
+      visual baseline 은 추가하지 않는다 (Phase 13 결정).
 - [ ] 결과 화면의 `at line N` 값으로 `state.recentGroups.length` 를 사용 중
       (현재 활성 그룹 + 직전 K 그룹 윈도우). 스펙 §A.6 의 `at line 142` 는
       "라인 수" 를 함의하지만 본 구현은 score(=그룹 수) 와 별도 카운터로
@@ -119,6 +120,7 @@ Drawing + Block Elements) 를 모두 커버함.
 | 10. Dynamic platforms | ✅ | shrink-right + fill-right 두 종. |
 | 11. i18n | ✅ | ko/en 모두. 시스템 토큰 영어 고정. |
 | 12. Tests | ✅ | 단위 65 개 (game 모듈) + e2e visual 4 + interactive 1. |
+| 13. Progressive levels & FX + gap line numbers | ✅ | LINE_RATE 3단 step → `LEVEL_RATES` 13단계 이산 ease-in (1.00 → cap 3.50 line/sec 도달까지 120s, step 폭 +0.12 → +0.30 으로 점차 확대). 레벨업 1초간 라인넘버 컬럼 + HUD score primary 펄스 (designer 에이전트 결정). gap row 도 lineCounter 증가시켜 모든 행에 번호 표시. |
 
 ## 10. 검증 명령어 결과
 

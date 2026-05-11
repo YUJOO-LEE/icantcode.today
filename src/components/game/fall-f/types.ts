@@ -44,11 +44,32 @@ export interface LineGroup {
 
 export type InputState = 'none' | 'left' | 'right' | 'both';
 
+/**
+ * Active dash direction. Dash never has an upward component — jump is the only
+ * upward action. Direction is decided purely by the held arrow key:
+ * left/right → horizontal; nothing held → straight down. Hitting walls is
+ * handled by the regular horizontal clamp.
+ */
+export type DashDirection = 'left' | 'right' | 'down';
+
 export interface Player {
   x: Cell;
   y: number;
   falling: boolean;
   input: InputState;
+  /** Vertical velocity in cells/sec. Negative = moving up (during a jump). */
+  velocityY: number;
+  /**
+   * Timestamp (in elapsedMs) at which the player transitioned into `falling`.
+   * `null` while supported. Drives the coyote-time grace period for late jumps.
+   */
+  fellAtMs: number | null;
+  /** > 0 while a dash is still active. */
+  dashRemainingMs: number;
+  /** > 0 while the player cannot start a new dash. */
+  dashCooldownMs: number;
+  /** Direction vector of the active dash; `null` when not dashing. */
+  dashDirection: DashDirection | null;
 }
 
 export interface Viewport {
@@ -64,21 +85,18 @@ export type GameStatus =
   | 'dead-timeout'
   | 'dead-resize';
 
-export interface RenderedLine {
-  text: string;
-  segments: PlatformSegment[];
-}
-
 /**
  * One on-screen row. Each visible line of a group is its own ScreenRow.
- * Gap rows have empty segments, `groupId === '__gap'`, and `lineNumber === 0`.
+ * Gap rows have empty segments and `groupId === '__gap'`. They still occupy
+ * a position in the running line counter — terminals number every line,
+ * blank or not — so the gutter shows a number for them too.
  */
 export interface ScreenRow {
   id: string;
   groupId: string;
   isLastOfGroup: boolean;
   lineIndex: number;
-  /** 1-based ordinal of this line since the run started; 0 for gap rows. */
+  /** 1-based ordinal of this row since the run started, including gap rows. */
   lineNumber: number;
   source: Line | null;
   text: string;
@@ -86,9 +104,6 @@ export interface ScreenRow {
   topRow: number;
   ageSec: number;
 }
-
-/** Backward-compatible alias used by physics tests. */
-export type GroupRow = ScreenRow;
 
 export interface GameState {
   status: GameStatus;
@@ -107,4 +122,12 @@ export interface GameState {
   recentGroups: LineGroup[];
   /** Total non-gap lines spawned in this run; used to assign lineNumber. */
   lineCounter: number;
+  /** Discrete difficulty step. floor(elapsedMs / LEVEL_DURATION_MS), clamped to LEVEL_MAX. */
+  level: number;
+  /** elapsedMs at which `level` last advanced; 0 means never. Drives the brief level-up FX. */
+  levelUpAtMs: number;
+  /** One-shot jump request consumed (and reset) by the next tick. */
+  pendingJump: boolean;
+  /** One-shot dash request consumed (and reset) by the next tick. */
+  pendingDash: boolean;
 }
