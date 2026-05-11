@@ -1,22 +1,42 @@
 import { FIELD_GUTTER_LEFT_PX, ROW_HEIGHT_PX } from './constants';
-import type { InputState } from './types';
+import type { DashDirection, InputState } from './types';
 
 interface PlayerProps {
   x: number;
   y: number;
   input: InputState;
-  dead?: 'segfault' | 'timeout' | null;
+  velocityY: number;
+  dashDirection: DashDirection | null;
 }
 
-const GLYPH: Record<InputState, string> = {
-  none: '█',
-  left: '▌',
-  right: '▐',
-  both: '█',
-};
+/**
+ * Map the player's current motion state to a single box-drawing glyph.
+ * Priority (top wins):
+ *   1. active dash — `down` gets the lower-half block, horizontal dashes
+ *      reuse the walk half-blocks (▌/▐).
+ *   2. upward jump (negative velocityY) — upper-half block.
+ *   3. horizontal walk input — left/right half blocks.
+ *   4. idle — full block.
+ *
+ * Death is rendered by `ResultScreen`, not by this component, so there are no
+ * `*` / `x` death glyphs here.
+ */
+function pickGlyph(
+  input: InputState,
+  velocityY: number,
+  dash: DashDirection | null,
+): string {
+  if (dash === 'down') return '▄';
+  if (dash === 'left') return '▌';
+  if (dash === 'right') return '▐';
+  if (velocityY < 0) return '▀';
+  if (input === 'left') return '▌';
+  if (input === 'right') return '▐';
+  return '█';
+}
 
-function Player({ x, y, input, dead }: PlayerProps) {
-  const glyph = dead === 'segfault' ? '*' : dead === 'timeout' ? 'x' : GLYPH[input];
+function Player({ x, y, input, velocityY, dashDirection }: PlayerProps) {
+  const glyph = pickGlyph(input, velocityY, dashDirection);
   return (
     <span
       className="absolute text-primary leading-none pointer-events-none select-none"

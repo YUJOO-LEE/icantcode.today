@@ -1,24 +1,51 @@
 import { describe, it, expect } from 'vitest';
 import {
+  applyDash,
+  applyDashVertical,
   applyGravity,
   applyHorizontal,
+  applyJump,
   autoSlide,
+  canDash,
+  canJump,
   clampX,
   detectDeath,
   findSupportingRow,
   inputDirection,
+  pickDashDirection,
   settle,
+  tickDashTimers,
 } from '../physics';
-import { PLAYER_GRAVITY_CELLS_PER_SEC, PLAYER_MOVE_CELLS_PER_SEC } from '../constants';
-import type { GroupRow, Player } from '../types';
+import {
+  COYOTE_TIME_MS,
+  DASH_COOLDOWN_MS,
+  DASH_DURATION_MS,
+  DASH_HORIZONTAL_CELLS_PER_SEC,
+  DASH_VERTICAL_CELLS_PER_SEC,
+  PLAYER_GRAVITY_CELLS_PER_SEC,
+  PLAYER_JUMP_VELOCITY_CELLS_PER_SEC,
+  PLAYER_MOVE_CELLS_PER_SEC,
+} from '../constants';
+import type { Player, ScreenRow } from '../types';
 
 const VIEWPORT = { rows: 25, cols: 80 };
 
 function makePlayer(overrides: Partial<Player> = {}): Player {
-  return { x: 5, y: 0, falling: true, input: 'none', ...overrides };
+  return {
+    x: 5,
+    y: 0,
+    falling: true,
+    input: 'none',
+    velocityY: 0,
+    fellAtMs: null,
+    dashRemainingMs: 0,
+    dashCooldownMs: 0,
+    dashDirection: null,
+    ...overrides,
+  };
 }
 
-function makeRow(topRow: number, startX = 0, endX = 10, id = 'g'): GroupRow {
+function makeRow(topRow: number, startX = 0, endX = 10, id = 'g'): ScreenRow {
   return {
     id: `${id}-${topRow}`,
     groupId: id,
@@ -53,14 +80,37 @@ describe('inputDirection', () => {
 });
 
 describe('applyGravity', () => {
-  it('does nothing when not falling', () => {
-    const p = makePlayer({ falling: false, y: 5 });
-    expect(applyGravity(p, 1).y).toBe(5);
+  it('does nothing when not falling and clears velocityY', () => {
+    const p = makePlayer({ falling: false, y: 5, velocityY: 7 });
+    const next = applyGravity(p, 1);
+    expect(next.y).toBe(5);
+    expect(next.velocityY).toBe(0);
   });
 
-  it('increases y by gravity * dt when falling', () => {
-    const p = makePlayer({ falling: true, y: 5 });
-    expect(applyGravity(p, 1).y).toBeCloseTo(5 + PLAYER_GRAVITY_CELLS_PER_SEC);
+  it('integrates velocityY into y and accumulates gravity into velocityY', () => {
+    const p = makePlayer({ falling: true, y: 5, velocityY: 0 });
+    const next = applyGravity(p, 1);
+    expect(next.y).toBeCloseTo(5);
+    expect(next.velocityY).toBeCloseTo(PLAYER_GRAVITY_CELLS_PER_SEC);
+  });
+
+  it('jump arc: velocityY ramps from negative back through zero', () => {
+    let p = makePlayer({ falling: true, y: 10, velocityY: -PLAYER_JUMP_VELOCITY_CELLS_PER_SEC });
+    // half a second of upward + gravity decel
+    p = applyGravity(p, 0.5);
+    expect(p.velocityY).toBeCloseTo(-PLAYER_JUMP_VELOCITY_CELLS_PER_SEC + PLAYER_GRAVITY_CELLS_PER_SEC * 0.5);
+    expect(p.y).toBeLessThan(10);
+  });
+
+  it('does not stack gravity onto velocityY while a downward dash is active', () => {
+    const p = makePlayer({
+      falling: true,
+      velocityY: 4,
+      dashRemainingMs: 100,
+      dashDirection: 'down',
+    });
+    const next = applyGravity(p, 1);
+    expect(next.velocityY).toBe(4); // unchanged during vertical dash
   });
 });
 
@@ -75,6 +125,136 @@ describe('applyHorizontal', () => {
     const p = makePlayer({ x: 0 });
     const next = applyHorizontal(p, 'left', 1, 80);
     expect(next.x).toBe(0);
+  });
+
+  it('uses dash speed and direction while dashing', () => {
+    const p = makePlayer({ x: 10, dashRemainingMs: 100, dashDirection: 'right' });
+    const next = applyHorizontal(p, 'none', 0.1, 80);
+    expect(next.x).toBeCloseTo(10 + DASH_HORIZONTAL_CELLS_PER_SEC * 0.1);
+  });
+
+  it('pure-down dash leaves x untouched', () => {
+    const p = makePlayer({ x: 10, dashRemainingMs: 100, dashDirection: 'down' });
+    const next = applyHorizontal(p, 'left', 0.1, 80);
+    expect(next.x).toBe(10);
+  });
+
+  it('left dash with arbitrary current input still goes left', () => {
+    const p = makePlayer({ x: 10, dashRemainingMs: 100, dashDirection: 'left' });
+    const next = applyHorizontal(p, 'right', 0.1, 80);
+    expect(next.x).toBeCloseTo(10 - DASH_HORIZONTAL_CELLS_PER_SEC * 0.1);
+  });
+});
+
+describe('applyDashVertical', () => {
+  it('only kicks downward dashes', () => {
+    const p = makePlayer({ y: 5, dashRemainingMs: 100, dashDirection: 'down' });
+    const next = applyDashVertical(p, 0.1);
+    expect(next.y).toBeCloseTo(5 + DASH_VERTICAL_CELLS_PER_SEC * 0.1);
+  });
+
+  it('no kicker on horizontal-only dash', () => {
+    const p = makePlayer({ y: 5, dashRemainingMs: 100, dashDirection: 'right' });
+    const next = applyDashVertical(p, 0.1);
+    expect(next.y).toBe(5);
+  });
+
+  it('no kicker when not dashing', () => {
+    const p = makePlayer({ y: 5, dashRemainingMs: 0, dashDirection: null });
+    const next = applyDashVertical(p, 0.1);
+    expect(next.y).toBe(5);
+  });
+});
+
+describe('canJump / applyJump', () => {
+  it('allows jump while supported', () => {
+    const p = makePlayer({ falling: false });
+    expect(canJump(p, 1000)).toBe(true);
+  });
+
+  it('allows coyote jump within COYOTE_TIME_MS of falling', () => {
+    const p = makePlayer({ falling: true, fellAtMs: 100 });
+    expect(canJump(p, 100 + COYOTE_TIME_MS)).toBe(true);
+    expect(canJump(p, 100 + COYOTE_TIME_MS - 1)).toBe(true);
+  });
+
+  it('rejects jump after the coyote window', () => {
+    const p = makePlayer({ falling: true, fellAtMs: 100 });
+    expect(canJump(p, 100 + COYOTE_TIME_MS + 1)).toBe(false);
+  });
+
+  it('rejects jump while airborne with no fellAtMs (e.g., spawned in air)', () => {
+    const p = makePlayer({ falling: true, fellAtMs: null });
+    expect(canJump(p, 1000)).toBe(false);
+  });
+
+  it('applyJump sets negative velocityY and clears fellAtMs', () => {
+    const p = makePlayer({ falling: false, velocityY: 0, fellAtMs: 200 });
+    const next = applyJump(p);
+    expect(next.falling).toBe(true);
+    expect(next.velocityY).toBe(-PLAYER_JUMP_VELOCITY_CELLS_PER_SEC);
+    expect(next.fellAtMs).toBeNull();
+  });
+});
+
+describe('pickDashDirection', () => {
+  it('left input → left, regardless of airborne state', () => {
+    expect(pickDashDirection(makePlayer({ falling: false, input: 'left' }))).toBe('left');
+    expect(pickDashDirection(makePlayer({ falling: true, input: 'left' }))).toBe('left');
+  });
+  it('right input → right, regardless of airborne state', () => {
+    expect(pickDashDirection(makePlayer({ falling: false, input: 'right' }))).toBe('right');
+    expect(pickDashDirection(makePlayer({ falling: true, input: 'right' }))).toBe('right');
+  });
+  it('no horizontal (none or both) → down', () => {
+    expect(pickDashDirection(makePlayer({ falling: false, input: 'none' }))).toBe('down');
+    expect(pickDashDirection(makePlayer({ falling: true, input: 'both' }))).toBe('down');
+  });
+});
+
+describe('canDash / applyDash', () => {
+  it('blocks while a dash is still running', () => {
+    const p = makePlayer({ dashRemainingMs: 50 });
+    expect(canDash(p)).toBe(false);
+  });
+
+  it('blocks while cooldown is active', () => {
+    const p = makePlayer({ dashRemainingMs: 0, dashCooldownMs: 200 });
+    expect(canDash(p)).toBe(false);
+  });
+
+  it('allows when both timers are zero', () => {
+    expect(canDash(makePlayer())).toBe(true);
+  });
+
+  it('applyDash sets duration, cooldown and direction', () => {
+    const p = makePlayer({ falling: false, input: 'right' });
+    const next = applyDash(p);
+    expect(next.dashRemainingMs).toBe(DASH_DURATION_MS);
+    expect(next.dashCooldownMs).toBe(DASH_COOLDOWN_MS);
+    expect(next.dashDirection).toBe('right');
+  });
+});
+
+describe('tickDashTimers', () => {
+  it('decrements both timers and clamps at zero', () => {
+    const p = makePlayer({ dashRemainingMs: 30, dashCooldownMs: 500, dashDirection: 'down' });
+    const next = tickDashTimers(p, 100);
+    expect(next.dashRemainingMs).toBe(0);
+    expect(next.dashCooldownMs).toBe(400);
+  });
+
+  it('clears dashDirection when remaining hits zero', () => {
+    const p = makePlayer({ dashRemainingMs: 30, dashCooldownMs: 500, dashDirection: 'down' });
+    const next = tickDashTimers(p, 100);
+    expect(next.dashDirection).toBeNull();
+  });
+
+  it('keeps dashDirection while remaining > 0', () => {
+    const p = makePlayer({ dashRemainingMs: 100, dashCooldownMs: 500, dashDirection: 'right' });
+    const next = tickDashTimers(p, 30);
+    expect(next.dashRemainingMs).toBe(70);
+    expect(next.dashDirection).toBe('right');
   });
 });
 
@@ -135,18 +315,37 @@ describe('findSupportingRow', () => {
 describe('settle', () => {
   it('snaps player onto the row above the supporting line and clears falling', () => {
     const row = makeRow(5, 0, 10);
-    const player = makePlayer({ x: 5, y: 4.7, falling: true });
-    const { player: next, supporting } = settle(player, [row]);
+    const player = makePlayer({ x: 5, y: 4.7, falling: true, velocityY: 6 });
+    const { player: next, supporting } = settle(player, [row], 1234);
     expect(supporting).toBe(row);
     expect(next.falling).toBe(false);
     expect(next.y).toBe(4);
+    expect(next.velocityY).toBe(0);
+    expect(next.fellAtMs).toBeNull();
   });
 
   it('marks player as falling when no supporting row', () => {
     const row = makeRow(5, 0, 1);
     const player = makePlayer({ x: 5, y: 5 });
-    const { player: next, supporting } = settle(player, [row]);
+    const { player: next, supporting } = settle(player, [row], 1234);
     expect(supporting).toBeNull();
     expect(next.falling).toBe(true);
+  });
+
+  it('stamps fellAtMs and a takeoff drop velocity on the tick a player walks off', () => {
+    const row = makeRow(5, 0, 1);
+    const player = makePlayer({ x: 5, y: 5, falling: false, fellAtMs: null });
+    const { player: next } = settle(player, [row], 999);
+    expect(next.falling).toBe(true);
+    expect(next.fellAtMs).toBe(999);
+    expect(next.velocityY).toBeGreaterThan(0); // takeoff drop kick
+  });
+
+  it('does not re-stamp fellAtMs or re-kick velocityY while staying airborne', () => {
+    const row = makeRow(5, 0, 1);
+    const player = makePlayer({ x: 5, y: 5, falling: true, fellAtMs: 100, velocityY: 4 });
+    const { player: next } = settle(player, [row], 1234);
+    expect(next.fellAtMs).toBe(100);
+    expect(next.velocityY).toBe(4); // preserved
   });
 });

@@ -4,16 +4,19 @@ import type { InputState } from './types';
 interface UseKeyboardArgs {
   enabled: boolean;
   onInput: (next: InputState) => void;
-  onStart?: () => void;
+  onJump?: () => void;
+  onDash?: () => void;
 }
 
-export function useKeyboard({ enabled, onInput, onStart }: UseKeyboardArgs): void {
+export function useKeyboard({ enabled, onInput, onJump, onDash }: UseKeyboardArgs): void {
   const onInputRef = useRef(onInput);
-  const onStartRef = useRef(onStart);
+  const onJumpRef = useRef(onJump);
+  const onDashRef = useRef(onDash);
   useEffect(() => {
     onInputRef.current = onInput;
-    onStartRef.current = onStart;
-  }, [onInput, onStart]);
+    onJumpRef.current = onJump;
+    onDashRef.current = onDash;
+  }, [onInput, onJump, onDash]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -37,8 +40,11 @@ export function useKeyboard({ enabled, onInput, onStart }: UseKeyboardArgs): voi
         right = true;
         onInputRef.current(compute());
         e.preventDefault();
-      } else if (e.key === 'Enter') {
-        onStartRef.current?.();
+      } else if (e.key === 'ArrowUp') {
+        onJumpRef.current?.();
+        e.preventDefault();
+      } else if (e.key === 'Shift') {
+        onDashRef.current?.();
         e.preventDefault();
       }
     };

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export type DeathCause = 'segfault' | 'timeout';
+type DeathCause = 'segfault' | 'timeout';
 
 interface ResultScreenProps {
   cause: DeathCause;

@@ -9,30 +9,42 @@ describe('Player glyph', () => {
     ['left', '▌'],
     ['right', '▐'],
     ['both', '█'],
-  ] as const)('renders the %s glyph (%s) when alive', (input, glyph) => {
-    const { container } = render(<Player x={0} y={0} input={input} />);
+  ] as const)('renders the %s glyph (%s) for a walking input', (input, glyph) => {
+    const { container } = render(
+      <Player x={0} y={0} input={input} velocityY={0} dashDirection={null} />,
+    );
     expect(container.textContent).toBe(glyph);
   });
 
-  it('renders `*` when segfault, regardless of input', () => {
-    const { container } = render(<Player x={0} y={0} input="left" dead="segfault" />);
-    expect(container.textContent).toBe('*');
+  it('renders ▀ while jumping (negative velocityY)', () => {
+    const { container } = render(
+      <Player x={0} y={0} input="none" velocityY={-3} dashDirection={null} />,
+    );
+    expect(container.textContent).toBe('▀');
   });
 
-  it('renders `x` when timeout, regardless of input', () => {
-    const { container } = render(<Player x={0} y={0} input="right" dead="timeout" />);
-    expect(container.textContent).toBe('x');
+  it.each([
+    ['down', '▄'],
+    ['left', '▌'],
+    ['right', '▐'],
+  ] as const)('renders the %s dash glyph (%s)', (dir, glyph) => {
+    const { container } = render(
+      <Player x={0} y={0} input="none" velocityY={0} dashDirection={dir} />,
+    );
+    expect(container.textContent).toBe(glyph);
   });
 
-  it('renders alive glyph when dead is null/undefined', () => {
-    const { container, rerender } = render(<Player x={0} y={0} input="none" dead={null} />);
-    expect(container.textContent).toBe('█');
-    rerender(<Player x={0} y={0} input="none" />);
-    expect(container.textContent).toBe('█');
+  it('dash glyph wins over a concurrent walking input', () => {
+    const { container } = render(
+      <Player x={0} y={0} input="right" velocityY={0} dashDirection="down" />,
+    );
+    expect(container.textContent).toBe('▄');
   });
 
   it('positions the span using x (ch) and y (row * ROW_HEIGHT_PX)', () => {
-    const { container } = render(<Player x={5} y={3} input="none" />);
+    const { container } = render(
+      <Player x={5} y={3} input="none" velocityY={0} dashDirection={null} />,
+    );
     const span = container.querySelector('span') as HTMLSpanElement;
     expect(span).not.toBeNull();
     const style = span.getAttribute('style') ?? '';
@@ -45,7 +57,9 @@ describe('Player glyph', () => {
   });
 
   it('is aria-hidden so screen readers ignore the glyph', () => {
-    const { container } = render(<Player x={0} y={0} input="none" />);
+    const { container } = render(
+      <Player x={0} y={0} input="none" velocityY={0} dashDirection={null} />,
+    );
     expect(container.querySelector('span')?.getAttribute('aria-hidden')).toBe('true');
   });
 });

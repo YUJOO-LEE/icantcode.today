@@ -1,4 +1,4 @@
-import { PRESSURE_GROUP_RATIO, SOLVABILITY } from './constants';
+import { PLAYER_SPAWN_X, PRESSURE_GROUP_RATIO, SOLVABILITY } from './constants';
 import { STATIC_GROUPS, DYNAMIC_GROUPS, ALL_GROUPS } from './linePool';
 import type { LineGroup, PlatformSegment } from './types';
 import { getSegments, maxLineWidth, unionSegments, minGapBetween } from './segments';
@@ -36,20 +36,18 @@ export interface PickContext {
   cols: number;
   /**
    * Set true for the very first pick of a run. Filters candidates to those
-   * with at least one platform segment within the player's reach from the
-   * center spawn (≈30 cells of horizontal travel during the fall).
+   * whose first rendered line has a platform segment that covers
+   * `PLAYER_SPAWN_X`, so the spawn drop lands on the platform without
+   * requiring any input.
    */
   firstPick?: boolean;
 }
 
-const FIRST_PICK_REACH_CELLS = 30;
-
-function isReachableFromSpawn(group: LineGroup, cols: number): boolean {
-  const center = Math.floor(cols / 2);
-  const lo = center - FIRST_PICK_REACH_CELLS;
-  const hi = center + FIRST_PICK_REACH_CELLS;
-  for (const seg of groupSegments(group)) {
-    if (seg.endX >= lo && seg.startX <= hi) return true;
+function firstLineCoversSpawn(group: LineGroup): boolean {
+  const first = group.lines[0];
+  if (!first) return false;
+  for (const seg of lineSegments(first)) {
+    if (PLAYER_SPAWN_X >= seg.startX && PLAYER_SPAWN_X <= seg.endX) return true;
   }
   return false;
 }
@@ -86,7 +84,7 @@ export function pickNextGroup(ctx: PickContext, rng: RNG = defaultRNG): LineGrou
   const passes = (candidate: LineGroup) =>
     passesR1(candidate, ctx) &&
     passesR2(candidate, ctx) &&
-    (!ctx.firstPick || isReachableFromSpawn(candidate, ctx.cols));
+    (!ctx.firstPick || firstLineCoversSpawn(candidate));
 
   for (const candidate of shuffle(primary, rng)) {
     if (passes(candidate)) return candidate;

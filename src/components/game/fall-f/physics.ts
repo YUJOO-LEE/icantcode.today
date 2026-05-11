@@ -1,5 +1,22 @@
-import { PLAYER_GRAVITY_CELLS_PER_SEC, PLAYER_MOVE_CELLS_PER_SEC } from './constants';
-import type { GroupRow, InputState, PlatformSegment, Player, Viewport } from './types';
+import {
+  COYOTE_TIME_MS,
+  DASH_COOLDOWN_MS,
+  DASH_DURATION_MS,
+  DASH_HORIZONTAL_CELLS_PER_SEC,
+  DASH_VERTICAL_CELLS_PER_SEC,
+  PLAYER_GRAVITY_CELLS_PER_SEC,
+  PLAYER_JUMP_VELOCITY_CELLS_PER_SEC,
+  PLAYER_MOVE_CELLS_PER_SEC,
+  PLAYER_TAKEOFF_DROP_CELLS_PER_SEC,
+} from './constants';
+import type {
+  DashDirection,
+  InputState,
+  PlatformSegment,
+  Player,
+  ScreenRow,
+  Viewport,
+} from './types';
 
 export function clampX(x: number, cols: number): number {
   if (cols <= 0) return 0;
@@ -17,7 +34,7 @@ function inSegment(x: number, segment: PlatformSegment): boolean {
  * support when `row.topRow - player.y` is in `[0, 1]`, then snap the
  * player to `row.topRow - 1` (see `settle`).
  */
-export function findSupportingRow(player: Player, rows: readonly GroupRow[]): GroupRow | null {
+export function findSupportingRow(player: Player, rows: readonly ScreenRow[]): ScreenRow | null {
   const px = Math.floor(player.x);
   for (const row of rows) {
     const dy = row.topRow - player.y;
@@ -29,9 +46,13 @@ export function findSupportingRow(player: Player, rows: readonly GroupRow[]): Gr
   return null;
 }
 
-export function applyGravity(player: Player, dt: number): Player {
-  if (!player.falling) return player;
-  return { ...player, y: player.y + PLAYER_GRAVITY_CELLS_PER_SEC * dt };
+/** Returns the segment of `row` that holds the player's x, or null. */
+export function findSupportingSegment(row: ScreenRow, x: number): PlatformSegment | null {
+  const px = Math.floor(x);
+  for (const seg of row.segments) {
+    if (inSegment(px, seg)) return seg;
+  }
+  return null;
 }
 
 export function inputDirection(input: InputState): -1 | 0 | 1 {
@@ -40,11 +61,123 @@ export function inputDirection(input: InputState): -1 | 0 | 1 {
   return 0; // 'none' or 'both' (cancel out)
 }
 
+/**
+ * Apply one tick of vertical motion. While mid-`down`-dash, gravity stops
+ * accumulating into velocityY so the dash burst (added separately by
+ * `applyDashVertical`) is the dominant downward force. Standing players
+ * (`falling=false`) hold velocityY at 0.
+ */
+export function applyGravity(player: Player, dt: number): Player {
+  if (!player.falling) return { ...player, velocityY: 0 };
+  const dashHasVertical = player.dashRemainingMs > 0 && player.dashDirection === 'down';
+  const nextY = player.y + player.velocityY * dt;
+  const nextVy = dashHasVertical
+    ? player.velocityY
+    : player.velocityY + PLAYER_GRAVITY_CELLS_PER_SEC * dt;
+  return { ...player, y: nextY, velocityY: nextVy };
+}
+
+function dashHorizontalSign(dir: DashDirection): -1 | 0 | 1 {
+  if (dir === 'left') return -1;
+  if (dir === 'right') return 1;
+  return 0; // 'down'
+}
+
+/**
+ * Apply one tick of horizontal motion. While dashing, the dash drives x at
+ * `DASH_HORIZONTAL_CELLS_PER_SEC`; otherwise the regular walk speed applies.
+ * A pure-`down` dash has no horizontal component.
+ */
 export function applyHorizontal(player: Player, input: InputState, dt: number, cols: number): Player {
+  if (player.dashRemainingMs > 0 && player.dashDirection !== null) {
+    const dashDir = dashHorizontalSign(player.dashDirection);
+    if (dashDir === 0) return { ...player, input };
+    const nextX = clampX(player.x + dashDir * DASH_HORIZONTAL_CELLS_PER_SEC * dt, cols);
+    return { ...player, x: nextX, input };
+  }
   const dir = inputDirection(input);
   if (dir === 0) return { ...player, input };
   const nextX = clampX(player.x + dir * PLAYER_MOVE_CELLS_PER_SEC * dt, cols);
   return { ...player, x: nextX, input };
+}
+
+/**
+ * Apply the dash's vertical kicker for one tick. Only the `down` dash pushes
+ * the player down extra; horizontal dashes leave gravity to do the work.
+ * Jump is the only action that ever moves the player upward.
+ */
+export function applyDashVertical(player: Player, dt: number): Player {
+  if (player.dashRemainingMs <= 0) return player;
+  if (player.dashDirection !== 'down') return player;
+  return { ...player, y: player.y + DASH_VERTICAL_CELLS_PER_SEC * dt };
+}
+
+/**
+ * Decide whether the player can act on a fresh jump request right now —
+ * standing on a platform, or within the coyote-time grace period after
+ * first transitioning to airborne.
+ */
+export function canJump(player: Player, elapsedMs: number): boolean {
+  if (!player.falling) return true;
+  if (player.fellAtMs === null) return false;
+  return elapsedMs - player.fellAtMs <= COYOTE_TIME_MS;
+}
+
+/**
+ * Fire a jump: set upward velocity and clear `fellAtMs` so a coyote jump
+ * can't be re-used after landing-and-falling within the same window.
+ */
+export function applyJump(player: Player): Player {
+  return {
+    ...player,
+    falling: true,
+    velocityY: -PLAYER_JUMP_VELOCITY_CELLS_PER_SEC,
+    fellAtMs: null,
+  };
+}
+
+/**
+ * Decide the dash direction from current input alone. Wall-clamping is
+ * handled by the regular horizontal clamp; the burst just fizzles against
+ * an edge.
+ */
+export function pickDashDirection(player: Player): DashDirection {
+  const horizontal = inputDirection(player.input);
+  if (horizontal === -1) return 'left';
+  if (horizontal === 1) return 'right';
+  return 'down';
+}
+
+/** A new dash can start only if no dash is active and the cooldown has expired. */
+export function canDash(player: Player): boolean {
+  return player.dashRemainingMs <= 0 && player.dashCooldownMs <= 0;
+}
+
+/** Fire a dash for `DASH_DURATION_MS` in the direction picked from current input. */
+export function applyDash(player: Player): Player {
+  return {
+    ...player,
+    dashRemainingMs: DASH_DURATION_MS,
+    dashCooldownMs: DASH_COOLDOWN_MS,
+    dashDirection: pickDashDirection(player),
+  };
+}
+
+/**
+ * Tick down the dash duration / cooldown counters by `dtMs`. When the active
+ * dash expires, clear `dashDirection`. Cooldown continues counting down even
+ * after the dash itself has ended.
+ */
+export function tickDashTimers(player: Player, dtMs: number): Player {
+  const nextRemaining = Math.max(0, player.dashRemainingMs - dtMs);
+  const nextCooldown = Math.max(0, player.dashCooldownMs - dtMs);
+  const nextDirection = nextRemaining > 0 ? player.dashDirection : null;
+  return {
+    ...player,
+    dashRemainingMs: nextRemaining,
+    dashCooldownMs: nextCooldown,
+    dashDirection: nextDirection,
+  };
 }
 
 /**
@@ -53,12 +186,8 @@ export function applyHorizontal(player: Player, input: InputState, dt: number, c
  */
 export function autoSlide(player: Player, segment: PlatformSegment): Player {
   const px = Math.floor(player.x);
-  if (px > segment.endX) {
-    return { ...player, x: segment.endX };
-  }
-  if (px < segment.startX) {
-    return { ...player, x: segment.startX };
-  }
+  if (px > segment.endX) return { ...player, x: segment.endX };
+  if (px < segment.startX) return { ...player, x: segment.startX };
   return player;
 }
 
@@ -71,18 +200,44 @@ export function detectDeath(player: Player, viewport: Viewport): 'segfault' | 't
 /**
  * After scrolling rows and applying gravity, check whether the player is now
  * supported. Returns the updated player (snapped to platform y) and the
- * supporting row (null if the player is still in the air).
+ * supporting row (null if still in the air).
+ *
+ * Side-effects on player state:
+ *   - landing: snaps y, clears velocityY and fellAtMs.
+ *   - takeoff (was supported, now not): stamps fellAtMs and a takeoff drop
+ *     velocity so the fall reads as a real fall right away (without the
+ *     kick, line-scroll keeps the player inside `dy ∈ [0, 1]` long enough
+ *     for a quickly-returning input to "climb back on" from below).
+ *   - mid-air or staying-airborne ticks pass through unchanged.
  */
 export function settle(
   player: Player,
-  rows: readonly GroupRow[],
-): { player: Player; supporting: GroupRow | null } {
+  rows: readonly ScreenRow[],
+  elapsedMs: number,
+): { player: Player; supporting: ScreenRow | null } {
   const supporting = findSupportingRow(player, rows);
   if (!supporting) {
+    if (!player.falling) {
+      return {
+        player: {
+          ...player,
+          falling: true,
+          fellAtMs: elapsedMs,
+          velocityY: PLAYER_TAKEOFF_DROP_CELLS_PER_SEC,
+        },
+        supporting: null,
+      };
+    }
     return { player: { ...player, falling: true }, supporting: null };
   }
   return {
-    player: { ...player, y: supporting.topRow - 1, falling: false },
+    player: {
+      ...player,
+      y: supporting.topRow - 1,
+      falling: false,
+      velocityY: 0,
+      fellAtMs: null,
+    },
     supporting,
   };
 }

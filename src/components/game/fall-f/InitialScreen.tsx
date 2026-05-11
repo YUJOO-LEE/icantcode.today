@@ -31,7 +31,11 @@ function InitialScreen({ best, hasBest, onStart }: InitialScreenProps) {
 
       <div className="mt-3 grid grid-cols-[auto_1fr] gap-x-2">
         <span className="text-muted-foreground">{t('labels.keys')}</span>
-        <span>{t('labels.move')}</span>
+        <div className="space-y-0">
+          <p>{t('labels.move')}</p>
+          <p>{t('labels.jump')}</p>
+          <p>{t('labels.dash')}</p>
+        </div>
 
         <span className="text-muted-foreground">{t('labels.death')}</span>
         <div className="space-y-0">

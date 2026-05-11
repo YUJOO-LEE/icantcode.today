@@ -21,12 +21,6 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
 ) {
   const { t } = useTranslation('game');
   const heightPx = state.viewport.rows * ROW_HEIGHT_PX;
-  const dead =
-    state.status === 'dead-segfault'
-      ? 'segfault'
-      : state.status === 'dead-timeout'
-        ? 'timeout'
-        : null;
   const atLeftEdge = state.player.x <= 0;
 
   // Brief level-up FX window. `levelUpAtMs === 0` means we're still on level 0.
@@ -99,7 +93,13 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
           </div>
         </div>
       ))}
-      <Player x={state.player.x} y={state.player.y} input={state.player.input} dead={dead} />
+      <Player
+        x={state.player.x}
+        y={state.player.y}
+        input={state.player.input}
+        velocityY={state.player.velocityY}
+        dashDirection={state.player.dashDirection}
+      />
     </div>
   );
 });

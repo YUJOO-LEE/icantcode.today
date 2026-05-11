@@ -3,15 +3,23 @@ import {
   LEVEL_DURATION_MS,
   LEVEL_MAX,
   LEVEL_RATES,
+  PLAYER_SPAWN_X,
   SOLVABILITY,
 } from './constants';
 import { lineSegmentsAt, renderLine } from './dynamicLine';
 import {
+  applyDash,
+  applyDashVertical,
   applyGravity,
   applyHorizontal,
+  applyJump,
   autoSlide,
+  canDash,
+  canJump,
   detectDeath,
+  findSupportingSegment,
   settle,
+  tickDashTimers,
 } from './physics';
 import { pickNextGroup } from './solvability';
 import type {
@@ -19,7 +27,6 @@ import type {
   GameStatus,
   LineGroup,
   Line,
-  PlatformSegment,
   Player,
   ScreenRow,
   Viewport,
@@ -34,19 +41,31 @@ export function levelFromElapsed(elapsedMs: number): number {
 }
 
 export function currentLinesPerSec(elapsedMs: number): number {
-  // `levelFromElapsed` clamps to [0, LEVEL_MAX] where LEVEL_MAX = LEVEL_RATES.length − 1,
-  // so the lookup is always defined; the `?? LINE_RATE_BASE` is a defensive fallback only.
+  // `levelFromElapsed` clamps to [0, LEVEL_MAX] so the lookup is always
+  // defined; the fallback is a TS-narrowing crutch, not a real runtime path.
   return LEVEL_RATES[levelFromElapsed(elapsedMs)] ?? LEVEL_RATES[0];
 }
 
-function freshPlayer(viewport: Viewport): Player {
-  return {
-    x: Math.floor(viewport.cols / 2),
-    y: 0,
-    falling: true,
-    input: 'none',
-  };
-}
+// Spawn at (PLAYER_SPAWN_X, 1):
+//   - x: most platforms start at column 0 and rarely reach past the middle
+//     of the viewport, so the firstPick filter in `solvability.ts` pairs
+//     with this column to guarantee a no-input landing.
+//   - y: with line-scroll applied to airborne players, y=0 would dip below
+//     zero on the first tick and trigger a timeout death before gravity
+//     has had a chance to ramp up; y=1 gives just enough headroom.
+// Shared reference is safe because every tick produces a new player via
+// `{ ...player, ... }` — the initial object is never mutated in place.
+const INITIAL_PLAYER: Player = {
+  x: PLAYER_SPAWN_X,
+  y: 1,
+  falling: true,
+  input: 'none',
+  velocityY: 0,
+  fellAtMs: null,
+  dashRemainingMs: 0,
+  dashCooldownMs: 0,
+  dashDirection: null,
+};
 
 export function makeInitialState(viewport: Viewport): GameState {
   return {
@@ -55,7 +74,7 @@ export function makeInitialState(viewport: Viewport): GameState {
     elapsedMs: 0,
     score: 0,
     best: 0,
-    player: freshPlayer(viewport),
+    player: INITIAL_PLAYER,
     rows: [],
     viewport,
     spawnPendingMs: FIRST_LINE_DELAY_MS,
@@ -66,26 +85,17 @@ export function makeInitialState(viewport: Viewport): GameState {
     lineCounter: 0,
     level: 0,
     levelUpAtMs: 0,
+    pendingJump: false,
+    pendingDash: false,
   };
 }
 
 export function startNewRun(state: GameState, nowMs: number): GameState {
   return {
-    ...state,
+    ...makeInitialState(state.viewport),
+    best: state.best,
     status: 'playing',
     startedAtMs: nowMs,
-    elapsedMs: 0,
-    score: 0,
-    rows: [],
-    player: freshPlayer(state.viewport),
-    spawnPendingMs: FIRST_LINE_DELAY_MS,
-    currentGroup: null,
-    currentGroupCursor: 0,
-    gapRowsRemaining: 0,
-    recentGroups: [],
-    lineCounter: 0,
-    level: 0,
-    levelUpAtMs: 0,
   };
 }
 
@@ -145,14 +155,6 @@ function rerenderDynamicRow(row: ScreenRow, cols: number): ScreenRow {
   const text = renderLine(row.source, row.ageSec, cols);
   const segments = lineSegmentsAt(row.source, row.ageSec, cols);
   return { ...row, text, segments };
-}
-
-function findSupportingSegment(row: ScreenRow, x: number): PlatformSegment | null {
-  const px = Math.floor(x);
-  for (const seg of row.segments) {
-    if (px >= seg.startX && px <= seg.endX) return seg;
-  }
-  return null;
 }
 
 export function tickGameState(state: GameState, dtMs: number, rng: RNG = defaultRNG): GameState {
@@ -240,12 +242,27 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
     next.recentGroups = pushRecent(next.recentGroups, picked);
   }
 
-  // 5. Player horizontal + gravity.
-  let player = applyHorizontal(next.player, next.player.input, dt, next.viewport.cols);
+  // 5. Player physics. Airborne players scroll with the map so jump arcs
+  //    return to the launching platform at any line-rate; on the ground,
+  //    `settle` re-snaps every tick so the scroll has no visible effect.
+  let player: Player = next.player.falling
+    ? { ...next.player, y: next.player.y - linesPerSec * dt }
+    : next.player;
+  if (next.pendingJump && canJump(player, elapsedMs)) {
+    player = applyJump(player);
+  }
+  if (next.pendingDash && canDash(player)) {
+    player = applyDash(player);
+  }
+  next.pendingJump = false;
+  next.pendingDash = false;
+  player = tickDashTimers(player, dtMs);
+  player = applyHorizontal(player, player.input, dt, next.viewport.cols);
   player = applyGravity(player, dt);
+  player = applyDashVertical(player, dt);
 
   // 6. Settle on supporting row, and track the deepest line stepped on.
-  const settled = settle(player, next.rows);
+  const settled = settle(player, next.rows, elapsedMs);
   player = settled.player;
   if (settled.supporting) {
     const seg = findSupportingSegment(settled.supporting, player.x);
@@ -276,4 +293,16 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
 export function setPlayerInput(state: GameState, input: Player['input']): GameState {
   if (state.player.input === input) return state;
   return { ...state, player: { ...state.player, input } };
+}
+
+/** Queue a one-shot jump request for the next `tickGameState`. */
+export function requestJump(state: GameState): GameState {
+  if (state.pendingJump) return state;
+  return { ...state, pendingJump: true };
+}
+
+/** Queue a one-shot dash request for the next `tickGameState`. */
+export function requestDash(state: GameState): GameState {
+  if (state.pendingDash) return state;
+  return { ...state, pendingDash: true };
 }

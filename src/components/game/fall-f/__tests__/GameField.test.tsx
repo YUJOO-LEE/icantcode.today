@@ -91,7 +91,17 @@ describe('GameField', () => {
 
   it('paints the left edge with the destructive color when the player is at x=0', () => {
     const state = makeState({
-      player: { x: 0, y: 0, falling: false, input: 'none' },
+      player: {
+        x: 0,
+        y: 0,
+        falling: false,
+        input: 'none',
+        velocityY: 0,
+        fellAtMs: null,
+        dashRemainingMs: 0,
+        dashCooldownMs: 0,
+        dashDirection: null,
+      },
     });
     const { container } = render(<GameField state={state} />, { wrapper: Wrapper });
     const edge = container.querySelector('[aria-hidden="true"].pointer-events-none.absolute.inset-y-0');
@@ -100,23 +110,21 @@ describe('GameField', () => {
 
   it('paints the left edge with the border color when the player is not at x=0', () => {
     const state = makeState({
-      player: { x: 4, y: 0, falling: false, input: 'none' },
+      player: {
+        x: 4,
+        y: 0,
+        falling: false,
+        input: 'none',
+        velocityY: 0,
+        fellAtMs: null,
+        dashRemainingMs: 0,
+        dashCooldownMs: 0,
+        dashDirection: null,
+      },
     });
     const { container } = render(<GameField state={state} />, { wrapper: Wrapper });
     const edge = container.querySelector('[aria-hidden="true"].pointer-events-none.absolute.inset-y-0');
     expect(edge?.className).toContain('bg-border');
-  });
-
-  it('renders the player with the segfault glyph when status is dead-segfault', () => {
-    const state = makeState({ status: 'dead-segfault' });
-    const { container } = render(<GameField state={state} />, { wrapper: Wrapper });
-    expect(container.textContent).toContain('*');
-  });
-
-  it('renders the player with the timeout glyph when status is dead-timeout', () => {
-    const state = makeState({ status: 'dead-timeout' });
-    const { container } = render(<GameField state={state} />, { wrapper: Wrapper });
-    expect(container.textContent).toContain('x');
   });
 
   it('forwards the ref to the field root', () => {
@@ -171,7 +179,17 @@ describe('GameField', () => {
       elapsedMs: 10_200,
       level: 1,
       levelUpAtMs: 10_000,
-      player: { x: 4, y: 0, falling: false, input: 'none' },
+      player: {
+        x: 4,
+        y: 0,
+        falling: false,
+        input: 'none',
+        velocityY: 0,
+        fellAtMs: null,
+        dashRemainingMs: 0,
+        dashCooldownMs: 0,
+        dashDirection: null,
+      },
       rows: [makeRow({ id: 'r1', text: 'hello', lineNumber: 1, topRow: 0 })],
     });
     render(<GameField state={state} />, { wrapper: Wrapper });
@@ -187,7 +205,17 @@ describe('GameField', () => {
       elapsedMs: 10_200,
       level: 1,
       levelUpAtMs: 10_000,
-      player: { x: 0, y: 0, falling: false, input: 'none' },
+      player: {
+        x: 0,
+        y: 0,
+        falling: false,
+        input: 'none',
+        velocityY: 0,
+        fellAtMs: null,
+        dashRemainingMs: 0,
+        dashCooldownMs: 0,
+        dashDirection: null,
+      },
     });
     render(<GameField state={state} />, { wrapper: Wrapper });
     expect(screen.getByTestId('ff-left-edge').className).toContain('bg-destructive');

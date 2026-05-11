@@ -8,7 +8,14 @@ import InitialScreen from './InitialScreen';
 import ResultScreen from './ResultScreen';
 import ErrorScreen from './ErrorScreen';
 import GameField from './GameField';
-import { makeInitialState, startNewRun, setPlayerInput, tickGameState } from './gameState';
+import {
+  makeInitialState,
+  requestDash,
+  requestJump,
+  setPlayerInput,
+  startNewRun,
+  tickGameState,
+} from './gameState';
 import { FIELD_GUTTER_LEFT_PX, FIELD_GUTTER_RIGHT_PX, ROW_HEIGHT_PX } from './constants';
 import { rowsForHeight, colsForWidth, measureCellWidth } from './grid';
 import { useKeyboard } from './useKeyboard';
@@ -100,6 +107,14 @@ function FallFGame() {
     setState((prev) => setPlayerInput(prev, input));
   }, []);
 
+  const queueJump = useCallback(() => {
+    setState((prev) => requestJump(prev));
+  }, []);
+
+  const queueDash = useCallback(() => {
+    setState((prev) => requestDash(prev));
+  }, []);
+
   const pageHidden = usePageHidden();
 
   // Game loop — uses functional setState so we never read state during render.
@@ -125,6 +140,8 @@ function FallFGame() {
   useKeyboard({
     enabled: state.status === 'playing',
     onInput: setInput,
+    onJump: queueJump,
+    onDash: queueDash,
   });
 
   useTouchControls({
@@ -156,9 +173,7 @@ function FallFGame() {
       />
     );
   } else if (state.status === 'dead-resize') {
-    content = (
-      <ErrorScreen kind="resize" onRetry={handleReturnToIdle} onHome={handleHome} />
-    );
+    content = <ErrorScreen onRetry={handleReturnToIdle} onHome={handleHome} />;
   } else {
     content = <GameField ref={fieldRef} state={state} ariaLabel="fall -f game" />;
   }
