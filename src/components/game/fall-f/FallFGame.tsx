@@ -4,9 +4,12 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { ROUTES } from '@/constants/routes';
 import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useStartGame } from '@/apis/queries/useGames';
 import InitialScreen from './InitialScreen';
+import LoadingScreen from './LoadingScreen';
 import ResultScreen from './ResultScreen';
 import ErrorScreen from './ErrorScreen';
+import StartErrorScreen from './StartErrorScreen';
 import GameField from './GameField';
 import {
   makeInitialState,
@@ -87,12 +90,29 @@ function FallFGame() {
     return () => ro.disconnect();
   }, [state.status]);
 
+  // `mutate` is referentially stable across renders (TanStack Query v5),
+  // so we can put it directly in the useCallback deps without retriggering
+  // InitialScreen's keyboard listener on every render.
+  const { mutate: startMutate } = useStartGame();
+
   const handleStart = useCallback(() => {
     // Measure viewport at game-start, not on mount: idle screen doesn't need it.
     const widthPx = wrapperRef.current?.clientWidth ?? 0;
     const viewport = widthPx > 0 ? viewportFromWidth(widthPx) : FALLBACK_VIEWPORT;
-    setState((prev) => startNewRun({ ...prev, viewport }, performance.now()));
-  }, []);
+    setState((prev) => ({ ...prev, viewport, status: 'starting' }));
+    startMutate(undefined, {
+      onSuccess: ({ sessionId }) => {
+        setState((prev) =>
+          prev.status === 'starting'
+            ? startNewRun({ ...prev, viewport }, performance.now(), sessionId)
+            : prev,
+        );
+      },
+      onError: () => {
+        setState((prev) => (prev.status === 'starting' ? { ...prev, status: 'start-failed' } : prev));
+      },
+    });
+  }, [startMutate]);
 
   const handleReturnToIdle = useCallback(() => {
     setState((prev) => ({ ...prev, status: 'idle' }));
@@ -162,12 +182,17 @@ function FallFGame() {
     content = (
       <InitialScreen best={state.best} hasBest={state.best > 0} onStart={handleStart} />
     );
+  } else if (state.status === 'starting') {
+    content = <LoadingScreen />;
+  } else if (state.status === 'start-failed') {
+    content = <StartErrorScreen onRetry={handleStart} onHome={handleHome} />;
   } else if (resultCause) {
     content = (
       <ResultScreen
         cause={resultCause}
         score={state.score}
         best={state.best}
+        sessionId={state.sessionId}
         onRetry={handleReturnToIdle}
         onHome={handleHome}
       />

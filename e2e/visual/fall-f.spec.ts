@@ -31,6 +31,39 @@ test.describe('fall -f — desktop', () => {
   });
 });
 
+test.describe('fall -f — score API screens', () => {
+  test.use({ viewport: { width: 1024, height: 720 } });
+
+  test('start error screen when /games/start fails', async ({ page }) => {
+    await page.route('**/games/start', (route) =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
+    );
+    await page.goto('/game/fall-f');
+    await page.getByText('$ fall -f').waitFor();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('alert').filter({ hasText: '[FAIL]' })).toBeVisible();
+    await expect(page).toHaveScreenshot('fall-f-start-error-desktop.png', { fullPage: true });
+  });
+
+  test('loading screen while /games/start is in flight', async ({ page }) => {
+    // Defer the response so the LoadingScreen stays on screen long enough to
+    // screenshot.
+    await page.route('**/games/start', async (route) => {
+      await new Promise((r) => setTimeout(r, 5_000));
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ sessionId: '550e8400-e29b-41d4-a716-446655440000' }),
+      });
+    });
+    await page.goto('/game/fall-f');
+    await page.getByText('$ fall -f').waitFor();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('status').filter({ hasText: '[BOOT]' })).toBeVisible();
+    await expect(page).toHaveScreenshot('fall-f-loading-desktop.png', { fullPage: true });
+  });
+});
+
 test.describe('fall -f — mobile', () => {
   test.use({ viewport: { width: 375, height: 667 } });
 

@@ -92,27 +92,27 @@ describe('tickGameState', () => {
   });
 
   it('advances elapsedMs while playing', () => {
-    const state = startNewRun(makeInitialState(VIEWPORT), 0);
+    const state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     const next = tickGameState(state, 16, mulberry32(1));
     expect(next.elapsedMs).toBe(16);
   });
 
   it('eventually spawns the first row after the grace period', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     const rng = mulberry32(2);
     for (let i = 0; i < 60; i++) state = tickGameState(state, 16, rng);
     expect(state.rows.length).toBeGreaterThan(0);
   });
 
   it('detects timeout when player y goes above 0', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = { ...state, player: { ...state.player, y: -1, falling: false } };
     state = tickGameState(state, 16, mulberry32(3));
     expect(state.status).toBe('dead-timeout');
   });
 
   it('detects segfault when player y exceeds rows', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = {
       ...state,
       player: { ...state.player, y: VIEWPORT.rows + 1, falling: true },
@@ -124,7 +124,7 @@ describe('tickGameState', () => {
 
 describe('setPlayerInput', () => {
   it('updates player input without changing other fields', () => {
-    const state = startNewRun(makeInitialState(VIEWPORT), 0);
+    const state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     const next = setPlayerInput(state, 'left');
     expect(next.player.input).toBe('left');
     expect(next.elapsedMs).toBe(state.elapsedMs);
@@ -138,7 +138,7 @@ describe('setPlayerInput', () => {
 
 describe('tickGameState — long runs', () => {
   it('spawns multiple lines + gaps over a few seconds without crashing', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     const rng = mulberry32(101);
     for (let i = 0; i < 600; i += 1) {
       state = tickGameState(state, 16, rng);
@@ -153,7 +153,7 @@ describe('tickGameState — long runs', () => {
   });
 
   it('updates score when the player lands on a supporting segment', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     const rng = mulberry32(202);
     // Pin the player onto whatever the first spawned platform is by holding
     // input='none' (no horizontal motion) and letting the simulation drop them
@@ -164,14 +164,14 @@ describe('tickGameState — long runs', () => {
       state = tickGameState(state, 16, rng);
       if (state.score > 0) break;
       if (state.status !== 'playing') {
-        state = startNewRun(makeInitialState(VIEWPORT), 0);
+        state = startNewRun(makeInitialState(VIEWPORT), 0, null);
       }
     }
     expect(state.score).toBeGreaterThan(0);
   });
 
   it('updates best when the player dies with a new high score', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = { ...state, score: 17, best: 5 };
     state = {
       ...state,
@@ -183,7 +183,7 @@ describe('tickGameState — long runs', () => {
   });
 
   it('keeps the existing best when the new score is lower', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = { ...state, score: 3, best: 50 };
     state = {
       ...state,
@@ -199,7 +199,7 @@ describe('tickGameState — long runs', () => {
     // only segment is far away from x. settle() will report this row as
     // supporting (player.y is just above topRow), but findSupportingSegment
     // must return null → covers gameState.ts:140 + 233 (falling=true branch).
-    const base = startNewRun(makeInitialState(VIEWPORT), 0);
+    const base = startNewRun(makeInitialState(VIEWPORT), 0, null);
     const row = {
       id: 'r-far',
       groupId: 'g',
@@ -227,7 +227,7 @@ describe('tickGameState — long runs', () => {
   });
 
   it('detects timeout via tick when player y drifts above 0', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = { ...state, player: { ...state.player, y: -2, falling: false } };
     state = tickGameState(state, 16, mulberry32(606));
     expect(state.status).toBe('dead-timeout');
@@ -252,7 +252,7 @@ describe('requestJump / requestDash', () => {
 
 describe('tickGameState — jump', () => {
   it('applies upward velocity to a supported player and clears the request', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = {
       ...state,
       player: { ...state.player, falling: false, velocityY: 0 },
@@ -268,7 +268,7 @@ describe('tickGameState — jump', () => {
   });
 
   it('drops the request when the player is airborne past coyote time', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = {
       ...state,
       player: { ...state.player, falling: true, fellAtMs: 0 },
@@ -282,7 +282,7 @@ describe('tickGameState — jump', () => {
   });
 
   it('honors a coyote jump within the grace window', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = {
       ...state,
       player: { ...state.player, falling: true, fellAtMs: 0, velocityY: 1 },
@@ -298,7 +298,7 @@ describe('tickGameState — jump', () => {
 
 describe('tickGameState — dash', () => {
   it('starts a dash burst and clears the request', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = setPlayerInput(state, 'right');
     state = requestDash(state);
     state = tickGameState(state, 16, mulberry32(901));
@@ -310,7 +310,7 @@ describe('tickGameState — dash', () => {
   });
 
   it('rejects a dash while cooldown is active', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = setPlayerInput(state, 'right');
     state = requestDash(state);
     state = tickGameState(state, 16, mulberry32(902));
@@ -323,7 +323,7 @@ describe('tickGameState — dash', () => {
   });
 
   it('clears dashDirection once the burst ends', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = setPlayerInput(state, 'right');
     state = requestDash(state);
     // Tick enough to exceed DASH_DURATION_MS in one step.
@@ -335,13 +335,13 @@ describe('tickGameState — dash', () => {
 
 describe('tickGameState — level progression', () => {
   it('starts a fresh run at level 0 with no level-up stamp', () => {
-    const state = startNewRun(makeInitialState(VIEWPORT), 0);
+    const state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     expect(state.level).toBe(0);
     expect(state.levelUpAtMs).toBe(0);
   });
 
   it('stamps levelUpAtMs the frame elapsed crosses a level boundary', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = { ...state, elapsedMs: 9_990 };
     state = tickGameState(state, 16, mulberry32(700));
     // 9_990 + 16 = 10_006 → level 1
@@ -350,7 +350,7 @@ describe('tickGameState — level progression', () => {
   });
 
   it('does not retrigger levelUpAtMs on subsequent same-level frames', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     state = { ...state, elapsedMs: 9_990 };
     state = tickGameState(state, 16, mulberry32(701));
     const stampedAt = state.levelUpAtMs;
@@ -360,7 +360,7 @@ describe('tickGameState — level progression', () => {
   });
 
   it('stops stamping past the cap', () => {
-    let state = startNewRun(makeInitialState(VIEWPORT), 0);
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
     // Jump just before the cap; the next tick crosses LEVEL_MAX-1 → LEVEL_MAX
     // in one frame and stamps. Subsequent ticks must not re-stamp.
     state = { ...state, elapsedMs: 200_000 - 16 };

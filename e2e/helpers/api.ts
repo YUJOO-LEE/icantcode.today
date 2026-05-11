@@ -52,7 +52,14 @@ export async function stubAnalytics(page: Page): Promise<void> {
  * Allowed messages (e.g. known harmless warnings) can be added to
  * `ALLOWED_CONSOLE_ERRORS` below.
  */
-const ALLOWED_CONSOLE_ERRORS: RegExp[] = [];
+const ALLOWED_CONSOLE_ERRORS: RegExp[] = [
+  // Specs that intentionally make an API return 500 (e.g. StartErrorScreen
+  // baseline) trip Chrome's "Failed to load resource: 500" message — the URL
+  // is not part of the console text, so we match on the status only. Other
+  // e2e specs rely on stubApi's success responses, so a stray 500 anywhere
+  // else would still indicate a real regression worth surfacing in the spec.
+  /Failed to load resource: the server responded with a status of 500/,
+];
 
 export const test = baseTest.extend({
   page: async ({ page }, use, testInfo) => {
@@ -175,6 +182,18 @@ export async function stubApi(page: Page, opts: StubOptions = {}): Promise<void>
         createdAt: new Date().toISOString(),
       });
       return route.fulfill(json({ id }));
+    }
+
+    if (path === '/games/start' && method === 'POST') {
+      return route.fulfill(json({ sessionId: '550e8400-e29b-41d4-a716-446655440000' }));
+    }
+
+    if (path === '/games/die' && method === 'POST') {
+      return route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 1 }),
+      });
     }
 
     const commentsMatch = path.match(/^\/posts\/(\d+)\/comments$/);

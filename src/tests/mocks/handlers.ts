@@ -34,4 +34,12 @@ export const handlers = [
   http.post(`${API_BASE_URL}/posts/:postId/comments`, () => {
     return HttpResponse.json({ id: 1 });
   }),
+
+  http.post(`${API_BASE_URL}/games/start`, () => {
+    return HttpResponse.json({ sessionId: '550e8400-e29b-41d4-a716-446655440000' });
+  }),
+
+  http.post(`${API_BASE_URL}/games/die`, () => {
+    return HttpResponse.json({ id: 1 }, { status: 201 });
+  }),
 ];
