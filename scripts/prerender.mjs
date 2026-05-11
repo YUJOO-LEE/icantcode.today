@@ -71,3 +71,7 @@ ${urls}
 }
 
 await main();
+// QueryClient(gcTime: 5분) 같은 런타임 핸들이 이벤트 루프를 잡고 있어
+// prerender 프로세스가 gcTime이 만료되는 5분 뒤에야 종료된다. 모든 I/O가
+// 완료된 이 시점에서 명시적으로 종료해 후속 inject 스크립트가 즉시 시작되게 한다.
+process.exit(0);
