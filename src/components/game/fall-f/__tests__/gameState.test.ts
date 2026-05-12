@@ -331,6 +331,16 @@ describe('tickGameState — dash', () => {
     expect(state.player.dashRemainingMs).toBe(0);
     expect(state.player.dashDirection).toBeNull();
   });
+
+  it('ignores a dash request when no direction is held', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    // input stays 'none' — dash key alone must do nothing.
+    state = requestDash(state);
+    state = tickGameState(state, 16, mulberry32(905));
+    expect(state.pendingDash).toBe(false);
+    expect(state.player.dashRemainingMs).toBe(0);
+    expect(state.player.dashDirection).toBeNull();
+  });
 });
 
 describe('tickGameState — level progression', () => {

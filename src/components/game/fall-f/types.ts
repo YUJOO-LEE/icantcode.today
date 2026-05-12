@@ -45,12 +45,12 @@ export interface LineGroup {
 export type InputState = 'none' | 'left' | 'right' | 'both';
 
 /**
- * Active dash direction. Dash never has an upward component — jump is the only
- * upward action. Direction is decided purely by the held arrow key:
- * left/right → horizontal; nothing held → straight down. Hitting walls is
- * handled by the regular horizontal clamp.
+ * Active dash direction. Dash is horizontal-only: the direction is the held
+ * arrow key (left/right). With no arrow held, pressing the dash key does
+ * nothing — there is no down/up dash. Hitting walls is handled by the regular
+ * horizontal clamp.
  */
-export type DashDirection = 'left' | 'right' | 'down';
+export type DashDirection = 'left' | 'right';
 
 export interface Player {
   x: Cell;

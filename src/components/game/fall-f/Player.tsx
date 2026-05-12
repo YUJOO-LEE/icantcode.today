@@ -12,8 +12,7 @@ interface PlayerProps {
 /**
  * Map the player's current motion state to a single box-drawing glyph.
  * Priority (top wins):
- *   1. active dash — `down` gets the lower-half block, horizontal dashes
- *      reuse the walk half-blocks (▌/▐).
+ *   1. active dash — left/right half blocks (▌/▐).
  *   2. upward jump (negative velocityY) — upper-half block.
  *   3. horizontal walk input — left/right half blocks.
  *   4. idle — full block.
@@ -26,7 +25,6 @@ function pickGlyph(
   velocityY: number,
   dash: DashDirection | null,
 ): string {
-  if (dash === 'down') return '▄';
   if (dash === 'left') return '▌';
   if (dash === 'right') return '▐';
   if (velocityY < 0) return '▀';
