@@ -85,3 +85,14 @@ export interface SubmitScoreRequest {
 export interface SubmitScoreResponse {
   id: number;
 }
+
+export interface RankingItem {
+  rank: number;
+  nickname: string;
+  score: number;
+  playedAt: string;
+}
+
+export interface RankingResponse {
+  list: RankingItem[];
+}

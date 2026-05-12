@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import RankingBoard from './RankingBoard';
 import { VERSION } from './constants';
 
 interface InitialScreenProps {
@@ -25,57 +26,61 @@ function InitialScreen({ best, hasBest, onStart }: InitialScreenProps) {
   }, [onStart]);
 
   return (
-    <section className="font-mono text-xs">
-      <p className="text-muted-foreground">$ fall -f</p>
-      <p className="mt-2 text-muted-foreground">── fall -f v{VERSION} — follow the fall ──</p>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+      <section className="font-mono text-xs sm:flex-[3] sm:min-w-0">
+        <p className="text-muted-foreground">$ fall -f</p>
+        <p className="mt-2 text-muted-foreground">── fall -f v{VERSION} — follow the fall ──</p>
 
-      <div className="mt-3 grid grid-cols-[auto_1fr] gap-x-2">
-        <span className="text-muted-foreground">{t('labels.keys')}</span>
-        <div className="space-y-0">
-          <p>{t('labels.move')}</p>
-          <p>{t('labels.jump')}</p>
-          <p>{t('labels.dash')}</p>
+        <div className="mt-3 grid grid-cols-[auto_1fr] gap-x-2">
+          <span className="text-muted-foreground">{t('labels.keys')}</span>
+          <div className="space-y-0">
+            <p>{t('labels.move')}</p>
+            <p>{t('labels.jump')}</p>
+            <p>{t('labels.dash')}</p>
+          </div>
+
+          <span className="text-muted-foreground">{t('labels.death')}</span>
+          <div className="space-y-0">
+            <p>
+              <span className="text-destructive">[TIMEOUT]</span>{' '}
+              <span>{t('death.timeout')}</span>
+            </p>
+            <p>
+              <span className="text-destructive">[SEGFAULT]</span>{' '}
+              <span>{t('death.segfault')}</span>
+            </p>
+          </div>
+
+          {hasBest && (
+            <>
+              <span className="text-muted-foreground">{t('labels.best')}</span>
+              <span className="text-primary">{best}</span>
+            </>
+          )}
         </div>
 
-        <span className="text-muted-foreground">{t('labels.death')}</span>
-        <div className="space-y-0">
-          <p>
-            <span className="text-destructive">[TIMEOUT]</span>{' '}
-            <span>{t('death.timeout')}</span>
-          </p>
-          <p>
-            <span className="text-destructive">[SEGFAULT]</span>{' '}
-            <span>{t('death.segfault')}</span>
-          </p>
-        </div>
+        <p className="mt-3">
+          {isCoarsePointer ? (
+            <button
+              type="button"
+              onClick={onStart}
+              aria-label={t('start.mobile')}
+              className="text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
+            >
+              <span aria-hidden="true">$ </span>
+              {t('start.mobile')}
+            </button>
+          ) : (
+            <span className="text-muted-foreground">
+              <span aria-hidden="true">$ </span>
+              {t('start.desktop')}
+            </span>
+          )}
+        </p>
+      </section>
 
-        {hasBest && (
-          <>
-            <span className="text-muted-foreground">{t('labels.best')}</span>
-            <span className="text-primary">{best}</span>
-          </>
-        )}
-      </div>
-
-      <p className="mt-3">
-        {isCoarsePointer ? (
-          <button
-            type="button"
-            onClick={onStart}
-            aria-label={t('start.mobile')}
-            className="text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
-          >
-            <span aria-hidden="true">$ </span>
-            {t('start.mobile')}
-          </button>
-        ) : (
-          <span className="text-muted-foreground">
-            <span aria-hidden="true">$ </span>
-            {t('start.desktop')}
-          </span>
-        )}
-      </p>
-    </section>
+      <RankingBoard className="sm:flex-[2] sm:min-w-0" />
+    </div>
   );
 }
 

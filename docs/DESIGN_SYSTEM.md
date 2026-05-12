@@ -432,6 +432,70 @@ unset   guest@icantcode.today:~$_
 └──────────────────────────────────────┘
 ```
 
+## 6a. Game screen layout pattern (fall-f)
+
+Game screens use a two-column flex layout (`sm:flex-row`, left `sm:flex-[3]`,
+right `sm:flex-[2]`). The right column holds a bordered data panel
+(`RankingBoard`); the left column holds all interactive and narrative content
+as plain prompt lines — no wrapping border.
+
+### Left column: plain prompt style
+
+Left-column content flows as plain terminal output. Sections are separated by
+`── section-name ──` divider lines (`text-muted-foreground`). This keeps the
+left column reading as a single continuous terminal session and avoids
+competing bordered regions when the right column is already a bordered panel.
+
+```
+[SEGFAULT] segmentation fault (core dumped)
+
+  DEATH:  fell through all platforms
+  score:  42
+  best:   256
+  in:     fall_f::on_tick
+
+── submit score ──
+$ set-nickname
+# confirm your nickname
+
+> tester_____________
+
+[submit]  [reroll]
+
+[retry]  [exit]
+```
+
+### Right column: bordered data panel
+
+`RankingBoard` carries `border border-border` and acts as the sole bordered
+element on the screen. One bordered region per screen prevents visual
+competition between panels.
+
+### Action hierarchy in game screens
+
+Two tiers of action appear on result/error screens. Both use `TerminalButton`
+for visual consistency:
+
+| Tier | Role | Styling |
+|---|---|---|
+| Form actions | submit, reroll (inside the submit-score section) | `TerminalButton` — submit gets `className="text-foreground"` to signal primary intent |
+| Navigation actions | retry, exit (below the form section, `mt-6`) | `TerminalButton` — retry gets `className="text-primary"`, exit defaults to `text-muted-foreground` |
+
+`mt-6` between the two tiers creates enough air to read as separate groups
+without requiring a second divider line. The navigation row appears on all
+game end screens (ResultScreen, ErrorScreen, StartErrorScreen) using the
+same markup so the pattern is consistent.
+
+`TerminalButton` supports `ref` forwarding — navigation buttons that need
+programmatic focus (e.g. the retry button receiving focus after score
+submission) use `ref` directly on `TerminalButton`.
+
+### Rule
+
+When the right column contains a bordered panel, left-column interactive forms
+are presented as plain prompt lines (no additional border). When the right
+column is absent, a single bordered box on the left is acceptable.
+
 ## 7. Component catalog
 
 ### 7.1 TerminalButton

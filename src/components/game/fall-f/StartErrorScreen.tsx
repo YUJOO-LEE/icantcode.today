@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import TerminalButton from '@/components/ui/TerminalButton';
 
 interface StartErrorScreenProps {
   onRetry: () => void;
@@ -26,22 +27,13 @@ function StartErrorScreen({ onRetry, onHome }: StartErrorScreenProps) {
         <span className="text-muted-foreground">{t('error.frames.startFail')}</span>
       </div>
 
-      <div className="mt-4 flex gap-3">
-        <button
-          ref={retryRef}
-          type="button"
-          onClick={onRetry}
-          className="text-primary hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
-        >
+      <div className="mt-6 flex gap-2">
+        <TerminalButton ref={retryRef} onClick={onRetry} className="text-primary">
           {t('actions.retry')}
-        </button>
-        <button
-          type="button"
-          onClick={onHome}
-          className="text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
-        >
+        </TerminalButton>
+        <TerminalButton onClick={onHome}>
           {t('actions.home')}
-        </button>
+        </TerminalButton>
       </div>
     </section>
   );

@@ -42,4 +42,8 @@ export const handlers = [
   http.post(`${API_BASE_URL}/games/die`, () => {
     return HttpResponse.json({ id: 1 }, { status: 201 });
   }),
+
+  http.get(`${API_BASE_URL}/games/ranking`, () => {
+    return HttpResponse.json({ list: [] });
+  }),
 ];

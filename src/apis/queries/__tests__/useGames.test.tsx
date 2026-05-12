@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { createTestWrapper } from '@/tests/wrappers';
 import { server } from '@/tests/mocks/server';
 import { API_BASE_URL } from '@/lib/constants';
-import { useStartGame, useSubmitScore } from '../useGames';
+import { useStartGame, useSubmitScore, useRanking } from '../useGames';
 
 describe('useStartGame', () => {
   it('returns sessionId from the API on success', async () => {
@@ -87,5 +87,65 @@ describe('useSubmitScore', () => {
       });
     });
     await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('invalidates the ranking query on a successful submit so the new score shows up', async () => {
+    let rankingHits = 0;
+    server.use(
+      http.get(`${API_BASE_URL}/games/ranking`, () => {
+        rankingHits += 1;
+        return HttpResponse.json({ list: [] });
+      }),
+      http.post(`${API_BASE_URL}/games/die`, () =>
+        HttpResponse.json({ id: 7 }, { status: 201 }),
+      ),
+    );
+    const { Wrapper } = createTestWrapper();
+    const { result } = renderHook(
+      () => ({ ranking: useRanking(), submit: useSubmitScore() }),
+      { wrapper: Wrapper },
+    );
+
+    await waitFor(() => expect(result.current.ranking.isSuccess).toBe(true));
+    expect(rankingHits).toBe(1);
+
+    await act(async () => {
+      result.current.submit.mutate({ sessionId: 'sid-x', nickname: 'koder', score: 50 });
+    });
+    await waitFor(() => expect(result.current.submit.isSuccess).toBe(true));
+    await waitFor(() => expect(rankingHits).toBe(2));
+  });
+});
+
+describe('useRanking', () => {
+  it('returns the ranking list from the API', async () => {
+    server.use(
+      http.get(`${API_BASE_URL}/games/ranking`, () =>
+        HttpResponse.json({
+          list: [
+            { rank: 1, nickname: 'koder', score: 9999, playedAt: '2026-05-01T00:00:00Z' },
+          ],
+        }),
+      ),
+    );
+    const { Wrapper } = createTestWrapper();
+    const { result } = renderHook(() => useRanking(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.list).toHaveLength(1);
+    expect(result.current.data?.list[0]?.nickname).toBe('koder');
+  });
+
+  it('forwards the limit query param', async () => {
+    let capturedLimit: string | null = null;
+    server.use(
+      http.get(`${API_BASE_URL}/games/ranking`, ({ request }) => {
+        capturedLimit = new URL(request.url).searchParams.get('limit');
+        return HttpResponse.json({ list: [] });
+      }),
+    );
+    const { Wrapper } = createTestWrapper();
+    renderHook(() => useRanking(5), { wrapper: Wrapper });
+    await waitFor(() => expect(capturedLimit).toBe('5'));
   });
 });

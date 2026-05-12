@@ -6,6 +6,7 @@ import { generateRandomNickname } from '@/lib/nicknameGenerator';
 import { useSubmitScore } from '@/apis/queries/useGames';
 import TerminalInput from '@/components/ui/TerminalInput';
 import TerminalButton from '@/components/ui/TerminalButton';
+import RankingBoard from './RankingBoard';
 
 type DeathCause = 'segfault' | 'timeout';
 
@@ -95,8 +96,13 @@ function ResultScreen({ cause, score, best, sessionId, onRetry, onHome }: Result
   const submitDisabled = !canSubmit || isSubmitting || isSubmitted || value.trim().length === 0;
 
   return (
-    <section className="font-mono text-xs" role="alert" aria-live="assertive">
-      <p className="text-destructive whitespace-pre-wrap">{t(TITLE_KEYS[cause])}</p>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+      <section
+        className="font-mono text-xs sm:flex-[3] sm:min-w-0"
+        role="alert"
+        aria-live="assertive"
+      >
+        <p className="text-destructive whitespace-pre-wrap">{t(TITLE_KEYS[cause])}</p>
 
       <div className="mt-3 ml-2 grid grid-cols-[auto_1fr] gap-x-2">
         <span className="text-muted-foreground">{t('labels.death')}</span>
@@ -112,7 +118,7 @@ function ResultScreen({ cause, score, best, sessionId, onRetry, onHome }: Result
         <span className="text-muted-foreground">{t('result.frame')}</span>
       </div>
 
-      <div className="mt-4 border border-border p-3 text-xs">
+      <div className="mt-4 text-xs">
         <p className="text-muted-foreground mb-2">── {t('result.submit.header')} ──</p>
 
         {isSubmitted ? (
@@ -144,7 +150,11 @@ function ResultScreen({ cause, score, best, sessionId, onRetry, onHome }: Result
               autoFocus={canSubmit}
             />
             <div className="flex gap-2 mt-3">
-              <TerminalButton onClick={handleSubmit} disabled={submitDisabled}>
+              <TerminalButton
+                onClick={handleSubmit}
+                disabled={submitDisabled}
+                className="text-foreground"
+              >
                 {isSubmitting ? t('common:submitting') : t('common:submit')}
               </TerminalButton>
               <TerminalButton
@@ -158,24 +168,22 @@ function ResultScreen({ cause, score, best, sessionId, onRetry, onHome }: Result
         )}
       </div>
 
-      <div className="mt-4 flex gap-3">
-        <button
+      <div className="mt-6 flex gap-2">
+        <TerminalButton
           ref={retryRef}
-          type="button"
           onClick={onRetry}
-          className="text-primary hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
+          className="text-primary"
         >
           {t('actions.retry')}
-        </button>
-        <button
-          type="button"
-          onClick={onHome}
-          className="text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
-        >
+        </TerminalButton>
+        <TerminalButton onClick={onHome}>
           {t('actions.home')}
-        </button>
+        </TerminalButton>
       </div>
-    </section>
+      </section>
+
+      <RankingBoard className="sm:flex-[2] sm:min-w-0" />
+    </div>
   );
 }
 

@@ -23,8 +23,8 @@
   "error.startFail": "could not reach server",
   "error.frames.startFail": "fall_f::start",
   "labels.error": "error:",
-  "actions.retry": "[ > retry ]",
-  "actions.home": "[ > exit ]",
+  "actions.retry": "retry",
+  "actions.home": "exit",
   "start.desktop": "press [Enter] to start_",
   "start.mobile": "tap to start",
   "loading.title": "[BOOT] connecting to score server",
@@ -34,5 +34,12 @@
   "catalog.moreComing": "(more coming...)",
   "hud.score": "score",
   "labels.score": "score:",
-  "labels.in": "in:"
+  "labels.in": "in:",
+  "ranking.header": "leaderboard — top 10",
+  "ranking.columns.rank": "#",
+  "ranking.columns.nickname": "name",
+  "ranking.columns.score": "score",
+  "ranking.loading": "loading...",
+  "ranking.error": "couldn't load the leaderboard",
+  "ranking.empty": "no scores yet"
 }
