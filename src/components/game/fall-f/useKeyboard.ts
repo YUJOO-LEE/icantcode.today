@@ -8,6 +8,33 @@ interface UseKeyboardArgs {
   onDash?: () => void;
 }
 
+type Direction = 'left' | 'right';
+
+/**
+ * Letter keys are matched on `e.code` (physical key) rather than `e.key` so
+ * that WASD works regardless of CapsLock state or an active IME (e.g. Korean),
+ * both of which change `e.key` but never `e.code`. Arrow keys keep `e.key`.
+ */
+function directionOf(e: KeyboardEvent): Direction | null {
+  if (e.key === 'ArrowLeft' || e.code === 'KeyA') return 'left';
+  if (e.key === 'ArrowRight' || e.code === 'KeyD') return 'right';
+  return null;
+}
+
+function isJumpKey(e: KeyboardEvent): boolean {
+  return e.key === 'ArrowUp' || e.code === 'KeyW';
+}
+
+function isDashKey(e: KeyboardEvent): boolean {
+  return e.key === 'Shift';
+}
+
+// Stable per-physical-key id; falls back to `key` when `code` is unavailable
+// (older browsers, jsdom synthetic events without an explicit `code`).
+function keyId(e: KeyboardEvent): string {
+  return e.code || e.key;
+}
+
 export function useKeyboard({ enabled, onInput, onJump, onDash }: UseKeyboardArgs): void {
   const onInputRef = useRef(onInput);
   const onJumpRef = useRef(onJump);
@@ -20,10 +47,15 @@ export function useKeyboard({ enabled, onInput, onJump, onDash }: UseKeyboardArg
 
   useEffect(() => {
     if (!enabled) return;
-    let left = false;
-    let right = false;
+    // Track held keys per direction so that, when two keys map to the same
+    // direction (e.g. ArrowLeft + A), releasing one doesn't drop movement
+    // while the other is still held.
+    const heldLeft = new Set<string>();
+    const heldRight = new Set<string>();
 
     const compute = (): InputState => {
+      const left = heldLeft.size > 0;
+      const right = heldRight.size > 0;
       if (left && right) return 'both';
       if (left) return 'left';
       if (right) return 'right';
@@ -32,35 +64,37 @@ export function useKeyboard({ enabled, onInput, onJump, onDash }: UseKeyboardArg
 
     const onDown = (e: KeyboardEvent) => {
       if (e.repeat) return;
-      if (e.key === 'ArrowLeft') {
-        left = true;
+      const dir = directionOf(e);
+      if (dir === 'left') {
+        heldLeft.add(keyId(e));
         onInputRef.current(compute());
         e.preventDefault();
-      } else if (e.key === 'ArrowRight') {
-        right = true;
+      } else if (dir === 'right') {
+        heldRight.add(keyId(e));
         onInputRef.current(compute());
         e.preventDefault();
-      } else if (e.key === 'ArrowUp') {
+      } else if (isJumpKey(e)) {
         onJumpRef.current?.();
         e.preventDefault();
-      } else if (e.key === 'Shift') {
+      } else if (isDashKey(e)) {
         onDashRef.current?.();
         e.preventDefault();
       }
     };
     const onUp = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        left = false;
+      const dir = directionOf(e);
+      if (dir === 'left') {
+        heldLeft.delete(keyId(e));
         onInputRef.current(compute());
-      } else if (e.key === 'ArrowRight') {
-        right = false;
+      } else if (dir === 'right') {
+        heldRight.delete(keyId(e));
         onInputRef.current(compute());
       }
     };
     const onBlur = () => {
-      if (!left && !right) return;
-      left = false;
-      right = false;
+      if (heldLeft.size === 0 && heldRight.size === 0) return;
+      heldLeft.clear();
+      heldRight.clear();
       onInputRef.current('none');
     };
     window.addEventListener('keydown', onDown);

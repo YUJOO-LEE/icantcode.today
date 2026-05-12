@@ -11,8 +11,19 @@ function press(key: string, init: KeyboardEventInit = {}) {
   return spy;
 }
 
-function release(key: string) {
-  window.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true }));
+function release(key: string, init: KeyboardEventInit = {}) {
+  window.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, ...init }));
+}
+
+// Simulates a physical letter key the way browsers report it under CapsLock or
+// an active IME: `key` is something other than the plain letter, but `code` is
+// the stable physical-key id.
+function pressCode(code: string, key = 'Process', init: KeyboardEventInit = {}) {
+  return press(key, { code, ...init });
+}
+
+function releaseCode(code: string, key = 'Process') {
+  release(key, { code });
 }
 
 describe('useKeyboard', () => {
@@ -85,8 +96,54 @@ describe('useKeyboard', () => {
 
   it('does not preventDefault on unrelated keys', () => {
     renderHook(() => useKeyboard({ enabled: true, onInput }));
-    expect(press('a')).not.toHaveBeenCalled();
     expect(press('Enter')).not.toHaveBeenCalled();
+    expect(pressCode('KeyQ', 'q')).not.toHaveBeenCalled();
+    expect(onInput).not.toHaveBeenCalled();
+  });
+
+  it('maps WASD via e.code, independent of e.key (CapsLock / IME safe)', () => {
+    renderHook(() => useKeyboard({ enabled: true, onInput, onJump, onDash }));
+    // `key` deliberately not the plain letter — e.g. Korean IME / CapsLock.
+    expect(pressCode('KeyA', 'ㅁ')).toHaveBeenCalled();
+    expect(onInput).toHaveBeenLastCalledWith('left');
+    releaseCode('KeyA', 'ㅁ');
+    expect(onInput).toHaveBeenLastCalledWith('none');
+
+    expect(pressCode('KeyD', 'ㅇ')).toHaveBeenCalled();
+    expect(onInput).toHaveBeenLastCalledWith('right');
+    releaseCode('KeyD', 'ㅇ');
+    expect(onInput).toHaveBeenLastCalledWith('none');
+
+    expect(pressCode('KeyW', 'ㅈ')).toHaveBeenCalled();
+    expect(onJump).toHaveBeenCalledOnce();
+  });
+
+  it('emits "both" when an arrow key and the opposite WASD key are held together', () => {
+    renderHook(() => useKeyboard({ enabled: true, onInput }));
+    press('ArrowLeft');
+    pressCode('KeyD');
+    expect(onInput).toHaveBeenLastCalledWith('both');
+  });
+
+  it('keeps a direction held while either of its two keys is still down', () => {
+    renderHook(() => useKeyboard({ enabled: true, onInput }));
+    press('ArrowLeft');
+    pressCode('KeyA');
+    expect(onInput).toHaveBeenLastCalledWith('left');
+    // Release only one of the two left-mapped keys → still moving left.
+    release('ArrowLeft');
+    expect(onInput).toHaveBeenLastCalledWith('left');
+    releaseCode('KeyA');
+    expect(onInput).toHaveBeenLastCalledWith('none');
+  });
+
+  it('clears WASD-held keys to "none" on window blur', () => {
+    renderHook(() => useKeyboard({ enabled: true, onInput }));
+    pressCode('KeyA');
+    expect(onInput).toHaveBeenLastCalledWith('left');
+    onInput.mockClear();
+    window.dispatchEvent(new Event('blur'));
+    expect(onInput).toHaveBeenLastCalledWith('none');
   });
 
   it('calls onJump on ArrowUp keydown', () => {
