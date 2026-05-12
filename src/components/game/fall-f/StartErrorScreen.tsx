@@ -2,12 +2,12 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import TerminalButton from '@/components/ui/TerminalButton';
 
-interface ErrorScreenProps {
+interface StartErrorScreenProps {
   onRetry: () => void;
   onHome: () => void;
 }
 
-function ErrorScreen({ onRetry, onHome }: ErrorScreenProps) {
+function StartErrorScreen({ onRetry, onHome }: StartErrorScreenProps) {
   const { t } = useTranslation('game');
   const retryRef = useRef<HTMLButtonElement>(null);
 
@@ -17,14 +17,14 @@ function ErrorScreen({ onRetry, onHome }: ErrorScreenProps) {
 
   return (
     <section className="font-mono text-xs" role="alert" aria-live="assertive">
-      <p className="text-destructive whitespace-pre-wrap">{t('error.titles.resize')}</p>
+      <p className="text-destructive whitespace-pre-wrap">{t('error.titles.startFail')}</p>
 
       <div className="mt-3 ml-2 grid grid-cols-[auto_1fr] gap-x-2">
         <span className="text-muted-foreground">{t('labels.error')}</span>
-        <span>{t('error.resize')}</span>
+        <span>{t('error.startFail')}</span>
 
         <span className="text-muted-foreground">{t('labels.in')}</span>
-        <span className="text-muted-foreground">{t('error.frames.resize')}</span>
+        <span className="text-muted-foreground">{t('error.frames.startFail')}</span>
       </div>
 
       <div className="mt-6 flex gap-2">
@@ -39,4 +39,4 @@ function ErrorScreen({ onRetry, onHome }: ErrorScreenProps) {
   );
 }
 
-export default ErrorScreen;
+export default StartErrorScreen;

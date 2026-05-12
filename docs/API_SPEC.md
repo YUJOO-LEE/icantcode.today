@@ -71,6 +71,17 @@ reference and may drift — cross-check before implementing.
   See `src/types/api.ts` for the canonical types.
 - `posts` — list / create.
 - `posts/:id/comments` — list / create comments on a post.
+- `games/start` (POST) — open a minigame session. Returns
+  `{ sessionId }` (one-shot, 36-char). Pass it back to `games/die`.
+- `games/die` (POST) — submit a final score. Body
+  `{ sessionId, nickname, score }` (`score` 0–99999). Returns `{ id }`.
+  A `score` of 0 is not submitted by the client.
+- `games/ranking` (GET) — leaderboard. Query `limit` (1–100, default 10).
+  Returns `{ list: RankingItem[] }`, `RankingItem` =
+  `{ rank, nickname, score, playedAt }`, ordered by score desc then
+  earliest `playedAt`. Consumed by `useRanking` in `apis/queries/useGames.ts`
+  and rendered by `components/game/fall-f/RankingBoard.tsx`. A successful
+  `games/die` invalidates the `['games', 'ranking']` query.
 
 When a new endpoint is added, update both the type file
 (`src/types/api.ts`) and this section.

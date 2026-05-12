@@ -71,3 +71,28 @@ export interface CreateCommentRequest {
 export interface IdResponse {
   id: number;
 }
+
+export interface StartGameResponse {
+  sessionId: string;
+}
+
+export interface SubmitScoreRequest {
+  sessionId: string;
+  nickname: string;
+  score: number;
+}
+
+export interface SubmitScoreResponse {
+  id: number;
+}
+
+export interface RankingItem {
+  rank: number;
+  nickname: string;
+  score: number;
+  playedAt: string;
+}
+
+export interface RankingResponse {
+  list: RankingItem[];
+}

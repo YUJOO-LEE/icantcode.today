@@ -52,7 +52,14 @@ export async function stubAnalytics(page: Page): Promise<void> {
  * Allowed messages (e.g. known harmless warnings) can be added to
  * `ALLOWED_CONSOLE_ERRORS` below.
  */
-const ALLOWED_CONSOLE_ERRORS: RegExp[] = [];
+const ALLOWED_CONSOLE_ERRORS: RegExp[] = [
+  // Specs that intentionally make an API return 500 (e.g. StartErrorScreen
+  // baseline) trip Chrome's "Failed to load resource: 500" message — the URL
+  // is not part of the console text, so we match on the status only. Other
+  // e2e specs rely on stubApi's success responses, so a stray 500 anywhere
+  // else would still indicate a real regression worth surfacing in the spec.
+  /Failed to load resource: the server responded with a status of 500/,
+];
 
 export const test = baseTest.extend({
   page: async ({ page }, use, testInfo) => {
@@ -120,7 +127,21 @@ export interface StubOptions {
       createdAt: string;
     }>
   >;
+  /**
+   * Leaderboard rows returned from `GET /games/ranking`. Defaults to a small
+   * deterministic set so the fall -f start/result screens render a stable board.
+   * Pass `[]` to exercise the empty state.
+   */
+  ranking?: Array<{ rank: number; nickname: string; score: number; playedAt: string }>;
 }
+
+const DEFAULT_RANKING: NonNullable<StubOptions['ranking']> = [
+  { rank: 1, nickname: 'segfault-sam', score: 9182, playedAt: '2026-03-30T12:00:00Z' },
+  { rank: 2, nickname: 'kernel-panic', score: 7421, playedAt: '2026-03-30T18:30:00Z' },
+  { rank: 3, nickname: 'null-pointer', score: 5310, playedAt: '2026-03-31T09:15:00Z' },
+  { rank: 4, nickname: 'race-condition', score: 4087, playedAt: '2026-03-31T20:00:00Z' },
+  { rank: 5, nickname: 'stack-overflow', score: 2766, playedAt: '2026-04-01T00:00:00Z' },
+];
 
 function json(body: unknown) {
   return {
@@ -139,6 +160,7 @@ export async function stubApi(page: Page, opts: StubOptions = {}): Promise<void>
   const status = opts.status ?? 'up';
   const posts = opts.posts ?? [];
   const commentsByPost = opts.comments ?? {};
+  const ranking = opts.ranking ?? DEFAULT_RANKING;
 
   await page.route(API_HOST_GLOB, async (route: Route) => {
     const url = new URL(route.request().url());
@@ -175,6 +197,22 @@ export async function stubApi(page: Page, opts: StubOptions = {}): Promise<void>
         createdAt: new Date().toISOString(),
       });
       return route.fulfill(json({ id }));
+    }
+
+    if (path === '/games/start' && method === 'POST') {
+      return route.fulfill(json({ sessionId: '550e8400-e29b-41d4-a716-446655440000' }));
+    }
+
+    if (path === '/games/die' && method === 'POST') {
+      return route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 1 }),
+      });
+    }
+
+    if (path === '/games/ranking' && method === 'GET') {
+      return route.fulfill(json({ list: ranking }));
     }
 
     const commentsMatch = path.match(/^\/posts\/(\d+)\/comments$/);

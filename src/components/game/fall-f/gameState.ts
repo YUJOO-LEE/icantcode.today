@@ -70,6 +70,7 @@ const INITIAL_PLAYER: Player = {
 export function makeInitialState(viewport: Viewport): GameState {
   return {
     status: 'idle',
+    sessionId: null,
     startedAtMs: 0,
     elapsedMs: 0,
     score: 0,
@@ -90,11 +91,12 @@ export function makeInitialState(viewport: Viewport): GameState {
   };
 }
 
-export function startNewRun(state: GameState, nowMs: number): GameState {
+export function startNewRun(state: GameState, nowMs: number, sessionId: string | null): GameState {
   return {
     ...makeInitialState(state.viewport),
     best: state.best,
     status: 'playing',
+    sessionId,
     startedAtMs: nowMs,
   };
 }

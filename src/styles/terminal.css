@@ -19,6 +19,21 @@
   animation: status-pulse var(--animation-status-pulse) ease-in-out infinite;
 }
 
+/* Three-dot loading ellipsis. Width grows 0 → 3ch in monospace step ticks
+   so the trailing dots appear/disappear without retyping the character. */
+.fall-f-ellipsis::after {
+  content: '...';
+  display: inline-block;
+  width: 0;
+  overflow: hidden;
+  vertical-align: bottom;
+  animation: fall-f-ellipsis 1.2s steps(4) infinite;
+}
+
+@keyframes fall-f-ellipsis {
+  to { width: 3ch; }
+}
+
 /* CRT scanline effect (dark mode only) */
 .dark body::after {
   content: '';
@@ -62,6 +77,11 @@
   .status-dot-down {
     animation: none;
     opacity: 1;
+  }
+
+  .fall-f-ellipsis::after {
+    animation: none;
+    width: 3ch;
   }
 
   .dark body::after {

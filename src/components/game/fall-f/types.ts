@@ -79,6 +79,8 @@ export interface Viewport {
 
 export type GameStatus =
   | 'idle'
+  | 'starting'
+  | 'start-failed'
   | 'playing'
   | 'paused'
   | 'dead-segfault'
@@ -107,6 +109,8 @@ export interface ScreenRow {
 
 export interface GameState {
   status: GameStatus;
+  /** Server-issued one-shot session id from POST /games/start. Required to submit a score. */
+  sessionId: string | null;
   startedAtMs: number;
   elapsedMs: number;
   /** Highest line number the player has actually stepped on (0 if none). */
