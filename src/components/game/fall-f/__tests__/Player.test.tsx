@@ -24,7 +24,6 @@ describe('Player glyph', () => {
   });
 
   it.each([
-    ['down', '▄'],
     ['left', '▌'],
     ['right', '▐'],
   ] as const)('renders the %s dash glyph (%s)', (dir, glyph) => {
@@ -36,9 +35,9 @@ describe('Player glyph', () => {
 
   it('dash glyph wins over a concurrent walking input', () => {
     const { container } = render(
-      <Player x={0} y={0} input="right" velocityY={0} dashDirection="down" />,
+      <Player x={0} y={0} input="left" velocityY={0} dashDirection="right" />,
     );
-    expect(container.textContent).toBe('▄');
+    expect(container.textContent).toBe('▐');
   });
 
   it('positions the span using x (ch) and y (row * ROW_HEIGHT_PX)', () => {

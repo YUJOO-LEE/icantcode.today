@@ -103,10 +103,6 @@ export const DASH_COOLDOWN_MS = 500;
 // that the player feels the snap even on smaller viewports.
 export const DASH_HORIZONTAL_CELLS_PER_SEC = 48;
 
-// [TUNING] Extra downward velocity during a `down` dash. Adds on top of
-// regular gravity-driven fall for a sharp plunge through gaps.
-export const DASH_VERTICAL_CELLS_PER_SEC = 32;
-
 export const SOLVABILITY = {
   shortLineRatio: 0.3, // [TUNING]
   shortLineRunCap: 3, // [TUNING]

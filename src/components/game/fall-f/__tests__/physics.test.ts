@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   applyDash,
-  applyDashVertical,
   applyGravity,
   applyHorizontal,
   applyJump,
@@ -21,7 +20,6 @@ import {
   DASH_COOLDOWN_MS,
   DASH_DURATION_MS,
   DASH_HORIZONTAL_CELLS_PER_SEC,
-  DASH_VERTICAL_CELLS_PER_SEC,
   PLAYER_GRAVITY_CELLS_PER_SEC,
   PLAYER_JUMP_VELOCITY_CELLS_PER_SEC,
   PLAYER_MOVE_CELLS_PER_SEC,
@@ -103,16 +101,6 @@ describe('applyGravity', () => {
     expect(p.y).toBeLessThan(10);
   });
 
-  it('does not stack gravity onto velocityY while a downward dash is active', () => {
-    const p = makePlayer({
-      falling: true,
-      velocityY: 4,
-      dashRemainingMs: 100,
-      dashDirection: 'down',
-    });
-    const next = applyGravity(p, 1);
-    expect(next.velocityY).toBe(4); // unchanged during vertical dash
-  });
 });
 
 describe('applyHorizontal', () => {
@@ -134,36 +122,10 @@ describe('applyHorizontal', () => {
     expect(next.x).toBeCloseTo(10 + DASH_HORIZONTAL_CELLS_PER_SEC * 0.1);
   });
 
-  it('pure-down dash leaves x untouched', () => {
-    const p = makePlayer({ x: 10, dashRemainingMs: 100, dashDirection: 'down' });
-    const next = applyHorizontal(p, 'left', 0.1, 80);
-    expect(next.x).toBe(10);
-  });
-
   it('left dash with arbitrary current input still goes left', () => {
     const p = makePlayer({ x: 10, dashRemainingMs: 100, dashDirection: 'left' });
     const next = applyHorizontal(p, 'right', 0.1, 80);
     expect(next.x).toBeCloseTo(10 - DASH_HORIZONTAL_CELLS_PER_SEC * 0.1);
-  });
-});
-
-describe('applyDashVertical', () => {
-  it('only kicks downward dashes', () => {
-    const p = makePlayer({ y: 5, dashRemainingMs: 100, dashDirection: 'down' });
-    const next = applyDashVertical(p, 0.1);
-    expect(next.y).toBeCloseTo(5 + DASH_VERTICAL_CELLS_PER_SEC * 0.1);
-  });
-
-  it('no kicker on horizontal-only dash', () => {
-    const p = makePlayer({ y: 5, dashRemainingMs: 100, dashDirection: 'right' });
-    const next = applyDashVertical(p, 0.1);
-    expect(next.y).toBe(5);
-  });
-
-  it('no kicker when not dashing', () => {
-    const p = makePlayer({ y: 5, dashRemainingMs: 0, dashDirection: null });
-    const next = applyDashVertical(p, 0.1);
-    expect(next.y).toBe(5);
   });
 });
 
@@ -207,30 +169,36 @@ describe('pickDashDirection', () => {
     expect(pickDashDirection(makePlayer({ falling: false, input: 'right' }))).toBe('right');
     expect(pickDashDirection(makePlayer({ falling: true, input: 'right' }))).toBe('right');
   });
-  it('no horizontal (none or both) → down', () => {
-    expect(pickDashDirection(makePlayer({ falling: false, input: 'none' }))).toBe('down');
-    expect(pickDashDirection(makePlayer({ falling: true, input: 'both' }))).toBe('down');
+  it('no direction held (none or both) → null', () => {
+    expect(pickDashDirection(makePlayer({ input: 'none' }))).toBeNull();
+    expect(pickDashDirection(makePlayer({ input: 'both' }))).toBeNull();
   });
 });
 
 describe('canDash / applyDash', () => {
   it('blocks while a dash is still running', () => {
-    const p = makePlayer({ dashRemainingMs: 50 });
+    const p = makePlayer({ input: 'left', dashRemainingMs: 50 });
     expect(canDash(p)).toBe(false);
   });
 
   it('blocks while cooldown is active', () => {
-    const p = makePlayer({ dashRemainingMs: 0, dashCooldownMs: 200 });
+    const p = makePlayer({ input: 'left', dashRemainingMs: 0, dashCooldownMs: 200 });
     expect(canDash(p)).toBe(false);
   });
 
-  it('allows when both timers are zero', () => {
-    expect(canDash(makePlayer())).toBe(true);
+  it('blocks when no direction is held', () => {
+    expect(canDash(makePlayer({ input: 'none' }))).toBe(false);
+    expect(canDash(makePlayer({ input: 'both' }))).toBe(false);
+  });
+
+  it('allows when a direction is held and both timers are zero', () => {
+    expect(canDash(makePlayer({ input: 'left' }))).toBe(true);
+    expect(canDash(makePlayer({ input: 'right' }))).toBe(true);
   });
 
   it('applyDash sets duration, cooldown and direction', () => {
-    const p = makePlayer({ falling: false, input: 'right' });
-    const next = applyDash(p);
+    const p = makePlayer({ falling: false });
+    const next = applyDash(p, 'right');
     expect(next.dashRemainingMs).toBe(DASH_DURATION_MS);
     expect(next.dashCooldownMs).toBe(DASH_COOLDOWN_MS);
     expect(next.dashDirection).toBe('right');
@@ -239,14 +207,14 @@ describe('canDash / applyDash', () => {
 
 describe('tickDashTimers', () => {
   it('decrements both timers and clamps at zero', () => {
-    const p = makePlayer({ dashRemainingMs: 30, dashCooldownMs: 500, dashDirection: 'down' });
+    const p = makePlayer({ dashRemainingMs: 30, dashCooldownMs: 500, dashDirection: 'left' });
     const next = tickDashTimers(p, 100);
     expect(next.dashRemainingMs).toBe(0);
     expect(next.dashCooldownMs).toBe(400);
   });
 
   it('clears dashDirection when remaining hits zero', () => {
-    const p = makePlayer({ dashRemainingMs: 30, dashCooldownMs: 500, dashDirection: 'down' });
+    const p = makePlayer({ dashRemainingMs: 30, dashCooldownMs: 500, dashDirection: 'left' });
     const next = tickDashTimers(p, 100);
     expect(next.dashDirection).toBeNull();
   });

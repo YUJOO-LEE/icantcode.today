@@ -9,7 +9,6 @@ import {
 import { lineSegmentsAt, renderLine } from './dynamicLine';
 import {
   applyDash,
-  applyDashVertical,
   applyGravity,
   applyHorizontal,
   applyJump,
@@ -18,6 +17,7 @@ import {
   canJump,
   detectDeath,
   findSupportingSegment,
+  pickDashDirection,
   settle,
   tickDashTimers,
 } from './physics';
@@ -258,14 +258,14 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
     player = applyJump(player);
   }
   if (next.pendingDash && canDash(player)) {
-    player = applyDash(player);
+    const dir = pickDashDirection(player);
+    if (dir) player = applyDash(player, dir);
   }
   next.pendingJump = false;
   next.pendingDash = false;
   player = tickDashTimers(player, dtMs);
   player = applyHorizontal(player, player.input, dt, next.viewport.cols);
   player = applyGravity(player, dt);
-  player = applyDashVertical(player, dt);
 
   // 6. Settle on supporting row, and track the deepest line stepped on.
   const settled = settle(player, next.rows, elapsedMs);

@@ -3,7 +3,6 @@ import {
   DASH_COOLDOWN_MS,
   DASH_DURATION_MS,
   DASH_HORIZONTAL_CELLS_PER_SEC,
-  DASH_VERTICAL_CELLS_PER_SEC,
   PLAYER_GRAVITY_CELLS_PER_SEC,
   PLAYER_JUMP_VELOCITY_CELLS_PER_SEC,
   PLAYER_MOVE_CELLS_PER_SEC,
@@ -68,36 +67,29 @@ export function inputDirection(input: InputState): -1 | 0 | 1 {
 }
 
 /**
- * Apply one tick of vertical motion. While mid-`down`-dash, gravity stops
- * accumulating into velocityY so the dash burst (added separately by
- * `applyDashVertical`) is the dominant downward force. Standing players
- * (`falling=false`) hold velocityY at 0.
+ * Apply one tick of vertical motion. Standing players (`falling=false`) hold
+ * velocityY at 0; airborne players accumulate gravity.
  */
 export function applyGravity(player: Player, dt: number): Player {
   if (!player.falling) return { ...player, velocityY: 0 };
-  const dashHasVertical = player.dashRemainingMs > 0 && player.dashDirection === 'down';
-  const nextY = player.y + player.velocityY * dt;
-  const nextVy = dashHasVertical
-    ? player.velocityY
-    : player.velocityY + PLAYER_GRAVITY_CELLS_PER_SEC * dt;
-  return { ...player, y: nextY, velocityY: nextVy };
+  return {
+    ...player,
+    y: player.y + player.velocityY * dt,
+    velocityY: player.velocityY + PLAYER_GRAVITY_CELLS_PER_SEC * dt,
+  };
 }
 
-function dashHorizontalSign(dir: DashDirection): -1 | 0 | 1 {
-  if (dir === 'left') return -1;
-  if (dir === 'right') return 1;
-  return 0; // 'down'
+function dashHorizontalSign(dir: DashDirection): -1 | 1 {
+  return dir === 'left' ? -1 : 1;
 }
 
 /**
  * Apply one tick of horizontal motion. While dashing, the dash drives x at
  * `DASH_HORIZONTAL_CELLS_PER_SEC`; otherwise the regular walk speed applies.
- * A pure-`down` dash has no horizontal component.
  */
 export function applyHorizontal(player: Player, input: InputState, dt: number, cols: number): Player {
   if (player.dashRemainingMs > 0 && player.dashDirection !== null) {
     const dashDir = dashHorizontalSign(player.dashDirection);
-    if (dashDir === 0) return { ...player, input };
     const nextX = clampX(player.x + dashDir * DASH_HORIZONTAL_CELLS_PER_SEC * dt, cols);
     return { ...player, x: nextX, input };
   }
@@ -105,17 +97,6 @@ export function applyHorizontal(player: Player, input: InputState, dt: number, c
   if (dir === 0) return { ...player, input };
   const nextX = clampX(player.x + dir * PLAYER_MOVE_CELLS_PER_SEC * dt, cols);
   return { ...player, x: nextX, input };
-}
-
-/**
- * Apply the dash's vertical kicker for one tick. Only the `down` dash pushes
- * the player down extra; horizontal dashes leave gravity to do the work.
- * Jump is the only action that ever moves the player upward.
- */
-export function applyDashVertical(player: Player, dt: number): Player {
-  if (player.dashRemainingMs <= 0) return player;
-  if (player.dashDirection !== 'down') return player;
-  return { ...player, y: player.y + DASH_VERTICAL_CELLS_PER_SEC * dt };
 }
 
 /**
@@ -143,29 +124,34 @@ export function applyJump(player: Player): Player {
 }
 
 /**
- * Decide the dash direction from current input alone. Wall-clamping is
- * handled by the regular horizontal clamp; the burst just fizzles against
- * an edge.
+ * Decide the dash direction from the held arrow key. Returns `null` when no
+ * arrow is held (or both are) — pressing the dash key then does nothing.
+ * Wall-clamping is handled by the regular horizontal clamp; the burst just
+ * fizzles against an edge.
  */
-export function pickDashDirection(player: Player): DashDirection {
+export function pickDashDirection(player: Player): DashDirection | null {
   const horizontal = inputDirection(player.input);
   if (horizontal === -1) return 'left';
   if (horizontal === 1) return 'right';
-  return 'down';
+  return null;
 }
 
-/** A new dash can start only if no dash is active and the cooldown has expired. */
+/**
+ * A new dash can start only if a direction is held, no dash is active, and the
+ * cooldown has expired.
+ */
 export function canDash(player: Player): boolean {
-  return player.dashRemainingMs <= 0 && player.dashCooldownMs <= 0;
+  if (player.dashRemainingMs > 0 || player.dashCooldownMs > 0) return false;
+  return pickDashDirection(player) !== null;
 }
 
-/** Fire a dash for `DASH_DURATION_MS` in the direction picked from current input. */
-export function applyDash(player: Player): Player {
+/** Fire a dash for `DASH_DURATION_MS` in `direction`. */
+export function applyDash(player: Player, direction: DashDirection): Player {
   return {
     ...player,
     dashRemainingMs: DASH_DURATION_MS,
     dashCooldownMs: DASH_COOLDOWN_MS,
-    dashDirection: pickDashDirection(player),
+    dashDirection: direction,
   };
 }
 
