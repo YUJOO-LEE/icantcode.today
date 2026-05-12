@@ -38,6 +38,7 @@ function makePlayer(overrides: Partial<Player> = {}): Player {
     input: 'none',
     velocityY: 0,
     fellAtMs: null,
+    groundY: Number.NEGATIVE_INFINITY,
     dashRemainingMs: 0,
     dashCooldownMs: 0,
     dashDirection: null,
@@ -310,6 +311,27 @@ describe('findSupportingRow', () => {
     const player = makePlayer({ x: 5, y: 2 });
     expect(findSupportingRow(player, [row])).toBeNull();
   });
+
+  it('ignores an airborne row whose stand line is more than one cell above groundY', () => {
+    // Player launched from groundY = 6 (stand line). A row at topRow 5 has its
+    // stand line at y=4 — two cells above groundY — so a jump must not grab it.
+    const row = makeRow(5, 0, 10);
+    const player = makePlayer({ x: 5, y: 5, falling: true, velocityY: 0.5, groundY: 6 });
+    expect(findSupportingRow(player, [row])).toBeNull();
+  });
+
+  it('still accepts an airborne row exactly one cell above groundY', () => {
+    // groundY 6, row at topRow 6 → stand line y=5, one cell up: a valid hop.
+    const row = makeRow(6, 0, 10);
+    const player = makePlayer({ x: 5, y: 5.5, falling: true, velocityY: 0.5, groundY: 6 });
+    expect(findSupportingRow(player, [row])).toBe(row);
+  });
+
+  it('does not apply the climb cap to a grounded (non-falling) player', () => {
+    const row = makeRow(5, 0, 10);
+    const player = makePlayer({ x: 5, y: 4, falling: false, groundY: 99 });
+    expect(findSupportingRow(player, [row])).toBe(row);
+  });
 });
 
 describe('settle', () => {
@@ -347,5 +369,32 @@ describe('settle', () => {
     const { player: next } = settle(player, [row], 1234);
     expect(next.fellAtMs).toBe(100);
     expect(next.velocityY).toBe(4); // preserved
+  });
+
+  it('passes through an overhead row while the jump is still rising (velocityY < 0)', () => {
+    const row = makeRow(5, 0, 10);
+    // Player rising, foot within the [0,1] catch range of `row` — but moving up.
+    const player = makePlayer({ x: 5, y: 4.5, falling: true, velocityY: -3 });
+    const { player: next, supporting } = settle(player, [row], 1234);
+    expect(supporting).toBeNull();
+    expect(next.falling).toBe(true);
+    expect(next.y).toBe(4.5); // unchanged — not snapped
+  });
+
+  it('lands on the same overhead row once descending (velocityY >= 0)', () => {
+    const row = makeRow(5, 0, 10);
+    const player = makePlayer({ x: 5, y: 4.5, falling: true, velocityY: 1 });
+    const { player: next, supporting } = settle(player, [row], 1234);
+    expect(supporting).toBe(row);
+    expect(next.falling).toBe(false);
+    expect(next.y).toBe(4);
+  });
+
+  it('records groundY as the stand line of the row it lands on', () => {
+    const row = makeRow(5, 0, 10);
+    // groundY 5 → row's stand line (4) is exactly one cell up: an allowed hop.
+    const player = makePlayer({ x: 5, y: 4.7, falling: true, velocityY: 6, groundY: 5 });
+    const { player: next } = settle(player, [row], 1234);
+    expect(next.groundY).toBe(4); // topRow - 1
   });
 });

@@ -33,12 +33,18 @@ function inSegment(x: number, segment: PlatformSegment): boolean {
  * character "lands on the line above the topmost row of a group". So we
  * support when `row.topRow - player.y` is in `[0, 1]`, then snap the
  * player to `row.topRow - 1` (see `settle`).
+ *
+ * While airborne, a row whose stand line (`topRow - 1`) sits more than one
+ * cell above the last grounded line (`player.groundY`) is ignored: a single
+ * jump only rises ~1 cell, so without this the apex of a jump can "grab" a
+ * platform two text-rows up and yank the player onto it.
  */
 export function findSupportingRow(player: Player, rows: readonly ScreenRow[]): ScreenRow | null {
   const px = Math.floor(player.x);
   for (const row of rows) {
     const dy = row.topRow - player.y;
     if (dy < 0 || dy > 1) continue;
+    if (player.falling && row.topRow < player.groundY - 0.5) continue;
     for (const seg of row.segments) {
       if (inSegment(px, seg)) return row;
     }
@@ -203,7 +209,7 @@ export function detectDeath(player: Player, viewport: Viewport): 'segfault' | 't
  * supporting row (null if still in the air).
  *
  * Side-effects on player state:
- *   - landing: snaps y, clears velocityY and fellAtMs.
+ *   - landing: snaps y, clears velocityY and fellAtMs, records groundY.
  *   - takeoff (was supported, now not): stamps fellAtMs and a takeoff drop
  *     velocity so the fall reads as a real fall right away (without the
  *     kick, line-scroll keeps the player inside `dy ∈ [0, 1]` long enough
@@ -215,6 +221,13 @@ export function settle(
   rows: readonly ScreenRow[],
   elapsedMs: number,
 ): { player: Player; supporting: ScreenRow | null } {
+  // While a jump is still rising (velocityY < 0), don't snap onto platforms
+  // overhead — pass through them. Landing is only resolved on the way down.
+  // This keeps the jump a visible 1-cell arc and stops the apex from "grabbing"
+  // a platform two text-rows above the launch line.
+  if (player.falling && player.velocityY < 0) {
+    return { player, supporting: null };
+  }
   const supporting = findSupportingRow(player, rows);
   if (!supporting) {
     if (!player.falling) {
@@ -237,6 +250,7 @@ export function settle(
       falling: false,
       velocityY: 0,
       fellAtMs: null,
+      groundY: supporting.topRow - 1,
     },
     supporting,
   };
