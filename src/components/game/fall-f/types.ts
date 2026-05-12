@@ -64,6 +64,14 @@ export interface Player {
    * `null` while supported. Drives the coyote-time grace period for late jumps.
    */
   fellAtMs: number | null;
+  /**
+   * Stand-line y of the platform the player last stood on, kept in current
+   * screen coordinates (scrolled with the map while airborne). A single jump
+   * only rises ~1 cell, so while airborne the player must never be "grabbed"
+   * upward onto a platform whose stand line is more than 1 cell above this.
+   * `-Infinity` before the first landing so the initial drop can't be capped.
+   */
+  groundY: number;
   /** > 0 while a dash is still active. */
   dashRemainingMs: number;
   /** > 0 while the player cannot start a new dash. */

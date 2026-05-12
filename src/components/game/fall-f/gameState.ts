@@ -62,6 +62,7 @@ const INITIAL_PLAYER: Player = {
   input: 'none',
   velocityY: 0,
   fellAtMs: null,
+  groundY: Number.NEGATIVE_INFINITY,
   dashRemainingMs: 0,
   dashCooldownMs: 0,
   dashDirection: null,
@@ -247,8 +248,11 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
   // 5. Player physics. Airborne players scroll with the map so jump arcs
   //    return to the launching platform at any line-rate; on the ground,
   //    `settle` re-snaps every tick so the scroll has no visible effect.
+  //    `groundY` scrolls alongside `y` so the "max 1 cell of climb" cap stays
+  //    aligned with the platforms (which also scroll) for the whole arc.
+  const scroll = linesPerSec * dt;
   let player: Player = next.player.falling
-    ? { ...next.player, y: next.player.y - linesPerSec * dt }
+    ? { ...next.player, y: next.player.y - scroll, groundY: next.player.groundY - scroll }
     : next.player;
   if (next.pendingJump && canJump(player, elapsedMs)) {
     player = applyJump(player);
