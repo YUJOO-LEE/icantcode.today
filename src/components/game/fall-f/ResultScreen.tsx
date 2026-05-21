@@ -8,7 +8,7 @@ import TerminalInput from '@/components/ui/TerminalInput';
 import TerminalButton from '@/components/ui/TerminalButton';
 import RankingBoard from './RankingBoard';
 
-type DeathCause = 'segfault' | 'timeout';
+type DeathCause = 'segfault' | 'timeout' | 'killed';
 
 interface ResultScreenProps {
   cause: DeathCause;
@@ -22,11 +22,19 @@ interface ResultScreenProps {
 const TITLE_KEYS: Record<DeathCause, string> = {
   segfault: 'result.titles.segfault',
   timeout: 'result.titles.timeout',
+  killed: 'result.titles.killed',
 };
 
 const CAUSE_KEYS: Record<DeathCause, string> = {
   segfault: 'death.segfault',
   timeout: 'death.timeout',
+  killed: 'death.killed',
+};
+
+const FRAME_KEYS: Record<DeathCause, string> = {
+  segfault: 'result.frame',
+  timeout: 'result.frame',
+  killed: 'result.frames.killed',
 };
 
 const SCORE_MAX = 99999;
@@ -115,7 +123,7 @@ function ResultScreen({ cause, score, best, sessionId, onRetry, onHome }: Result
         <span className="text-primary">{best}</span>
 
         <span className="text-muted-foreground">{t('labels.in')}</span>
-        <span className="text-muted-foreground">{t('result.frame')}</span>
+        <span className="text-muted-foreground">{t(FRAME_KEYS[cause])}</span>
       </div>
 
       <div className="mt-4 text-xs">

@@ -93,7 +93,50 @@ export type GameStatus =
   | 'paused'
   | 'dead-segfault'
   | 'dead-timeout'
+  | 'dead-killed'
   | 'dead-resize';
+
+/**
+ * Telegraphed warning marker that precedes a projectile by
+ * PROJECTILE_TELEGRAPH_MS. Drawn as a blinking dot at the right edge of the
+ * row whose stand-line the projectile will sweep.
+ */
+export interface Telegraph {
+  id: string;
+  /** Y in screen-space at the moment the telegraph spawned. Scrolls with the map. */
+  y: number;
+  /** Counts down to 0; at zero the projectile spawns and the telegraph is removed. */
+  remainingMs: number;
+  /** Pre-rolled velocity (cells/sec, negative for right→left) so timing stays tied to spawn. */
+  velocityX: number;
+}
+
+/**
+ * Right-to-left hazard that sweeps across a row. Kills the player on direct
+ * hit; "detonates" (turns into an Explosion) the moment its rounded cell
+ * enters a platform segment that occupies the same y. Platforms that sit a
+ * row above/below the projectile do not block it — only platforms on the
+ * exact same line.
+ */
+export interface Projectile {
+  id: string;
+  x: number;
+  y: number;
+  /** cells/sec, negative for right→left. */
+  velocityX: number;
+  glyph: string;
+}
+
+/**
+ * Short-lived visual that replaces a projectile when it hits a platform cell.
+ * Pure cosmetic — has no collision and disappears after EXPLOSION_DURATION_MS.
+ */
+export interface Explosion {
+  id: string;
+  x: number;
+  y: number;
+  remainingMs: number;
+}
 
 /**
  * One on-screen row. Each visible line of a group is its own ScreenRow.
@@ -142,4 +185,12 @@ export interface GameState {
   pendingJump: boolean;
   /** One-shot dash request consumed (and reset) by the next tick. */
   pendingDash: boolean;
+  /** Pending right→left telegraphs. Each spawns a Projectile when remainingMs hits 0. */
+  telegraphs: Telegraph[];
+  /** In-flight horizontal hazards. */
+  projectiles: Projectile[];
+  /** Cosmetic explosion marks after a projectile detonates on a platform. */
+  explosions: Explosion[];
+  /** Ms until the next telegraph spawn. Only ticks down once score ≥ threshold. */
+  projectileSpawnTimerMs: number;
 }

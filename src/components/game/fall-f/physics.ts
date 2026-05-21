@@ -13,6 +13,7 @@ import type {
   InputState,
   PlatformSegment,
   Player,
+  Projectile,
   ScreenRow,
   Viewport,
 } from './types';
@@ -187,6 +188,45 @@ export function detectDeath(player: Player, viewport: Viewport): 'segfault' | 't
   if (player.y < 0) return 'timeout';
   if (player.y >= viewport.rows) return 'segfault';
   return null;
+}
+
+/** Apply one tick of horizontal motion to a projectile. */
+export function advanceProjectile(p: Projectile, dt: number): Projectile {
+  return { ...p, x: p.x + p.velocityX * dt };
+}
+
+/**
+ * Detonates when the projectile's cell crosses a platform segment that shares
+ * its row line (|row.topRow - p.y| < 0.5). Only platforms on the exact same
+ * line block it — a platform sitting one row above or below the projectile
+ * trail is irrelevant, which matches the visual ("the missile flew through
+ * the empty space above that platform, not into it").
+ */
+export function projectileHitsPlatform(
+  p: Projectile,
+  rows: readonly ScreenRow[],
+): { row: ScreenRow; cell: number } | null {
+  const cell = Math.floor(p.x);
+  for (const row of rows) {
+    if (Math.abs(row.topRow - p.y) >= 0.5) continue;
+    for (const seg of row.segments) {
+      if (inSegment(cell, seg)) return { row, cell };
+    }
+  }
+  return null;
+}
+
+/**
+ * Direct hit against the player. We treat both entities as inhabiting a single
+ * cell: hit when the rounded cells align and the rows are within half a cell.
+ * That tolerance is enough to catch projectiles passing through the player at
+ * any practical velocity given the 50ms frame cap (worst case ≈ 2 cells/frame
+ * at PROJECTILE_VELOCITY_MAX, so per-tick alignment misses are negligible at
+ * the resolution of `Math.floor`).
+ */
+export function projectileHitsPlayer(p: Projectile, player: Player): boolean {
+  if (Math.abs(p.y - player.y) >= 0.5) return false;
+  return Math.floor(p.x) === Math.floor(player.x);
 }
 
 /**

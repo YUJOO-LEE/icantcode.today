@@ -6,7 +6,10 @@ import {
   LEVEL_UP_FX_DURATION_MS,
   ROW_HEIGHT_PX,
 } from './constants';
+import Explosion from './Explosion';
 import Player from './Player';
+import Projectile from './Projectile';
+import Telegraph from './Telegraph';
 import { GAP_GROUP_ID } from './gameState';
 import type { GameState } from './types';
 
@@ -93,6 +96,12 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
           </div>
         </div>
       ))}
+      {state.explosions.map((e) => (
+        <Explosion key={e.id} x={e.x} y={e.y} remainingMs={e.remainingMs} />
+      ))}
+      {state.telegraphs.map((t) => (
+        <Telegraph key={t.id} x={state.viewport.cols - 1} y={t.y} />
+      ))}
       <Player
         x={state.player.x}
         y={state.player.y}
@@ -100,6 +109,9 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
         velocityY={state.player.velocityY}
         dashDirection={state.player.dashDirection}
       />
+      {state.projectiles.map((p) => (
+        <Projectile key={p.id} x={p.x} y={p.y} glyph={p.glyph} />
+      ))}
     </div>
   );
 });

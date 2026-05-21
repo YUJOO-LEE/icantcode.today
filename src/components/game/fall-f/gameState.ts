@@ -1,13 +1,23 @@
 import {
+  EXPLOSION_DURATION_MS,
   FIRST_LINE_DELAY_MS,
   LEVEL_DURATION_MS,
   LEVEL_MAX,
   LEVEL_RATES,
   PLAYER_SPAWN_X,
+  PROJECTILE_GLYPH,
+  PROJECTILE_SPAWN_INTERVAL_MAX_MS,
+  PROJECTILE_SPAWN_INTERVAL_MIN_MS,
+  PROJECTILE_SPAWN_THRESHOLD_SCORE,
+  PROJECTILE_TELEGRAPH_MS,
+  PROJECTILE_UPWARD_WEIGHT_FACTOR,
+  PROJECTILE_VELOCITY_MAX_CELLS_PER_SEC,
+  PROJECTILE_VELOCITY_MIN_CELLS_PER_SEC,
   SOLVABILITY,
 } from './constants';
 import { lineSegmentsAt, renderLine } from './dynamicLine';
 import {
+  advanceProjectile,
   applyDash,
   applyGravity,
   applyHorizontal,
@@ -18,17 +28,22 @@ import {
   detectDeath,
   findSupportingSegment,
   pickDashDirection,
+  projectileHitsPlatform,
+  projectileHitsPlayer,
   settle,
   tickDashTimers,
 } from './physics';
 import { pickNextGroup } from './solvability';
 import type {
+  Explosion,
   GameState,
   GameStatus,
   LineGroup,
   Line,
   Player,
+  Projectile,
   ScreenRow,
+  Telegraph,
   Viewport,
 } from './types';
 import { defaultRNG, type RNG } from './rng';
@@ -89,6 +104,10 @@ export function makeInitialState(viewport: Viewport): GameState {
     levelUpAtMs: 0,
     pendingJump: false,
     pendingDash: false,
+    telegraphs: [],
+    projectiles: [],
+    explosions: [],
+    projectileSpawnTimerMs: 0,
   };
 }
 
@@ -106,6 +125,81 @@ let rowIdCounter = 0;
 function makeRowId(prefix: string): string {
   rowIdCounter += 1;
   return `${prefix}-${rowIdCounter}`;
+}
+
+let projectileIdCounter = 0;
+function makeProjectileId(): string {
+  projectileIdCounter += 1;
+  return `proj-${projectileIdCounter}`;
+}
+
+let telegraphIdCounter = 0;
+function makeTelegraphId(): string {
+  telegraphIdCounter += 1;
+  return `tel-${telegraphIdCounter}`;
+}
+
+let explosionIdCounter = 0;
+function makeExplosionId(): string {
+  explosionIdCounter += 1;
+  return `boom-${explosionIdCounter}`;
+}
+
+function lerp(min: number, max: number, t: number): number {
+  return min + (max - min) * t;
+}
+
+/**
+ * Pick a platform row to target for a new projectile telegraph. Returns null
+ * when no eligible row exists (early game, or the screen is mostly gaps).
+ *
+ * Eligibility: non-gap, has at least one segment, fully inside the visible
+ * area with a one-row margin so the right-edge telegraph isn't drawn on top
+ * of the score HUD nor on a row about to scroll off.
+ *
+ * Weighted pick with two biases:
+ *   1. distance — closer to player.y wins (1 / (1 + d))
+ *   2. direction — rows above the player are scaled down by
+ *      PROJECTILE_UPWARD_WEIGHT_FACTOR, because the run only ever progresses
+ *      downward and an above-player missile is cosmetic. Without (2), half
+ *      the missiles land where the player isn't going.
+ *
+ * Without (1) bottom-camping runs avoid most missiles; without (2) above-row
+ * missiles look impressive but never threaten.
+ */
+function pickTelegraphTargetRow(
+  rows: readonly ScreenRow[],
+  viewport: Viewport,
+  playerY: number,
+  rng: RNG,
+): ScreenRow | null {
+  // Top margin (`topRow >= 1`) protects the score HUD from a telegraph dot
+  // landing on top of it. No bottom margin: the lead time (PROJECTILE_TELEGRAPH_MS)
+  // scrolls the row safely upward before the projectile launches, and the
+  // projectile itself collides on y-alignment, not row presence — so even if
+  // the row scrolls away the missile keeps flying.
+  const candidates = rows.filter(
+    (r) =>
+      r.groupId !== GAP_GROUP_ID &&
+      r.segments.length > 0 &&
+      r.topRow >= 1 &&
+      r.topRow < viewport.rows,
+  );
+  if (candidates.length === 0) return null;
+  const weights = candidates.map((r) => {
+    const standY = r.topRow - 1;
+    const signed = standY - playerY;
+    const distance = Math.abs(signed);
+    const direction = signed < 0 ? PROJECTILE_UPWARD_WEIGHT_FACTOR : 1;
+    return direction / (1 + distance);
+  });
+  const total = weights.reduce((s, w) => s + w, 0);
+  let roll = rng() * total;
+  for (let i = 0; i < candidates.length; i += 1) {
+    roll -= weights[i] ?? 0;
+    if (roll <= 0) return candidates[i] ?? null;
+  }
+  return candidates[candidates.length - 1] ?? null;
 }
 
 function makeLineRow(
@@ -282,11 +376,111 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
   }
   next.player = player;
 
-  // 7. Death detection.
+  // 7. Projectile lifecycle. Scroll → telegraph countdown → spawn projectiles
+  //    → projectile motion → platform detonation → player hit detection →
+  //    expiry/offscreen cleanup → new telegraph spawn (gated on score).
+  let telegraphs: Telegraph[] = next.telegraphs.map((t) => ({ ...t, y: t.y - scroll }));
+  let projectiles: Projectile[] = next.projectiles.map((p) => ({ ...p, y: p.y - scroll }));
+  let explosions: Explosion[] = next.explosions.map((e) => ({ ...e, y: e.y - scroll }));
+
+  const tickedTelegraphs: Telegraph[] = [];
+  const newlySpawned: Projectile[] = [];
+  for (const t of telegraphs) {
+    const remaining = t.remainingMs - dtMs;
+    if (remaining <= 0) {
+      newlySpawned.push({
+        id: makeProjectileId(),
+        x: cols - 1,
+        y: t.y,
+        velocityX: t.velocityX,
+        glyph: PROJECTILE_GLYPH,
+      });
+    } else {
+      tickedTelegraphs.push({ ...t, remainingMs: remaining });
+    }
+  }
+  telegraphs = tickedTelegraphs;
+  projectiles = projectiles.concat(newlySpawned).map((p) => advanceProjectile(p, dt));
+
+  // Platform detonation. A projectile whose rounded cell lands on a segment
+  // of its origin row becomes a short-lived explosion and is removed.
+  const survivingProjectiles: Projectile[] = [];
+  for (const p of projectiles) {
+    const hit = projectileHitsPlatform(p, next.rows);
+    if (hit) {
+      explosions = explosions.concat({
+        id: makeExplosionId(),
+        x: hit.cell,
+        y: p.y,
+        remainingMs: EXPLOSION_DURATION_MS,
+      });
+    } else {
+      survivingProjectiles.push(p);
+    }
+  }
+  projectiles = survivingProjectiles;
+
+  let killedByProjectile = false;
+  for (const p of projectiles) {
+    if (projectileHitsPlayer(p, player)) {
+      killedByProjectile = true;
+      break;
+    }
+  }
+
+  explosions = explosions
+    .map((e) => ({ ...e, remainingMs: e.remainingMs - dtMs }))
+    .filter((e) => e.remainingMs > 0 && e.y >= -0.5 && e.y < next.viewport.rows);
+  projectiles = projectiles.filter(
+    (p) => p.x >= -0.5 && p.y >= -0.5 && p.y < next.viewport.rows,
+  );
+  telegraphs = telegraphs.filter((t) => t.y >= -0.5 && t.y < next.viewport.rows);
+
+  let spawnTimerMs = next.projectileSpawnTimerMs;
+  if (next.score >= PROJECTILE_SPAWN_THRESHOLD_SCORE) {
+    spawnTimerMs -= dtMs;
+    // `while` over `if` so a long frame can still drain multiple intervals,
+    // matching the spawn-budget pattern in step 4.
+    let spawnSafety = 4;
+    while (spawnTimerMs <= 0 && spawnSafety > 0) {
+      spawnSafety -= 1;
+      const target = pickTelegraphTargetRow(next.rows, next.viewport, player.y, rng);
+      if (target) {
+        const speed = lerp(
+          PROJECTILE_VELOCITY_MIN_CELLS_PER_SEC,
+          PROJECTILE_VELOCITY_MAX_CELLS_PER_SEC,
+          rng(),
+        );
+        telegraphs = telegraphs.concat({
+          id: makeTelegraphId(),
+          y: target.topRow - 1,
+          remainingMs: PROJECTILE_TELEGRAPH_MS,
+          velocityX: -speed,
+        });
+      }
+      spawnTimerMs += lerp(
+        PROJECTILE_SPAWN_INTERVAL_MIN_MS,
+        PROJECTILE_SPAWN_INTERVAL_MAX_MS,
+        rng(),
+      );
+    }
+  }
+
+  next.telegraphs = telegraphs;
+  next.projectiles = projectiles;
+  next.explosions = explosions;
+  next.projectileSpawnTimerMs = spawnTimerMs;
+
+  // 8. Death detection. Projectile hit overrides the y-bounds checks because
+  //    a missile can land on a player who's still well inside the viewport.
   let nextStatus: GameStatus = next.status;
-  const death = detectDeath(player, next.viewport);
-  if (death === 'segfault') nextStatus = 'dead-segfault';
-  else if (death === 'timeout') nextStatus = 'dead-timeout';
+  if (killedByProjectile) {
+    nextStatus = 'dead-killed';
+  } else {
+    const death = detectDeath(player, next.viewport);
+    if (death === 'segfault') nextStatus = 'dead-segfault';
+    else if (death === 'timeout') nextStatus = 'dead-timeout';
+  }
 
   if (nextStatus !== state.status) {
     next.status = nextStatus;

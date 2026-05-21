@@ -170,12 +170,14 @@ function FallFGame() {
     onInput: setInput,
   });
 
-  const resultCause: 'segfault' | 'timeout' | null =
+  const resultCause: 'segfault' | 'timeout' | 'killed' | null =
     state.status === 'dead-segfault'
       ? 'segfault'
       : state.status === 'dead-timeout'
         ? 'timeout'
-        : null;
+        : state.status === 'dead-killed'
+          ? 'killed'
+          : null;
 
   let content;
   if (state.status === 'idle') {
