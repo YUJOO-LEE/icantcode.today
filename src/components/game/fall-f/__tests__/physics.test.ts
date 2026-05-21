@@ -304,6 +304,22 @@ describe('findSupportingRow', () => {
     const player = makePlayer({ x: 5, y: 4, falling: false, groundY: 99 });
     expect(findSupportingRow(player, [row])).toBe(row);
   });
+
+  it('does not snap up to a shorter row directly above a grounded player (bug repro)', () => {
+    // Lower row at topRow=10, segment 0..20 — long, player stands on it.
+    const lower = makeRow(10, 0, 20, 'lower');
+    // Upper row at topRow=9, segment 5..8 — short, directly above the lower
+    // row (1-row gap, e.g. consecutive lines inside the same group).
+    const upper = makeRow(9, 5, 8, 'upper');
+    // Player on lower row's stand-line: y = lower.topRow - 1 = 9. Walking
+    // right, currently at x=6 — which sits inside upper.segments [5..8].
+    const player = makePlayer({ x: 6, y: 9, falling: false });
+    // BUG: with rows ordered [upper, lower], findSupportingRow currently
+    // matches upper first because dy = upper.topRow - player.y = 0 ∈ [0,1]
+    // and player.x is inside upper's segment. settle() then snaps the player
+    // up to upper.topRow - 1 = 8 — a free teleport upward without jumping.
+    expect(findSupportingRow(player, [upper, lower])).toBe(lower);
+  });
 });
 
 describe('settle', () => {

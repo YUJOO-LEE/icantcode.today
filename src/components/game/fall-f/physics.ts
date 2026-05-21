@@ -43,7 +43,12 @@ export function findSupportingRow(player: Player, rows: readonly ScreenRow[]): S
   const px = Math.floor(player.x);
   for (const row of rows) {
     const dy = row.topRow - player.y;
-    if (dy < 0 || dy > 1) continue;
+    // dy must be strictly positive — a row at the same y as the player
+    // (dy === 0) sits *level* with them, not under their feet. Treating it
+    // as supporting would let settle() snap player.y up to row.topRow - 1,
+    // i.e. teleport one cell upward while walking across a shorter row
+    // directly above.
+    if (dy <= 0 || dy > 1) continue;
     if (player.falling && row.topRow < player.groundY - 0.5) continue;
     for (const seg of row.segments) {
       if (inSegment(px, seg)) return row;
