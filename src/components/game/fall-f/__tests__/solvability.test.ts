@@ -69,6 +69,46 @@ describe('pickNextGroup', () => {
     const result = pickNextGroup({ recentGroups: [], cols: COLS }, rng);
     expect(ALL_GROUPS).toContain(result);
   });
+
+  it('never picks a shifting-line group as the first pick of a run', () => {
+    for (let seed = 0; seed < 50; seed += 1) {
+      const picked = pickNextGroup(
+        { recentGroups: [], cols: COLS, firstPick: true },
+        mulberry32(seed),
+      );
+      const hasShifting = picked.lines.some((line) => line.kind === 'shifting');
+      expect(hasShifting).toBe(false);
+    }
+  });
+
+  it('exempts shifting-line candidates from the R-2 adjacency budget', () => {
+    // Build a "far right" prev whose only segment is at the right edge — its
+    // distance from a shifting line's pattern (anchored at x=0 in solvability
+    // eval) blows past adjacencyMaxGapCells. The shifting candidate should
+    // still be eligible.
+    const shiftingGroup = ALL_GROUPS.find((g) =>
+      g.lines.some((l) => l.kind === 'shifting'),
+    );
+    expect(shiftingGroup).toBeDefined();
+    const farRight: LineGroup = {
+      id: 'far-right',
+      gap: 1,
+      lines: [{ kind: 'static', text: ' '.repeat(COLS - 3) + 'xxx' }],
+    };
+    // Force the picker to consider only the shifting group's lineage by
+    // running many seeds and ensuring at least one picks the shifting group
+    // after this prev (i.e. not blocked by R-2).
+    const recent: LineGroup[] = [farRight];
+    let everPickedShifting = false;
+    for (let seed = 0; seed < 200; seed += 1) {
+      const picked = pickNextGroup({ recentGroups: recent, cols: COLS }, mulberry32(seed));
+      if (picked.id === shiftingGroup!.id) {
+        everPickedShifting = true;
+        break;
+      }
+    }
+    expect(everPickedShifting).toBe(true);
+  });
 });
 
 function pickRunSeq(seed: number): string[] {

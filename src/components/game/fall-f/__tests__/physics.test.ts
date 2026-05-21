@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  advanceProjectile,
   applyDash,
   applyGravity,
   applyHorizontal,
@@ -12,6 +13,8 @@ import {
   findSupportingRow,
   inputDirection,
   pickDashDirection,
+  projectileHitsPlatform,
+  projectileHitsPlayer,
   settle,
   tickDashTimers,
 } from '../physics';
@@ -24,7 +27,7 @@ import {
   PLAYER_JUMP_VELOCITY_CELLS_PER_SEC,
   PLAYER_MOVE_CELLS_PER_SEC,
 } from '../constants';
-import type { Player, ScreenRow } from '../types';
+import type { Player, Projectile, ScreenRow } from '../types';
 
 const VIEWPORT = { rows: 25, cols: 80 };
 
@@ -56,6 +59,7 @@ function makeRow(topRow: number, startX = 0, endX = 10, id = 'g'): ScreenRow {
     segments: [{ startX, endX }],
     topRow,
     ageSec: 0,
+    contentOffsetX: 0,
   };
 }
 
@@ -300,6 +304,22 @@ describe('findSupportingRow', () => {
     const player = makePlayer({ x: 5, y: 4, falling: false, groundY: 99 });
     expect(findSupportingRow(player, [row])).toBe(row);
   });
+
+  it('does not snap up to a shorter row directly above a grounded player (bug repro)', () => {
+    // Lower row at topRow=10, segment 0..20 — long, player stands on it.
+    const lower = makeRow(10, 0, 20, 'lower');
+    // Upper row at topRow=9, segment 5..8 — short, directly above the lower
+    // row (1-row gap, e.g. consecutive lines inside the same group).
+    const upper = makeRow(9, 5, 8, 'upper');
+    // Player on lower row's stand-line: y = lower.topRow - 1 = 9. Walking
+    // right, currently at x=6 — which sits inside upper.segments [5..8].
+    const player = makePlayer({ x: 6, y: 9, falling: false });
+    // BUG: with rows ordered [upper, lower], findSupportingRow currently
+    // matches upper first because dy = upper.topRow - player.y = 0 ∈ [0,1]
+    // and player.x is inside upper's segment. settle() then snaps the player
+    // up to upper.topRow - 1 = 8 — a free teleport upward without jumping.
+    expect(findSupportingRow(player, [upper, lower])).toBe(lower);
+  });
 });
 
 describe('settle', () => {
@@ -364,5 +384,101 @@ describe('settle', () => {
     const player = makePlayer({ x: 5, y: 4.7, falling: true, velocityY: 6, groundY: 5 });
     const { player: next } = settle(player, [row], 1234);
     expect(next.groundY).toBe(4); // topRow - 1
+  });
+});
+
+function makeProjectile(overrides: Partial<Projectile> = {}): Projectile {
+  return {
+    id: 'p-1',
+    x: 70,
+    y: 4,
+    velocityX: -20,
+    glyph: '◄',
+    ...overrides,
+  };
+}
+
+describe('advanceProjectile', () => {
+  it('integrates velocityX into x', () => {
+    const p = makeProjectile({ x: 70, velocityX: -20 });
+    const next = advanceProjectile(p, 0.5);
+    expect(next.x).toBeCloseTo(60);
+  });
+
+  it('preserves identity fields', () => {
+    const p = makeProjectile();
+    const next = advanceProjectile(p, 0.1);
+    expect(next.id).toBe(p.id);
+    expect(next.y).toBe(p.y);
+    expect(next.glyph).toBe(p.glyph);
+    expect(next.velocityX).toBe(p.velocityX);
+  });
+});
+
+describe('projectileHitsPlatform', () => {
+  it('hits when row.topRow matches projectile.y and cell is inside a segment', () => {
+    const row = makeRow(5, 3, 7); // topRow=5, segment [3,7]
+    const p = makeProjectile({ x: 5.2, y: 5 });
+    const hit = projectileHitsPlatform(p, [row]);
+    expect(hit).not.toBeNull();
+    expect(hit?.cell).toBe(5);
+    expect(hit?.row).toBe(row);
+  });
+
+  it('misses when cell is between segments on the matching row', () => {
+    const row = makeRow(5, 3, 7);
+    const p = makeProjectile({ x: 10, y: 5 });
+    expect(projectileHitsPlatform(p, [row])).toBeNull();
+  });
+
+  it('ignores a platform that sits a full row above the projectile', () => {
+    // Projectile flying at y=4, platform at y=5 (one row below). Even if the
+    // cell aligns with the platform's segment, the missile is on a different
+    // line and should not detonate.
+    const row = makeRow(5, 0, 10);
+    const p = makeProjectile({ x: 5, y: 4 });
+    expect(projectileHitsPlatform(p, [row])).toBeNull();
+  });
+
+  it('ignores a platform that sits a full row below the projectile', () => {
+    const row = makeRow(5, 0, 10);
+    const p = makeProjectile({ x: 5, y: 6 });
+    expect(projectileHitsPlatform(p, [row])).toBeNull();
+  });
+
+  it('returns the first row whose y matches and whose segment contains the cell', () => {
+    const decoy = makeRow(8, 0, 10, 'decoy'); // wrong y
+    const home = makeRow(5, 0, 10, 'home');
+    const p = makeProjectile({ x: 5, y: 5 });
+    const hit = projectileHitsPlatform(p, [decoy, home]);
+    expect(hit?.row).toBe(home);
+  });
+});
+
+describe('projectileHitsPlayer', () => {
+  it('hits when both cells align and rows are within half a cell', () => {
+    const p = makeProjectile({ x: 5.3, y: 4 });
+    const player = makePlayer({ x: 5.1, y: 4 });
+    expect(projectileHitsPlayer(p, player)).toBe(true);
+  });
+
+  it('misses when rows differ by half a cell or more', () => {
+    const p = makeProjectile({ x: 5, y: 4 });
+    const player = makePlayer({ x: 5, y: 4.5 });
+    expect(projectileHitsPlayer(p, player)).toBe(false);
+  });
+
+  it('misses when columns are adjacent but not the same floored cell', () => {
+    const p = makeProjectile({ x: 5.9, y: 4 });
+    const player = makePlayer({ x: 6.0, y: 4 });
+    expect(projectileHitsPlayer(p, player)).toBe(false);
+  });
+
+  it('still hits a dashing or airborne player', () => {
+    const p = makeProjectile({ x: 5, y: 4 });
+    const dashing = makePlayer({ x: 5, y: 4, dashRemainingMs: 100, dashDirection: 'left' });
+    expect(projectileHitsPlayer(p, dashing)).toBe(true);
+    const airborne = makePlayer({ x: 5, y: 4, falling: true, velocityY: 5 });
+    expect(projectileHitsPlayer(p, airborne)).toBe(true);
   });
 });

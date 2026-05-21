@@ -109,4 +109,81 @@ export const SOLVABILITY = {
   adjacencyMaxGapCells: 5, // [TUNING] spec §1.3b uses 5 as example
 } as const;
 
+// [TUNING] Score (= deepest stepped line) at which horizontal projectiles
+// start spawning. Below this the run is the original "just dodge gravity"
+// challenge; above it a second axis of pressure kicks in, capping the runs
+// that would otherwise drift past four-digit scores indefinitely.
+export const PROJECTILE_SPAWN_THRESHOLD_SCORE = 10;
+
+// [TUNING] Telegraph lead time — a blinking dot appears at the row's right
+// edge this many ms before the projectile actually enters the row.
+export const PROJECTILE_TELEGRAPH_MS = 500;
+
+// [TUNING] Random horizontal speed range. Min must beat the player's walk
+// (12 cells/sec) so a "run from the missile" strategy cannot win every time;
+// max kept under DASH_HORIZONTAL_CELLS_PER_SEC (48) so a perfectly-timed dash
+// can still outrun the worst roll.
+export const PROJECTILE_VELOCITY_MIN_CELLS_PER_SEC = 14;
+export const PROJECTILE_VELOCITY_MAX_CELLS_PER_SEC = 38;
+
+// [TUNING] Random interval between telegraph spawns. Only ticks down once
+// score ≥ PROJECTILE_SPAWN_THRESHOLD_SCORE. Tight intervals keep pressure on
+// even when a player camps on a comfortable platform. The interval is then
+// scaled by a score-driven factor (see *_RAMP_SCORE / *_MIN_FACTOR) so the
+// cadence ramps up as the run goes deeper.
+export const PROJECTILE_SPAWN_INTERVAL_MIN_MS = 1_100;
+export const PROJECTILE_SPAWN_INTERVAL_MAX_MS = 3_000;
+
+// [TUNING] Score over `THRESHOLD` at which the spawn interval has been
+// shrunk all the way down to MIN_FACTOR (no further). e.g. 700 + 0.3 means
+// scaling reaches its cap at score = threshold + 700, where intervals are
+// 30% of their base length (≈ 3× more frequent than at threshold).
+export const PROJECTILE_SPAWN_INTERVAL_RAMP_SCORE = 700;
+export const PROJECTILE_SPAWN_INTERVAL_MIN_FACTOR = 0.3;
+
+// [TUNING] Weight multiplier applied to candidate rows whose stand-line sits
+// ABOVE the player. The run only ever moves downward, so missiles spawned
+// above the player are cosmetic — visible flair, no real threat. Keep them
+// rare but not zero so the field doesn't feel half-empty. 0.2 = upward rows
+// pick at ~20% the rate of downward rows at the same distance.
+export const PROJECTILE_UPWARD_WEIGHT_FACTOR = 0.2;
+
+// Single-cell glyphs. Picked to stay inside the terminal/box-drawing aesthetic.
+export const PROJECTILE_GLYPH = '◄';
+export const TELEGRAPH_GLYPH = '•';
+
+// Three-stage explosion. The impact frame lights up a radial cluster
+// (center + horizontal arms at ±1ch/±2ch + sub-row vertical pips + diagonal
+// sparks) so the burst reads as a near-circular pop. Cells outside the
+// center never use neighboring rows (`dy: ±1` = 16px gap) — instead the
+// top/bottom pips and diagonals are nudged within the center cell by a
+// sub-row pixel offset, which makes the silhouette read as a tight star
+// rather than a 32px-tall vertical oval. Heat ramps inward: muted residue
+// at the outer edges, destructive (red/orange) on the inner ring, and
+// foreground (bright) at the core — so it reads as a heat gradient instead
+// of a flat blood spatter.
+export const EXPLOSION_GLYPHS = {
+  core: '●', // filled disc at center — heaviest, hottest cell
+  flash: '✶', // 6-point spark on the flash frame, center only
+  residue: '·', // soot dot for the residue fade
+  armNear: '*', // inner cardinal arms (±1ch horizontally, vertical pip)
+  armFar: '·', // outer cardinal arms (±2ch horizontally) — wisp at the tip
+  diag: '·', // diagonal sparks, sub-row offset so they don't extend into neighboring rows
+} as const;
+
+// [TUNING] Sub-row vertical offsets (in pixels) for the top/bottom pip and
+// diagonals. Cell rows are 16px tall; ±5/6px keeps the burst inside the
+// impact row visually, avoiding the vertical-oval artifact that ±1 cell
+// spacing produced (16px gap vs 7-8px horizontal gap → 2:1 elongation).
+export const EXPLOSION_VERTICAL_PIP_PX = 5; // top/bottom arms
+export const EXPLOSION_DIAGONAL_PX = 4; // diagonal sparks
+
+// [TUNING] Explosion timing. Short enough that consecutive missiles don't
+// stack visually, long enough that the impact frame can carry the "pop" at
+// 60fps. Past iterations were either too snappy (160ms) or too gory (700ms
+// with a 3-cell color-inverted slab).
+export const EXPLOSION_DURATION_MS = 380;
+export const EXPLOSION_IMPACT_MS = 90;
+export const EXPLOSION_FLASH_MS = 150;
+
 export const VERSION = '1.0.0';

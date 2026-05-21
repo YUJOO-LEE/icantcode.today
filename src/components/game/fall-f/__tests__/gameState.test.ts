@@ -13,12 +13,17 @@ import {
   COYOTE_TIME_MS,
   DASH_COOLDOWN_MS,
   DASH_DURATION_MS,
+  EXPLOSION_DURATION_MS,
   LEVEL_MAX,
   LINE_RATE_MAX,
   PLAYER_GRAVITY_CELLS_PER_SEC,
   PLAYER_JUMP_VELOCITY_CELLS_PER_SEC,
+  PROJECTILE_GLYPH,
+  PROJECTILE_SPAWN_THRESHOLD_SCORE,
+  PROJECTILE_TELEGRAPH_MS,
 } from '../constants';
 import { mulberry32 } from '../rng';
+import type { ScreenRow } from '../types';
 
 const VIEWPORT = { rows: 25, cols: 80 };
 
@@ -212,6 +217,7 @@ describe('tickGameState — long runs', () => {
       segments: [{ startX: 0, endX: 2 }],
       topRow: 5,
       ageSec: 0,
+      contentOffsetX: 0,
     };
     const state = {
       ...base,
@@ -381,5 +387,317 @@ describe('tickGameState — level progression', () => {
     state = tickGameState(state, 16, mulberry32(704));
     expect(state.level).toBe(LEVEL_MAX);
     expect(state.levelUpAtMs).toBe(firstCapStamp);
+  });
+});
+
+function makeRow(overrides: Partial<ScreenRow> & { id: string; topRow: number }): ScreenRow {
+  return {
+    groupId: 'g',
+    isLastOfGroup: true,
+    lineIndex: 0,
+    lineNumber: 1,
+    source: null,
+    text: 'xxxxx',
+    segments: [{ startX: 0, endX: 5 }],
+    ageSec: 0,
+    contentOffsetX: 0,
+    ...overrides,
+  };
+}
+
+describe('tickGameState — projectile spawn gating', () => {
+  it('never spawns telegraphs or projectiles while score < threshold', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = { ...state, score: PROJECTILE_SPAWN_THRESHOLD_SCORE - 1 };
+    // Seed a visible platform row so the spawner has a target if it were to run.
+    state = {
+      ...state,
+      rows: [makeRow({ id: 'r-1', topRow: 10, lineNumber: 5 })],
+    };
+    const rng = mulberry32(11);
+    for (let i = 0; i < 600; i += 1) {
+      state = tickGameState(state, 16, rng);
+      // Keep the score pinned just below threshold across ticks.
+      if (state.score >= PROJECTILE_SPAWN_THRESHOLD_SCORE) {
+        state = { ...state, score: PROJECTILE_SPAWN_THRESHOLD_SCORE - 1 };
+      }
+      if (state.status !== 'playing') break;
+    }
+    expect(state.telegraphs).toEqual([]);
+    expect(state.projectiles).toEqual([]);
+  });
+
+  it('eventually spawns at least one telegraph (or projectile) once score >= threshold', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      score: PROJECTILE_SPAWN_THRESHOLD_SCORE,
+      // Generous row coverage so picks always succeed.
+      rows: [
+        makeRow({ id: 'r-a', topRow: 5, lineNumber: 5 }),
+        makeRow({ id: 'r-b', topRow: 12, lineNumber: 6 }),
+        makeRow({ id: 'r-c', topRow: 18, lineNumber: 7 }),
+      ],
+    };
+    const rng = mulberry32(22);
+    let saw = false;
+    for (let i = 0; i < 800; i += 1) {
+      state = tickGameState(state, 16, rng);
+      if (state.telegraphs.length > 0 || state.projectiles.length > 0) {
+        saw = true;
+        break;
+      }
+      if (state.status !== 'playing') break;
+    }
+    expect(saw).toBe(true);
+  });
+});
+
+describe('tickGameState — projectile lifecycle', () => {
+  it('promotes a telegraph to a projectile when its remaining time hits 0', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [makeRow({ id: 'r-host', topRow: 10, lineNumber: 5 })],
+      telegraphs: [
+        {
+          id: 'tel-x',
+          y: 9,
+          remainingMs: 20,
+          velocityX: -30,
+        },
+      ],
+    };
+    state = tickGameState(state, 30, mulberry32(33));
+    expect(state.telegraphs).toEqual([]);
+    expect(state.projectiles.length).toBe(1);
+    expect(state.projectiles[0]?.glyph).toBe(PROJECTILE_GLYPH);
+    expect(state.projectiles[0]?.velocityX).toBe(-30);
+  });
+
+  it('detonates the projectile when it shares y with a platform segment', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    // Projectile y matches row.topRow exactly — both scroll in lockstep so
+    // they stay aligned through the tick. Cell falls inside segment [0,5].
+    state = {
+      ...state,
+      rows: [makeRow({ id: 'r-host', topRow: 10, lineNumber: 5 })],
+      projectiles: [
+        {
+          id: 'p-1',
+          x: 2.4,
+          y: 10,
+          velocityX: -1,
+          glyph: PROJECTILE_GLYPH,
+        },
+      ],
+      // Move the player far away so the projectile doesn't kill them this tick.
+      player: { ...state.player, x: 70, y: 1, falling: true },
+    };
+    state = tickGameState(state, 16, mulberry32(44));
+    expect(state.projectiles).toEqual([]);
+    expect(state.explosions.length).toBe(1);
+    expect(state.explosions[0]?.remainingMs).toBeLessThanOrEqual(EXPLOSION_DURATION_MS);
+    expect(state.status).toBe('playing');
+  });
+
+  it('passes through when a platform sits on a different y from the projectile', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    // Projectile at y=9, platform at y=10 — visually the missile is flying
+    // one row above the platform's stand-line. Must not detonate.
+    state = {
+      ...state,
+      rows: [makeRow({ id: 'r-host', topRow: 10, lineNumber: 5 })],
+      projectiles: [
+        {
+          id: 'p-1',
+          x: 2.4,
+          y: 9,
+          velocityX: -1,
+          glyph: PROJECTILE_GLYPH,
+        },
+      ],
+      player: { ...state.player, x: 70, y: 1, falling: true },
+    };
+    state = tickGameState(state, 16, mulberry32(444));
+    expect(state.projectiles.length).toBe(1);
+    expect(state.explosions).toEqual([]);
+  });
+
+  it('kills the player when a projectile lands on their cell', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    // Player is mid-air (no support); use a row whose segments are far from
+    // the player so projectile cannot be blocked by the platform. Start the
+    // projectile at x=10.5 so a 16ms tick of leftward motion still leaves
+    // `floor(x)` aligned with the player's cell at x=10.
+    state = {
+      ...state,
+      rows: [makeRow({ id: 'r-decoy', topRow: 20, lineNumber: 5, segments: [{ startX: 70, endX: 75 }] })],
+      player: { ...state.player, x: 10, y: 5, falling: true, velocityY: 0 },
+      projectiles: [
+        {
+          id: 'p-killer',
+          x: 10.5,
+          y: 5,
+          velocityX: -1,
+          glyph: PROJECTILE_GLYPH,
+        },
+      ],
+    };
+    state = tickGameState(state, 16, mulberry32(55));
+    expect(state.status).toBe('dead-killed');
+  });
+
+  it('updates best when killed by projectile and score is a new high', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      score: 42,
+      best: 10,
+      rows: [makeRow({ id: 'r-decoy', topRow: 20, lineNumber: 5, segments: [{ startX: 70, endX: 75 }] })],
+      player: { ...state.player, x: 10, y: 5, falling: true, velocityY: 0 },
+      projectiles: [
+        {
+          id: 'p-killer',
+          x: 10.5,
+          y: 5,
+          velocityX: -1,
+          glyph: PROJECTILE_GLYPH,
+        },
+      ],
+    };
+    state = tickGameState(state, 16, mulberry32(56));
+    expect(state.status).toBe('dead-killed');
+    expect(state.best).toBe(42);
+  });
+
+  it('expires explosions after EXPLOSION_DURATION_MS', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      explosions: [
+        { id: 'e-1', x: 5, y: 4, remainingMs: 50 },
+      ],
+    };
+    state = tickGameState(state, 60, mulberry32(66));
+    expect(state.explosions).toEqual([]);
+  });
+
+  it('is deterministic under the same seed and initial state', () => {
+    function run(): { telegraphs: number; projectiles: number; explosions: number } {
+      let s = startNewRun(makeInitialState(VIEWPORT), 0, null);
+      s = {
+        ...s,
+        score: PROJECTILE_SPAWN_THRESHOLD_SCORE,
+        rows: [
+          makeRow({ id: 'r-a', topRow: 5, lineNumber: 5 }),
+          makeRow({ id: 'r-b', topRow: 12, lineNumber: 6 }),
+          makeRow({ id: 'r-c', topRow: 18, lineNumber: 7 }),
+        ],
+      };
+      const rng = mulberry32(777);
+      for (let i = 0; i < 400; i += 1) {
+        s = tickGameState(s, 16, rng);
+        if (s.status !== 'playing') break;
+      }
+      return {
+        telegraphs: s.telegraphs.length,
+        projectiles: s.projectiles.length,
+        explosions: s.explosions.length,
+      };
+    }
+    const a = run();
+    const b = run();
+    expect(a).toEqual(b);
+  });
+
+  it('PROJECTILE_TELEGRAPH_MS is a positive lead time', () => {
+    // Anchors the contract for the visual telegraph in case the constant is
+    // ever zeroed out by accident — without lead time the warning is useless.
+    expect(PROJECTILE_TELEGRAPH_MS).toBeGreaterThan(0);
+  });
+
+  it('shortens the projectile spawn interval as score climbs', () => {
+    function intervalAt(score: number): number {
+      let s = startNewRun(makeInitialState(VIEWPORT), 0, null);
+      s = {
+        ...s,
+        score,
+        rows: [makeRow({ id: 'r-a', topRow: 12, lineNumber: 5 })],
+        projectileSpawnTimerMs: 1, // about to trigger spawn this tick
+      };
+      // dt=2ms drains the 1ms timer, fires one telegraph, and reseeds the
+      // timer with a fresh interval based on `score`.
+      s = tickGameState(s, 2, mulberry32(900));
+      return s.projectileSpawnTimerMs;
+    }
+    const atThreshold = intervalAt(PROJECTILE_SPAWN_THRESHOLD_SCORE);
+    const deepRun = intervalAt(PROJECTILE_SPAWN_THRESHOLD_SCORE + 1000);
+    expect(deepRun).toBeLessThan(atThreshold);
+  });
+});
+
+describe('tickGameState — shifting platform drag', () => {
+  it('drags the player horizontally by the row contentOffsetX delta', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    // Land the player on a row whose segment covers x=4.
+    state = {
+      ...state,
+      rows: [
+        makeRow({
+          id: 'r-shift',
+          topRow: 10,
+          lineNumber: 5,
+          segments: [{ startX: 2, endX: 6 }],
+          contentOffsetX: 0,
+        }),
+      ],
+      player: { ...state.player, x: 4, y: 9, falling: true, velocityY: 1 },
+    };
+    state = tickGameState(state, 16, mulberry32(700));
+    expect(state.playerStanding?.rowId).toBe('r-shift');
+    expect(state.playerStanding?.offsetX).toBe(0);
+    const xBefore = state.player.x;
+
+    // Hand-shift the platform by +1 cell. With source: null the rerender step
+    // won't overwrite our shift back to 0, so we can isolate the drag logic.
+    state = {
+      ...state,
+      rows: state.rows.map((r) =>
+        r.id === 'r-shift'
+          ? { ...r, contentOffsetX: 1, segments: [{ startX: 3, endX: 7 }] }
+          : r,
+      ),
+    };
+    state = tickGameState(state, 16, mulberry32(701));
+    expect(state.player.x).toBeCloseTo(xBefore + 1, 5);
+    expect(state.playerStanding?.offsetX).toBe(1);
+  });
+
+  it('clears playerStanding when the player leaves the platform', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [
+        makeRow({
+          id: 'r-floor',
+          topRow: 10,
+          lineNumber: 5,
+          segments: [{ startX: 0, endX: 5 }],
+        }),
+      ],
+      player: { ...state.player, x: 2, y: 9, falling: true, velocityY: 1 },
+    };
+    state = tickGameState(state, 16, mulberry32(702));
+    expect(state.playerStanding).not.toBeNull();
+
+    // Send the player far off the platform — supporting row is lost.
+    state = {
+      ...state,
+      player: { ...state.player, x: 60, y: 20, falling: true },
+      rows: [],
+    };
+    state = tickGameState(state, 16, mulberry32(703));
+    expect(state.playerStanding).toBeNull();
   });
 });

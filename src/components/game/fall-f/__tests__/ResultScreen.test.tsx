@@ -45,6 +45,12 @@ describe('ResultScreen', () => {
     expect(screen.getByText(/\[TIMEOUT\]/)).toBeInTheDocument();
   });
 
+  it('renders SIGKILL title and on_signal frame for killed cause', () => {
+    renderScreen({ cause: 'killed' });
+    expect(screen.getByText(/\[SIGKILL\]/)).toBeInTheDocument();
+    expect(screen.getByText('fall_f::on_signal')).toBeInTheDocument();
+  });
+
   it('shows the score and best values', () => {
     renderScreen({ score: 99, best: 256 });
     expect(screen.getByText('99')).toBeInTheDocument();
