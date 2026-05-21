@@ -7,7 +7,9 @@ import {
   PLAYER_SPAWN_X,
   PROJECTILE_GLYPH,
   PROJECTILE_SPAWN_INTERVAL_MAX_MS,
+  PROJECTILE_SPAWN_INTERVAL_MIN_FACTOR,
   PROJECTILE_SPAWN_INTERVAL_MIN_MS,
+  PROJECTILE_SPAWN_INTERVAL_RAMP_SCORE,
   PROJECTILE_SPAWN_THRESHOLD_SCORE,
   PROJECTILE_TELEGRAPH_MS,
   PROJECTILE_UPWARD_WEIGHT_FACTOR,
@@ -149,6 +151,19 @@ function makeExplosionId(): string {
 
 function lerp(min: number, max: number, t: number): number {
   return min + (max - min) * t;
+}
+
+/**
+ * Random projectile spawn delay, shortened as the score climbs. Reaches its
+ * floor (factor = PROJECTILE_SPAWN_INTERVAL_MIN_FACTOR of base length) at
+ * score = threshold + RAMP_SCORE.
+ */
+function rolledSpawnIntervalMs(score: number, roll: number): number {
+  const over = Math.max(0, score - PROJECTILE_SPAWN_THRESHOLD_SCORE);
+  const t = Math.min(1, over / PROJECTILE_SPAWN_INTERVAL_RAMP_SCORE);
+  const factor = lerp(1, PROJECTILE_SPAWN_INTERVAL_MIN_FACTOR, t);
+  const base = lerp(PROJECTILE_SPAWN_INTERVAL_MIN_MS, PROJECTILE_SPAWN_INTERVAL_MAX_MS, roll);
+  return factor * base;
 }
 
 /**
@@ -479,11 +494,7 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
           velocityX: -speed,
         });
       }
-      spawnTimerMs += lerp(
-        PROJECTILE_SPAWN_INTERVAL_MIN_MS,
-        PROJECTILE_SPAWN_INTERVAL_MAX_MS,
-        rng(),
-      );
+      spawnTimerMs += rolledSpawnIntervalMs(next.score, rng());
     }
   }
 

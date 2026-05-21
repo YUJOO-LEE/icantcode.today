@@ -128,9 +128,18 @@ export const PROJECTILE_VELOCITY_MAX_CELLS_PER_SEC = 38;
 
 // [TUNING] Random interval between telegraph spawns. Only ticks down once
 // score ≥ PROJECTILE_SPAWN_THRESHOLD_SCORE. Tight intervals keep pressure on
-// even when a player camps on a comfortable platform.
+// even when a player camps on a comfortable platform. The interval is then
+// scaled by a score-driven factor (see *_RAMP_SCORE / *_MIN_FACTOR) so the
+// cadence ramps up as the run goes deeper.
 export const PROJECTILE_SPAWN_INTERVAL_MIN_MS = 1_100;
 export const PROJECTILE_SPAWN_INTERVAL_MAX_MS = 3_000;
+
+// [TUNING] Score over `THRESHOLD` at which the spawn interval has been
+// shrunk all the way down to MIN_FACTOR (no further). e.g. 700 + 0.3 means
+// scaling reaches its cap at score = threshold + 700, where intervals are
+// 30% of their base length (≈ 3× more frequent than at threshold).
+export const PROJECTILE_SPAWN_INTERVAL_RAMP_SCORE = 700;
+export const PROJECTILE_SPAWN_INTERVAL_MIN_FACTOR = 0.3;
 
 // [TUNING] Weight multiplier applied to candidate rows whose stand-line sits
 // ABOVE the player. The run only ever moves downward, so missiles spawned

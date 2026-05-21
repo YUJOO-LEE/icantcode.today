@@ -616,6 +616,25 @@ describe('tickGameState — projectile lifecycle', () => {
     // ever zeroed out by accident — without lead time the warning is useless.
     expect(PROJECTILE_TELEGRAPH_MS).toBeGreaterThan(0);
   });
+
+  it('shortens the projectile spawn interval as score climbs', () => {
+    function intervalAt(score: number): number {
+      let s = startNewRun(makeInitialState(VIEWPORT), 0, null);
+      s = {
+        ...s,
+        score,
+        rows: [makeRow({ id: 'r-a', topRow: 12, lineNumber: 5 })],
+        projectileSpawnTimerMs: 1, // about to trigger spawn this tick
+      };
+      // dt=2ms drains the 1ms timer, fires one telegraph, and reseeds the
+      // timer with a fresh interval based on `score`.
+      s = tickGameState(s, 2, mulberry32(900));
+      return s.projectileSpawnTimerMs;
+    }
+    const atThreshold = intervalAt(PROJECTILE_SPAWN_THRESHOLD_SCORE);
+    const deepRun = intervalAt(PROJECTILE_SPAWN_THRESHOLD_SCORE + 1000);
+    expect(deepRun).toBeLessThan(atThreshold);
+  });
 });
 
 describe('tickGameState — shifting platform drag', () => {
