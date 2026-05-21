@@ -34,7 +34,21 @@ export interface FillRightLine {
   empty: string;
 }
 
-export type Line = StaticLine | GrowRightLine | FillRightLine;
+/**
+ * Toggles between two fixed patterns every `periodSec`. Used for "flickering"
+ * platforms that look like a stable row but periodically swap which cells are
+ * solid — the player has to move before the next flip drops them. RNG-free:
+ * the toggle is purely a function of `ageSec`, so seeded replays are stable.
+ */
+export interface AlternatingLine {
+  kind: 'alternating';
+  patternA: string;
+  patternB: string;
+  /** Seconds each pattern stays solid before flipping to the other. */
+  periodSec: number;
+}
+
+export type Line = StaticLine | GrowRightLine | FillRightLine | AlternatingLine;
 
 export interface LineGroup {
   id: string;

@@ -1,4 +1,10 @@
-import type { Line, FillRightLine, GrowRightLine, PlatformSegment } from './types';
+import type {
+  AlternatingLine,
+  FillRightLine,
+  GrowRightLine,
+  Line,
+  PlatformSegment,
+} from './types';
 import { getSegments } from './segments';
 
 const FILL_EMPTY = new Set([' ', '\t', '░']);
@@ -29,6 +35,20 @@ function renderFillRight(line: FillRightLine, ageSec: number): string {
   return head + line.filled.repeat(filledCount) + line.empty.repeat(emptied) + tail;
 }
 
+function renderAlternating(line: AlternatingLine, ageSec: number, maxWidth?: number): string {
+  // floor(ageSec / period) parity selects which pattern is current. ageSec=0
+  // always starts on patternA, which is also the phase used by solvability
+  // when validating spawn safety — so a freshly spawned alternating row is
+  // always landable on patternA cells without any wait.
+  const period = Math.max(line.periodSec, 0.001);
+  const phaseIndex = Math.floor(Math.max(0, ageSec) / period) % 2;
+  const text = phaseIndex === 0 ? line.patternA : line.patternB;
+  if (maxWidth && maxWidth > 0 && text.length > maxWidth) {
+    return text.slice(0, maxWidth);
+  }
+  return text;
+}
+
 export function renderLine(line: Line, ageSec: number, maxWidth?: number): string {
   switch (line.kind) {
     case 'static':
@@ -37,6 +57,8 @@ export function renderLine(line: Line, ageSec: number, maxWidth?: number): strin
       return renderGrowRight(line, ageSec, maxWidth);
     case 'fill-right':
       return renderFillRight(line, ageSec);
+    case 'alternating':
+      return renderAlternating(line, ageSec, maxWidth);
   }
 }
 

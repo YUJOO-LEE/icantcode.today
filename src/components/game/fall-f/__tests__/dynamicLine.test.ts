@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderLine, lineSegmentsAt } from '../dynamicLine';
-import type { FillRightLine, GrowRightLine, StaticLine } from '../types';
+import type { AlternatingLine, FillRightLine, GrowRightLine, StaticLine } from '../types';
 
 const staticLine: StaticLine = { kind: 'static', text: '$ npm run build' };
 
@@ -81,5 +81,60 @@ describe('lineSegmentsAt', () => {
       { startX: 0, endX: 0 },
       { startX: 9, endX: 9 },
     ]);
+  });
+
+  it('alternating: segments come from patternA at age 0', () => {
+    const line: AlternatingLine = {
+      kind: 'alternating',
+      patternA: '███     ███     ',
+      patternB: '     ███     ███',
+      periodSec: 1.5,
+    };
+    expect(lineSegmentsAt(line, 0)).toEqual([
+      { startX: 0, endX: 2 },
+      { startX: 8, endX: 10 },
+    ]);
+  });
+
+  it('alternating: segments switch to patternB after one full period', () => {
+    const line: AlternatingLine = {
+      kind: 'alternating',
+      patternA: '███     ',
+      patternB: '     ███',
+      periodSec: 1.5,
+    };
+    // Just past the first flip — patternB is now active.
+    expect(lineSegmentsAt(line, 1.6)).toEqual([{ startX: 5, endX: 7 }]);
+  });
+});
+
+describe('renderLine — alternating', () => {
+  const line: AlternatingLine = {
+    kind: 'alternating',
+    patternA: '███     ',
+    patternB: '     ███',
+    periodSec: 1.5,
+  };
+
+  it('starts on patternA at age 0', () => {
+    expect(renderLine(line, 0)).toBe('███     ');
+  });
+
+  it('stays on patternA for the first periodSec', () => {
+    expect(renderLine(line, 0.1)).toBe('███     ');
+    expect(renderLine(line, 1.4)).toBe('███     ');
+  });
+
+  it('flips to patternB after one period', () => {
+    expect(renderLine(line, 1.5)).toBe('     ███');
+    expect(renderLine(line, 2.9)).toBe('     ███');
+  });
+
+  it('flips back to patternA after two periods', () => {
+    expect(renderLine(line, 3.0)).toBe('███     ');
+  });
+
+  it('clamps to maxWidth when the pattern is longer than the viewport', () => {
+    expect(renderLine(line, 0, 4)).toBe('███ ');
   });
 });

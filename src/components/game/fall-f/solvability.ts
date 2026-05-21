@@ -8,6 +8,7 @@ const FILL_EMPTY = new Set([' ', '\t', '░']);
 
 function lineRenderedText(line: LineGroup['lines'][number]): string {
   if (line.kind === 'static') return line.text;
+  if (line.kind === 'alternating') return line.patternA;
   return line.initial;
 }
 
@@ -15,6 +16,9 @@ function lineSegments(line: LineGroup['lines'][number]): PlatformSegment[] {
   if (line.kind === 'fill-right') {
     return getSegments(line.initial, FILL_EMPTY);
   }
+  // Alternating rows are graded on patternA — that's the phase they spawn on,
+  // so reachability and first-pick spawn safety are evaluated against the
+  // platform cells the player will see when the row enters the screen.
   return getSegments(lineRenderedText(line));
 }
 

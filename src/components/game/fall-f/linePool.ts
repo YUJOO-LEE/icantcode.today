@@ -1,4 +1,10 @@
-import type { LineGroup, StaticLine, GrowRightLine, FillRightLine } from './types';
+import type {
+  AlternatingLine,
+  FillRightLine,
+  GrowRightLine,
+  LineGroup,
+  StaticLine,
+} from './types';
 
 function s(text: string): StaticLine {
   return { kind: 'static', text };
@@ -169,12 +175,39 @@ const oscillate = (
   empty,
 });
 
+// Flickering platform: alternating single cells — plank / gap / plank / gap
+// across the row, toggling every FLICKER_PERIOD_SEC. Equal 1-cell widths
+// keep the two phases exact inverses of each other (every plank in A is a
+// gap in B). The 1-cell shift means the player only has to nudge one cell
+// over when the phase flips, but the 1.5s window still demands attention —
+// stand still and you fall through on the next toggle.
+//
+// patternA spawns first (renderAlternating phase 0 = A) and solvability
+// grades reachability against patternA, so a freshly arrived row is always
+// landable on its A cells.
+const FLICKER_PATTERN_TOTAL_LEN = 80;
+const FLICKER_PERIOD_SEC = 1.5;
+
+function repeatTo(unit: string, totalLen: number): string {
+  let out = '';
+  while (out.length < totalLen) out += unit;
+  return out.slice(0, totalLen);
+}
+
+const flicker = (unitA: string, unitB: string): AlternatingLine => ({
+  kind: 'alternating',
+  patternA: repeatTo(unitA, FLICKER_PATTERN_TOTAL_LEN),
+  patternB: repeatTo(unitB, FLICKER_PATTERN_TOTAL_LEN),
+  periodSec: FLICKER_PERIOD_SEC,
+});
+
 export const DYNAMIC_GROUPS: LineGroup[] = [
   group('loading-dots', [grow('loading...', '.', 4)]),
   group('compiling-dots', [grow('compiling...', '.', 4)]),
   group('fetching-dots', [grow('fetching deps...', '.', 5)]),
   group('progress-bar', [oscillate('[████████████]', 3.5)], 2),
   group('progress-long', [oscillate('[████████████████]', 4.5)]),
+  group('flicker-bar', [flicker('- ', ' -')], 2),
 ];
 
 export const ALL_GROUPS: LineGroup[] = [...STATIC_GROUPS, ...DYNAMIC_GROUPS];
