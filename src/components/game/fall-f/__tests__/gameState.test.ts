@@ -217,6 +217,7 @@ describe('tickGameState — long runs', () => {
       segments: [{ startX: 0, endX: 2 }],
       topRow: 5,
       ageSec: 0,
+      contentOffsetX: 0,
     };
     const state = {
       ...base,
@@ -399,6 +400,7 @@ function makeRow(overrides: Partial<ScreenRow> & { id: string; topRow: number })
     text: 'xxxxx',
     segments: [{ startX: 0, endX: 5 }],
     ageSec: 0,
+    contentOffsetX: 0,
     ...overrides,
   };
 }
@@ -613,5 +615,70 @@ describe('tickGameState — projectile lifecycle', () => {
     // Anchors the contract for the visual telegraph in case the constant is
     // ever zeroed out by accident — without lead time the warning is useless.
     expect(PROJECTILE_TELEGRAPH_MS).toBeGreaterThan(0);
+  });
+});
+
+describe('tickGameState — shifting platform drag', () => {
+  it('drags the player horizontally by the row contentOffsetX delta', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    // Land the player on a row whose segment covers x=4.
+    state = {
+      ...state,
+      rows: [
+        makeRow({
+          id: 'r-shift',
+          topRow: 10,
+          lineNumber: 5,
+          segments: [{ startX: 2, endX: 6 }],
+          contentOffsetX: 0,
+        }),
+      ],
+      player: { ...state.player, x: 4, y: 9, falling: true, velocityY: 1 },
+    };
+    state = tickGameState(state, 16, mulberry32(700));
+    expect(state.playerStanding?.rowId).toBe('r-shift');
+    expect(state.playerStanding?.offsetX).toBe(0);
+    const xBefore = state.player.x;
+
+    // Hand-shift the platform by +1 cell. With source: null the rerender step
+    // won't overwrite our shift back to 0, so we can isolate the drag logic.
+    state = {
+      ...state,
+      rows: state.rows.map((r) =>
+        r.id === 'r-shift'
+          ? { ...r, contentOffsetX: 1, segments: [{ startX: 3, endX: 7 }] }
+          : r,
+      ),
+    };
+    state = tickGameState(state, 16, mulberry32(701));
+    expect(state.player.x).toBeCloseTo(xBefore + 1, 5);
+    expect(state.playerStanding?.offsetX).toBe(1);
+  });
+
+  it('clears playerStanding when the player leaves the platform', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [
+        makeRow({
+          id: 'r-floor',
+          topRow: 10,
+          lineNumber: 5,
+          segments: [{ startX: 0, endX: 5 }],
+        }),
+      ],
+      player: { ...state.player, x: 2, y: 9, falling: true, velocityY: 1 },
+    };
+    state = tickGameState(state, 16, mulberry32(702));
+    expect(state.playerStanding).not.toBeNull();
+
+    // Send the player far off the platform — supporting row is lost.
+    state = {
+      ...state,
+      player: { ...state.player, x: 60, y: 20, falling: true },
+      rows: [],
+    };
+    state = tickGameState(state, 16, mulberry32(703));
+    expect(state.playerStanding).toBeNull();
   });
 });

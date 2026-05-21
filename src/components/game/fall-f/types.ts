@@ -48,7 +48,15 @@ export interface AlternatingLine {
   periodSec: number;
 }
 
-export type Line = StaticLine | GrowRightLine | FillRightLine | AlternatingLine;
+/** Ping-pongs left/right one cell per `periodSec`. Players riding it are dragged along. */
+export interface ShiftingLine {
+  kind: 'shifting';
+  pattern: string;
+  periodSec: number;
+  initialDirection: -1 | 1;
+}
+
+export type Line = StaticLine | GrowRightLine | FillRightLine | AlternatingLine | ShiftingLine;
 
 export interface LineGroup {
   id: string;
@@ -170,6 +178,8 @@ export interface ScreenRow {
   segments: PlatformSegment[];
   topRow: number;
   ageSec: number;
+  /** Cell-offset from a shifting source line. 0 for everything else. */
+  contentOffsetX: number;
 }
 
 export interface GameState {
@@ -207,4 +217,6 @@ export interface GameState {
   explosions: Explosion[];
   /** Ms until the next telegraph spawn. Only ticks down once score ≥ threshold. */
   projectileSpawnTimerMs: number;
+  /** Tracks the player's standing row + its offsetX at contact; delta drives shifting-platform drag. */
+  playerStanding: { rowId: string; offsetX: number } | null;
 }

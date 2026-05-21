@@ -29,6 +29,7 @@ function makeRow(overrides: Partial<ScreenRow> = {}): ScreenRow {
     segments: [],
     topRow: 0,
     ageSec: 0,
+    contentOffsetX: 0,
     ...overrides,
   };
 }

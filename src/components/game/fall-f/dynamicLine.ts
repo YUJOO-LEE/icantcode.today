@@ -4,6 +4,7 @@ import type {
   GrowRightLine,
   Line,
   PlatformSegment,
+  ShiftingLine,
 } from './types';
 import { getSegments } from './segments';
 
@@ -49,6 +50,33 @@ function renderAlternating(line: AlternatingLine, ageSec: number, maxWidth?: num
   return text;
 }
 
+function computeShiftOffset(line: ShiftingLine, ageSec: number, width: number): number {
+  const patternLen = line.pattern.length;
+  if (patternLen >= width) return 0;
+  const range = width - patternLen;
+  const period = Math.max(line.periodSec, 0.001);
+  const stepIdx = Math.floor(Math.max(0, ageSec) / period);
+  const cycleLen = Math.max(1, 2 * range);
+  const cyclePos = ((stepIdx % cycleLen) + cycleLen) % cycleLen;
+  const baseOffset = cyclePos <= range ? cyclePos : cycleLen - cyclePos;
+  return line.initialDirection === 1 ? baseOffset : range - baseOffset;
+}
+
+function renderShifting(line: ShiftingLine, ageSec: number, maxWidth?: number): string {
+  const patternLen = line.pattern.length;
+  const width = maxWidth && maxWidth > 0 ? maxWidth : patternLen;
+  if (patternLen >= width) return line.pattern.slice(0, width);
+  const offset = computeShiftOffset(line, ageSec, width);
+  const range = width - patternLen;
+  return ' '.repeat(offset) + line.pattern + ' '.repeat(range - offset);
+}
+
+export function lineContentOffsetX(line: Line, ageSec: number, maxWidth?: number): number {
+  if (line.kind !== 'shifting') return 0;
+  const width = maxWidth && maxWidth > 0 ? maxWidth : line.pattern.length;
+  return computeShiftOffset(line, ageSec, width);
+}
+
 export function renderLine(line: Line, ageSec: number, maxWidth?: number): string {
   switch (line.kind) {
     case 'static':
@@ -59,6 +87,8 @@ export function renderLine(line: Line, ageSec: number, maxWidth?: number): strin
       return renderFillRight(line, ageSec);
     case 'alternating':
       return renderAlternating(line, ageSec, maxWidth);
+    case 'shifting':
+      return renderShifting(line, ageSec, maxWidth);
   }
 }
 

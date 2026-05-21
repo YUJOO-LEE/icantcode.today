@@ -3,6 +3,7 @@ import type {
   FillRightLine,
   GrowRightLine,
   LineGroup,
+  ShiftingLine,
   StaticLine,
 } from './types';
 
@@ -13,6 +14,19 @@ function s(text: string): StaticLine {
 function group(id: string, lines: LineGroup['lines'], gap: 1 | 2 = 1): LineGroup {
   return { id, lines, gap };
 }
+
+// Shifting platform: ASCII bar drifting one cell per `periodSec`, ping-ponging
+// between the viewport edges. Players riding it are carried along.
+const shift = (
+  pattern: string,
+  initialDirection: -1 | 1 = 1,
+  periodSec = 0.08,
+): ShiftingLine => ({
+  kind: 'shifting',
+  pattern,
+  periodSec,
+  initialDirection,
+});
 
 export const STATIC_GROUPS: LineGroup[] = [
   // npm / vite / tsc
@@ -153,6 +167,11 @@ export const STATIC_GROUPS: LineGroup[] = [
   group('ssh-out', [
     s('Last login: Mon May  8 09:15:42 2026'),
   ], 2),
+
+  // shifting platforms — kept in the static pool (not dynamic) so they pick at
+  // the regular frequency instead of being gated behind PRESSURE_GROUP_RATIO.
+  group('shift-plank-r', [shift('=======', 1)], 2),
+  group('shift-plank-l', [shift('=======', -1)], 2),
 ];
 
 const grow = (initial: string, growChar = '.', growPerSec = 4): GrowRightLine => ({

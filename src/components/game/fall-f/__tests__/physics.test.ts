@@ -59,6 +59,7 @@ function makeRow(topRow: number, startX = 0, endX = 10, id = 'g'): ScreenRow {
     segments: [{ startX, endX }],
     topRow,
     ageSec: 0,
+    contentOffsetX: 0,
   };
 }
 

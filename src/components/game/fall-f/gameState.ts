@@ -15,7 +15,7 @@ import {
   PROJECTILE_VELOCITY_MIN_CELLS_PER_SEC,
   SOLVABILITY,
 } from './constants';
-import { lineSegmentsAt, renderLine } from './dynamicLine';
+import { lineContentOffsetX, lineSegmentsAt, renderLine } from './dynamicLine';
 import {
   advanceProjectile,
   applyDash,
@@ -25,6 +25,7 @@ import {
   autoSlide,
   canDash,
   canJump,
+  clampX,
   detectDeath,
   findSupportingSegment,
   pickDashDirection,
@@ -108,6 +109,7 @@ export function makeInitialState(viewport: Viewport): GameState {
     projectiles: [],
     explosions: [],
     projectileSpawnTimerMs: 0,
+    playerStanding: null,
   };
 }
 
@@ -212,6 +214,7 @@ function makeLineRow(
   const source = group.lines[lineIndex] as Line;
   const text = renderLine(source, 0, cols);
   const segments = lineSegmentsAt(source, 0, cols);
+  const contentOffsetX = lineContentOffsetX(source, 0, cols);
   return {
     id: makeRowId(group.id),
     groupId: group.id,
@@ -223,6 +226,7 @@ function makeLineRow(
     segments,
     topRow: bottomRow,
     ageSec: 0,
+    contentOffsetX,
   };
 }
 
@@ -238,6 +242,7 @@ function makeGapRow(bottomRow: number, isLast: boolean, lineNumber: number): Scr
     segments: [],
     topRow: bottomRow,
     ageSec: 0,
+    contentOffsetX: 0,
   };
 }
 
@@ -251,7 +256,8 @@ function rerenderDynamicRow(row: ScreenRow, cols: number): ScreenRow {
   if (!row.source || row.source.kind === 'static') return row;
   const text = renderLine(row.source, row.ageSec, cols);
   const segments = lineSegmentsAt(row.source, row.ageSec, cols);
-  return { ...row, text, segments };
+  const contentOffsetX = lineContentOffsetX(row.source, row.ageSec, cols);
+  return { ...row, text, segments, contentOffsetX };
 }
 
 export function tickGameState(state: GameState, dtMs: number, rng: RNG = defaultRNG): GameState {
@@ -365,14 +371,29 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
   const settled = settle(player, next.rows, elapsedMs);
   player = settled.player;
   if (settled.supporting) {
-    const seg = findSupportingSegment(settled.supporting, player.x);
+    const supporting = settled.supporting;
+    // Shifting-platform drag: same row as last tick → carry the player by
+    // the delta of the row's contentOffsetX so the platform doesn't slide
+    // out from under them.
+    const prevStanding = next.playerStanding;
+    if (prevStanding && prevStanding.rowId === supporting.id) {
+      const delta = supporting.contentOffsetX - prevStanding.offsetX;
+      if (delta !== 0) {
+        player = { ...player, x: clampX(player.x + delta, cols) };
+      }
+    }
+    next.playerStanding = { rowId: supporting.id, offsetX: supporting.contentOffsetX };
+    const seg = findSupportingSegment(supporting, player.x);
     if (seg) {
       player = autoSlide(player, seg);
-      const ln = settled.supporting.lineNumber;
+      const ln = supporting.lineNumber;
       if (ln > next.score) next.score = ln;
     } else {
       player = { ...player, falling: true };
+      next.playerStanding = null;
     }
+  } else {
+    next.playerStanding = null;
   }
   next.player = player;
 

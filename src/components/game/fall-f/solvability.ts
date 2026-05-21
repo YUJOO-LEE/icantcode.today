@@ -9,7 +9,12 @@ const FILL_EMPTY = new Set([' ', '\t', '░']);
 function lineRenderedText(line: LineGroup['lines'][number]): string {
   if (line.kind === 'static') return line.text;
   if (line.kind === 'alternating') return line.patternA;
+  if (line.kind === 'shifting') return line.pattern;
   return line.initial;
+}
+
+function groupHasShiftingLine(group: LineGroup): boolean {
+  return group.lines.some((line) => line.kind === 'shifting');
 }
 
 function lineSegments(line: LineGroup['lines'][number]): PlatformSegment[] {
@@ -73,6 +78,10 @@ function passesR1(candidate: LineGroup, ctx: PickContext): boolean {
 function passesR2(candidate: LineGroup, ctx: PickContext): boolean {
   const prev = ctx.recentGroups[ctx.recentGroups.length - 1];
   if (!prev) return true;
+  // Shifting platforms sweep the full viewport, so the prev→candidate
+  // adjacency check (which compares static segment positions) doesn't model
+  // them — they always reach any prev segment eventually.
+  if (groupHasShiftingLine(candidate) || groupHasShiftingLine(prev)) return true;
   const prevSegs = groupSegments(prev);
   const candSegs = groupSegments(candidate);
   if (prevSegs.length === 0 || candSegs.length === 0) return true;
@@ -88,7 +97,7 @@ export function pickNextGroup(ctx: PickContext, rng: RNG = defaultRNG): LineGrou
   const passes = (candidate: LineGroup) =>
     passesR1(candidate, ctx) &&
     passesR2(candidate, ctx) &&
-    (!ctx.firstPick || firstLineCoversSpawn(candidate));
+    (!ctx.firstPick || (firstLineCoversSpawn(candidate) && !groupHasShiftingLine(candidate)));
 
   for (const candidate of shuffle(primary, rng)) {
     if (passes(candidate)) return candidate;
