@@ -225,4 +225,16 @@ describe('GameField', () => {
     render(<GameField state={state} />, { wrapper: Wrapper });
     expect(screen.getByTestId('ff-left-edge').className).toContain('bg-destructive');
   });
+
+  it('renders explosions, telegraphs, and projectiles from state', () => {
+    const state = makeState({
+      explosions: [{ id: 'e-1', x: 5, y: 4, remainingMs: 200 }],
+      telegraphs: [{ id: 't-1', y: 3, remainingMs: 200, velocityX: -20 }],
+      projectiles: [{ id: 'p-1', x: 10, y: 5, velocityX: -20, glyph: '◄' }],
+    });
+    render(<GameField state={state} />, { wrapper: Wrapper });
+    expect(screen.getByTestId('ff-explosion')).toBeInTheDocument();
+    expect(screen.getByTestId('ff-telegraph')).toBeInTheDocument();
+    expect(screen.getByTestId('ff-projectile')).toBeInTheDocument();
+  });
 });
