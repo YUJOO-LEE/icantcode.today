@@ -845,4 +845,82 @@ describe('tickGameState — pusher hazard', () => {
     }
     expect(state.pushers).toHaveLength(0);
   });
+
+  it('does not push a grounded player whose row differs from the pusher row', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 8 })],
+      player: { ...state.player, x: 5, y: 12, falling: false, velocityY: 0, groundY: 12 },
+      pushers: [{ id: 'p1', x: 5, y: 8, velocityX: 10 }],
+      pusherSpawnTimerMs: 60_000,
+    };
+    const x0 = state.player.x;
+    state = tickGameState(state, 16, mulberry32(920));
+    expect(state.player.x).toBe(x0);
+  });
+
+  it('does not push when the player foot is outside the pusher body cells', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 10 })],
+      // Pusher body = [3..5]; player at x=10 is well outside.
+      player: { ...state.player, x: 10, y: 10, falling: false, velocityY: 0, groundY: 10 },
+      pushers: [{ id: 'p1', x: 5, y: 10, velocityX: 10 }],
+      pusherSpawnTimerMs: 60_000,
+    };
+    const x0 = state.player.x;
+    state = tickGameState(state, 16, mulberry32(921));
+    expect(state.player.x).toBe(x0);
+  });
+
+  it('despawns once the trailing edge has scrolled past the right wall', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 10 })],
+      // cols = 80; trailing edge = round(x) - 2 = 80. >= cols → despawn.
+      pushers: [{ id: 'p1', x: 82, y: 10, velocityX: 5 }],
+      pusherSpawnTimerMs: 60_000,
+    };
+    state = tickGameState(state, 16, mulberry32(922));
+    expect(state.pushers).toHaveLength(0);
+  });
+
+  it('does not annihilate when a projectile is on a different y than the pusher', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 10 })],
+      pushers: [{ id: 'p1', x: 20, y: 10, velocityX: 5 }],
+      projectiles: [{ id: 'm1', x: 19.5, y: 14, velocityX: -20, glyph: '◄' }],
+      pusherSpawnTimerMs: 60_000,
+    };
+    state = tickGameState(state, 16, mulberry32(923));
+    expect(state.pushers.find((p) => p.id === 'p1')).toBeDefined();
+    expect(state.projectiles.find((p) => p.id === 'm1')).toBeDefined();
+  });
+
+  it('only annihilates one pusher per projectile (does not double-charge an already-hit pusher)', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 10 })],
+      // Two projectiles converging on the same pusher cell — only one can
+      // claim the kill. Exercises the `pushersHit.has(p.id)` continue
+      // branch.
+      pushers: [{ id: 'p1', x: 20, y: 10, velocityX: 5 }],
+      projectiles: [
+        { id: 'm1', x: 19.7, y: 10, velocityX: -20, glyph: '◄' },
+        { id: 'm2', x: 19.5, y: 10, velocityX: -20, glyph: '◄' },
+      ],
+      pusherSpawnTimerMs: 60_000,
+    };
+    state = tickGameState(state, 16, mulberry32(924));
+    expect(state.pushers.find((p) => p.id === 'p1')).toBeUndefined();
+    // Exactly one projectile is consumed; the other survives.
+    const survivingMissiles = state.projectiles.filter((p) => p.id === 'm1' || p.id === 'm2');
+    expect(survivingMissiles).toHaveLength(1);
+  });
 });
