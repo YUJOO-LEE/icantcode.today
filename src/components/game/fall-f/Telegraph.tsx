@@ -22,6 +22,10 @@ function Telegraph({ x, y }: TelegraphProps) {
         left: `calc(${FIELD_GUTTER_LEFT_PX}px + ${x}ch)`,
         height: `${ROW_HEIGHT_PX}px`,
         lineHeight: `${ROW_HEIGHT_PX}px`,
+        // 1ch-cell guard — `•` falls back outside MulmaruMono.
+        display: 'inline-block',
+        width: '1ch',
+        textAlign: 'center',
       }}
       aria-hidden="true"
     >

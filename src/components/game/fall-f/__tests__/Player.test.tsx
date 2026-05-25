@@ -61,4 +61,20 @@ describe('Player glyph', () => {
     );
     expect(container.querySelector('span')?.getAttribute('aria-hidden')).toBe('true');
   });
+
+  // Without this guard the glyph would render at its native fallback-font
+  // advance (measured at 1.2ch for `█` under MulmaruMono on macOS Chrome),
+  // overflowing the column to the right and pushing the visual center off
+  // the `Math.round(player.x)`-aligned foot cell. The result: "must walk
+  // further right than visible to fall off / overlaps the next character
+  // on landing". Lock the styles in place.
+  it('pins the glyph to a single character cell so visual center matches foot cell', () => {
+    const { container } = render(
+      <Player x={5} y={3} input="none" velocityY={0} dashDirection={null} />,
+    );
+    const style = container.querySelector('span')?.getAttribute('style') ?? '';
+    expect(style).toContain('width: 1ch');
+    expect(style).toContain('text-align: center');
+    expect(style).toContain('display: inline-block');
+  });
 });

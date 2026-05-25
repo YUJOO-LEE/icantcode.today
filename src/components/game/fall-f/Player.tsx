@@ -43,6 +43,18 @@ function Player({ x, y, input, velocityY, dashDirection }: PlayerProps) {
         left: `calc(${FIELD_GUTTER_LEFT_PX}px + ${x}ch)`,
         height: `${ROW_HEIGHT_PX}px`,
         lineHeight: `${ROW_HEIGHT_PX}px`,
+        // Lock the body to a single character cell so the visual center
+        // matches `player.x + 0.5` regardless of which font ends up
+        // drawing the glyph. The block-drawing characters in `pickGlyph`
+        // (█▌▐▀) aren't in MulmaruMono, so the browser falls back to the
+        // system monospace whose advance width may not equal MulmaruMono's
+        // `1ch` — without `width: 1ch` + center alignment the glyph drifts
+        // to one side of the cell and the player looks misaligned with
+        // the platform text (e.g. "must walk further right than visible
+        // to fall off / appears to overlap the next character on landing").
+        display: 'inline-block',
+        width: '1ch',
+        textAlign: 'center',
       }}
       aria-hidden="true"
     >
