@@ -122,7 +122,12 @@ export const PROJECTILE_SPAWN_THRESHOLD_SCORE = 10;
 
 // [TUNING] Telegraph lead time — a blinking dot appears at the row's right
 // edge this many ms before the projectile actually enters the row.
-export const PROJECTILE_TELEGRAPH_MS = 500;
+// Keep this small relative to LINE_RATE_MAX: at 500ms the targeted row
+// scrolled ~4.5 cells upward before the missile actually flew, so by the
+// time anything launched the row had drifted into the upper third of the
+// screen and a player camping near the bottom was never threatened. 300ms
+// keeps the warning visible while only scrolling ~2.7 cells at the cap.
+export const PROJECTILE_TELEGRAPH_MS = 300;
 
 // [TUNING] Random horizontal speed range. Min must beat the player's walk
 // (12 cells/sec) so a "run from the missile" strategy cannot win every time;
@@ -153,9 +158,11 @@ export const PROJECTILE_SPAWN_INTERVAL_MIN_FACTOR = 0.22;
 // [TUNING] Weight multiplier applied to candidate rows whose stand-line sits
 // ABOVE the player. The run only ever moves downward, so missiles spawned
 // above the player are cosmetic — visible flair, no real threat. Keep them
-// rare but not zero so the field doesn't feel half-empty. 0.2 = upward rows
-// pick at ~20% the rate of downward rows at the same distance.
-export const PROJECTILE_UPWARD_WEIGHT_FACTOR = 0.2;
+// rare but not zero so the field doesn't feel half-empty. 0.1 = upward rows
+// pick at ~10% the rate of downward rows at the same distance — at 0.2 the
+// field still felt biased toward already-passed rows once the telegraph
+// scroll was factored in.
+export const PROJECTILE_UPWARD_WEIGHT_FACTOR = 0.1;
 
 // Single-cell glyphs. Picked to stay inside the terminal/box-drawing aesthetic.
 export const PROJECTILE_GLYPH = '◄';
