@@ -21,6 +21,12 @@ function Projectile({ x, y, glyph }: ProjectileProps) {
         left: `calc(${FIELD_GUTTER_LEFT_PX}px + ${x}ch)`,
         height: `${ROW_HEIGHT_PX}px`,
         lineHeight: `${ROW_HEIGHT_PX}px`,
+        // Same 1ch-cell guard as Player — the projectile glyph (◄) isn't
+        // in MulmaruMono either, so without this its fallback advance
+        // would let the missile drift off-cell visually.
+        display: 'inline-block',
+        width: '1ch',
+        textAlign: 'center',
       }}
       aria-hidden="true"
     >

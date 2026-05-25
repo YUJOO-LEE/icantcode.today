@@ -23,4 +23,14 @@ describe('Telegraph', () => {
     expect(span.style.top).toBe('96px'); // 6 * 16
     expect(span.style.left).toContain('79ch');
   });
+
+  // U+2022 bullet falls back outside MulmaruMono; keep the dot pinned to
+  // a single character cell so it doesn't drift sideways.
+  it('pins the dot to a single character cell', () => {
+    render(<Telegraph x={79} y={4} />);
+    const span = screen.getByTestId('ff-telegraph');
+    expect(span.style.width).toBe('1ch');
+    expect(span.style.textAlign).toBe('center');
+    expect(span.style.display).toBe('inline-block');
+  });
 });
