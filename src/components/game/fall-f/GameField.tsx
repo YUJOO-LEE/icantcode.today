@@ -90,6 +90,13 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
               left: `${FIELD_GUTTER_LEFT_PX}px`,
               right: `${FIELD_GUTTER_RIGHT_PX}px`,
               height: `${ROW_HEIGHT_PX}px`,
+              // Keep `\t` rendering 1ch wide so visual columns match the JS
+              // character index that `getSegments` and `player.x` use. With
+              // the default tab-size, a tab expands to the next tab stop
+              // (typically 8ch), making the player visually float on the
+              // expanded whitespace while logically standing on a later
+              // segment (e.g. 'INFO' in a Go-style log line).
+              tabSize: 1,
             }}
           >
             {row.text}

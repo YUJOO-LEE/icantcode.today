@@ -427,7 +427,10 @@ export const STATIC_GROUPS: LineGroup[] = [
     s('time="2026-05-21T23:14:08Z" level=info msg="deploy ok" service=api by=yujoo.lee'),
   ]),
   group('zap-log', [
-    s('2026-05-21T23:14:08.421Z\tINFO\tapi/run.go:124\trun submitted\t{"user":"park","score":871}'),
+    // Tab characters would render visually wider than their JS-string length
+    // under `whitespace-pre`, so we spell out the separators as literal
+    // spaces — see GameField's `tabSize: 1` for the matching CSS guard.
+    s('2026-05-21T23:14:08.421Z  INFO  api/run.go:124  run submitted  {"user":"park","score":871}'),
   ]),
   group('syslog', [
     s('<14>May 21 23:14:08 api-park-7c9f kernel: [4621211.812] TCP: out of memory -- consider tuning tcp_mem'),

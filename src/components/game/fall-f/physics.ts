@@ -28,6 +28,19 @@ function inSegment(x: number, segment: PlatformSegment): boolean {
 }
 
 /**
+ * The cell the player visually occupies. The player glyph is 1ch wide and
+ * rendered at `left = x ch`, so its visual span is `[x, x + 1)` ch and its
+ * center sits at `x + 0.5`. Using `Math.round(x)` picks the column the
+ * player is most over — at x=2.0 that's col 2, at x=2.7 it's col 3 (because
+ * the right 70 % of the body covers col 3). This matches what the eye sees
+ * and prevents the "falls beside the actual whitespace" / "stands on top of
+ * a long whitespace" mismatches the floor-based pick produced.
+ */
+export function playerFootCell(x: number): number {
+  return Math.round(x);
+}
+
+/**
  * Returns the row currently under the player's feet, or null when in the air.
  * The player stands one cell above the row's text — spec §A.3 says the
  * character "lands on the line above the topmost row of a group". So we
@@ -40,7 +53,7 @@ function inSegment(x: number, segment: PlatformSegment): boolean {
  * platform two text-rows up and yank the player onto it.
  */
 export function findSupportingRow(player: Player, rows: readonly ScreenRow[]): ScreenRow | null {
-  const px = Math.floor(player.x);
+  const px = playerFootCell(player.x);
   for (const row of rows) {
     const dy = row.topRow - player.y;
     // dy must be strictly positive — a row at the same y as the player
@@ -59,7 +72,7 @@ export function findSupportingRow(player: Player, rows: readonly ScreenRow[]): S
 
 /** Returns the segment of `row` that holds the player's x, or null. */
 export function findSupportingSegment(row: ScreenRow, x: number): PlatformSegment | null {
-  const px = Math.floor(x);
+  const px = playerFootCell(x);
   for (const seg of row.segments) {
     if (inSegment(px, seg)) return seg;
   }
@@ -183,7 +196,7 @@ export function tickDashTimers(player: Player, dtMs: number): Player {
  * snap them back onto the segment. Used when dynamic platforms shrink.
  */
 export function autoSlide(player: Player, segment: PlatformSegment): Player {
-  const px = Math.floor(player.x);
+  const px = playerFootCell(player.x);
   if (px > segment.endX) return { ...player, x: segment.endX };
   if (px < segment.startX) return { ...player, x: segment.startX };
   return player;
