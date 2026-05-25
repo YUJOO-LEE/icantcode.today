@@ -56,23 +56,24 @@ describe('currentLinesPerSec', () => {
   it('returns the base rate at the start', () => {
     expect(currentLinesPerSec(0)).toBe(1.0);
   });
-  it('follows the discrete ease-in table — early bumps already > +0.1', () => {
-    // First step is +0.12 — bigger than the previous flat +0.1 curve so the
-    // very first level-up is perceptibly faster.
-    expect(approx(currentLinesPerSec(10_000), 1.12)).toBe(true);
-    expect(approx(currentLinesPerSec(20_000), 1.25)).toBe(true);
-    expect(approx(currentLinesPerSec(30_000), 1.4)).toBe(true);
-    expect(approx(currentLinesPerSec(60_000), 1.94)).toBe(true);
+  it('opens fast — the first level-up alone clears +0.25 line/sec', () => {
+    // The pre-tune curve started with +0.12, which made the first minute
+    // feel like idle drift. The new +0.25 / +0.30 opening gets pressure
+    // going right away.
+    expect(approx(currentLinesPerSec(10_000), 1.25)).toBe(true);
+    expect(approx(currentLinesPerSec(20_000), 1.55)).toBe(true);
+    expect(approx(currentLinesPerSec(30_000), 1.85)).toBe(true);
+    expect(approx(currentLinesPerSec(60_000), 2.75)).toBe(true);
   });
   it('keeps accelerating past 60s — late game punishes the player', () => {
-    expect(approx(currentLinesPerSec(80_000), 2.4)).toBe(true);
-    expect(approx(currentLinesPerSec(100_000), 2.94)).toBe(true);
-    expect(approx(currentLinesPerSec(110_000), 3.24)).toBe(true);
+    expect(approx(currentLinesPerSec(80_000), 3.4)).toBe(true);
+    expect(approx(currentLinesPerSec(100_000), 4.1)).toBe(true);
+    expect(approx(currentLinesPerSec(110_000), 4.5)).toBe(true);
   });
-  it('continues climbing past the old 120s plateau', () => {
-    expect(currentLinesPerSec(120_000)).toBe(3.5);
-    expect(currentLinesPerSec(150_000)).toBe(5.15);
-    expect(currentLinesPerSec(180_000)).toBe(7.25);
+  it('continues climbing past 120s with even larger steps', () => {
+    expect(currentLinesPerSec(120_000)).toBe(4.95);
+    expect(currentLinesPerSec(150_000)).toBe(6.55);
+    expect(currentLinesPerSec(180_000)).toBe(8.15);
   });
   it('caps at 8.9 line/sec once 200s has elapsed', () => {
     expect(currentLinesPerSec(200_000)).toBe(8.9);
@@ -86,6 +87,42 @@ describe('currentLinesPerSec', () => {
     // unwinnable past the cap. Lock this in so future curve tweaks can't
     // accidentally violate it.
     expect(LINE_RATE_MAX).toBeLessThan(PLAYER_GRAVITY_CELLS_PER_SEC);
+  });
+
+  it('lets a player jump from a mid-screen platform without timing out at LINE_RATE_MAX', () => {
+    // Even when the scroll is at the cap, a single hop from a platform
+    // sitting in the middle of the viewport must survive — the entire
+    // jump arc costs ~2v/gravity = 0.667s, during which the player
+    // scrolls 0.667 × LINE_RATE_MAX (= ~5.94 cells) closer to the top
+    // edge. A platform at y = viewport.rows/2 still has rows headroom.
+    // Without this guard the difficulty curve could regress us into an
+    // unwinnable opening tick after a jump.
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    // Jump from a platform in the middle of the viewport, at the post-cap
+    // elapsed time so the scroll rate is at LINE_RATE_MAX.
+    const platformTop = Math.floor(VIEWPORT.rows / 2);
+    state = {
+      ...state,
+      elapsedMs: 200_000,
+      level: LEVEL_MAX,
+      rows: [makeRow({ id: 'r-mid', topRow: platformTop, lineNumber: 5 })],
+      player: {
+        ...state.player,
+        x: 2,
+        y: platformTop - 1,
+        falling: false,
+        velocityY: 0,
+        fellAtMs: null,
+        groundY: platformTop - 1,
+      },
+    };
+    state = requestJump(state);
+    const rng = mulberry32(1234);
+    // Simulate ~1 second of motion — covers the full ~0.667s arc.
+    for (let i = 0; i < 60; i += 1) {
+      state = tickGameState(state, 16, rng);
+      expect(state.status, `died at tick ${i} (status=${state.status})`).toBe('playing');
+    }
   });
 });
 
