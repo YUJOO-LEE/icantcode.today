@@ -230,7 +230,11 @@ export const STATIC_GROUPS: LineGroup[] = [
   // misc ops
   group('systemctl-status', [s('$ systemctl status api.service')]),
   group('systemctl-status-out', [
-    s('● api.service — icantcode api'),
+    // ASCII-only — MulmaruMono ships U+25CF (●) and U+2014 (—) at advance=192,
+    // i.e. 2ch wide, which breaks the visual ↔ JS-index alignment everything
+    // in physics relies on (the player visually catches on the right edge of
+    // the glyph). Stick to 1ch-wide characters here.
+    s('* api.service -- icantcode api'),
     s('   Active: active (running) since Wed 2026-05-21 23:00:11 UTC'),
   ], 2),
   group('journalctl-tail', [s('$ journalctl -u api.service -n 2 --no-pager')]),
@@ -359,7 +363,7 @@ export const STATIC_GROUPS: LineGroup[] = [
   group('gh-run-list', [s('$ gh run list -L 3')]),
   group('gh-run-list-out', [
     s('completed  success  feat/fall-f-projectile-hazard  CI  3m12s  Lee Yujoo'),
-    s('completed  success  fix/api-rate-limit              CI  2m48s  Park Hyungjun'),
+    s('completed  success  fix/api-rate-limit             CI  2m48s  Park Hyungjun'),
   ], 2),
   group('lighthouse', [
     s('Performance: 96   Accessibility: 100   Best Practices: 100   SEO: 100'),
@@ -427,7 +431,10 @@ export const STATIC_GROUPS: LineGroup[] = [
     s('time="2026-05-21T23:14:08Z" level=info msg="deploy ok" service=api by=yujoo.lee'),
   ]),
   group('zap-log', [
-    s('2026-05-21T23:14:08.421Z\tINFO\tapi/run.go:124\trun submitted\t{"user":"park","score":871}'),
+    // Tab characters would render visually wider than their JS-string length
+    // under `whitespace-pre`, so we spell out the separators as literal
+    // spaces — see GameField's `tabSize: 1` for the matching CSS guard.
+    s('2026-05-21T23:14:08.421Z  INFO  api/run.go:124  run submitted  {"user":"park","score":871}'),
   ]),
   group('syslog', [
     s('<14>May 21 23:14:08 api-park-7c9f kernel: [4621211.812] TCP: out of memory -- consider tuning tcp_mem'),

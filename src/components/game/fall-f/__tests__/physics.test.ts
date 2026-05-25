@@ -11,8 +11,10 @@ import {
   clampX,
   detectDeath,
   findSupportingRow,
+  findSupportingSegment,
   inputDirection,
   pickDashDirection,
+  playerFootCell,
   projectileHitsPlatform,
   projectileHitsPlayer,
   settle,
@@ -319,6 +321,52 @@ describe('findSupportingRow', () => {
     // and player.x is inside upper's segment. settle() then snaps the player
     // up to upper.topRow - 1 = 8 — a free teleport upward without jumping.
     expect(findSupportingRow(player, [upper, lower])).toBe(lower);
+  });
+
+  // Foot-cell rounding (visual-match) — see playerFootCell. The player glyph
+  // is 1 ch wide, rendered at left=x ch, so its visual center sits at
+  // x + 0.5. A foot picked by Math.floor lags half a cell behind the visual
+  // center, causing the "falls beside the visible whitespace" / "stands on
+  // top of a long whitespace" mismatches reported as fall-f bugs.
+  it('treats x=2.7 as standing on col 3 (visual center), not col 2', () => {
+    // Platform only covers col 3 — col 2 is whitespace.
+    const row = makeRow(5, 3, 5);
+    const player = makePlayer({ x: 2.7, y: 4, falling: false });
+    expect(findSupportingRow(player, [row])).toBe(row);
+  });
+
+  it('falls off when visual center clears the segment, even if floor(x) is still on it', () => {
+    // Platform covers cols 0..2. Player at x=2.6 has visual center at 3.1,
+    // i.e. mostly over col 3 (whitespace). Old floor-based pick said col 2
+    // (still on), letting the player visually float over the empty space.
+    const row = makeRow(5, 0, 2);
+    const player = makePlayer({ x: 2.6, y: 4, falling: false });
+    expect(findSupportingRow(player, [row])).toBeNull();
+  });
+});
+
+describe('playerFootCell', () => {
+  it('rounds to the visually predominant column', () => {
+    expect(playerFootCell(2.0)).toBe(2);
+    expect(playerFootCell(2.4)).toBe(2);
+    expect(playerFootCell(2.5)).toBe(3); // tie breaks toward the right cell
+    expect(playerFootCell(2.7)).toBe(3);
+  });
+});
+
+describe('findSupportingSegment', () => {
+  it('uses the visually predominant cell, not floor(x)', () => {
+    // Two adjacent platforms separated by a 2-cell gap at cols 3..4.
+    const row = makeRow(5, 0, 2);
+    row.segments = [
+      { startX: 0, endX: 2 },
+      { startX: 5, endX: 8 },
+    ];
+    row.text = 'abc  defg';
+    // x=4.6 → visual center 5.1, predominantly in col 5 (right platform).
+    expect(findSupportingSegment(row, 4.6)).toEqual({ startX: 5, endX: 8 });
+    // x=4.3 → visual center 4.8, predominantly in col 4 (gap) — falls.
+    expect(findSupportingSegment(row, 4.3)).toBeNull();
   });
 });
 
