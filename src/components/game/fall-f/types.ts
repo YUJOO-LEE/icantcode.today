@@ -161,6 +161,22 @@ export interface Explosion {
 }
 
 /**
+ * Left-to-right hazard that only spawns on fully-empty (gap) rows. Drags any
+ * grounded player whose foot cell overlaps the pusher body rightward at the
+ * pusher's velocity until the player jumps clear, the pusher hits a missile
+ * (mutual annihilation), or the pusher reaches the right edge. The "body"
+ * is `PUSHER_LENGTH` cells wide; `x` is the leading (rightmost) cell.
+ */
+export interface Pusher {
+  id: string;
+  /** Leading-edge column (rightmost cell of the body). */
+  x: number;
+  y: number;
+  /** cells/sec, positive (left→right). */
+  velocityX: number;
+}
+
+/**
  * One on-screen row. Each visible line of a group is its own ScreenRow.
  * Gap rows have empty segments and `groupId === '__gap'`. They still occupy
  * a position in the running line counter — terminals number every line,
@@ -217,6 +233,10 @@ export interface GameState {
   explosions: Explosion[];
   /** Ms until the next telegraph spawn. Only ticks down once score ≥ threshold. */
   projectileSpawnTimerMs: number;
+  /** Active left-to-right pushers (gap-row only). */
+  pushers: Pusher[];
+  /** Ms until the next pusher spawn. Only ticks down once score ≥ pusher threshold. */
+  pusherSpawnTimerMs: number;
   /** Tracks the player's standing row + its offsetX at contact; delta drives shifting-platform drag. */
   playerStanding: { rowId: string; offsetX: number } | null;
 }

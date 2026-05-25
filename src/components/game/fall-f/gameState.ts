@@ -15,6 +15,14 @@ import {
   PROJECTILE_UPWARD_WEIGHT_FACTOR,
   PROJECTILE_VELOCITY_MAX_CELLS_PER_SEC,
   PROJECTILE_VELOCITY_MIN_CELLS_PER_SEC,
+  PUSHER_LENGTH,
+  PUSHER_SPAWN_INTERVAL_MAX_MS,
+  PUSHER_SPAWN_INTERVAL_MIN_FACTOR,
+  PUSHER_SPAWN_INTERVAL_MIN_MS,
+  PUSHER_SPAWN_INTERVAL_RAMP_SCORE,
+  PUSHER_SPAWN_THRESHOLD_SCORE,
+  PUSHER_VELOCITY_MAX_CELLS_PER_SEC,
+  PUSHER_VELOCITY_MIN_CELLS_PER_SEC,
   SOLVABILITY,
 } from './constants';
 import { lineContentOffsetX, lineSegmentsAt, renderLine } from './dynamicLine';
@@ -45,6 +53,7 @@ import type {
   Line,
   Player,
   Projectile,
+  Pusher,
   ScreenRow,
   Telegraph,
   Viewport,
@@ -111,6 +120,8 @@ export function makeInitialState(viewport: Viewport): GameState {
     projectiles: [],
     explosions: [],
     projectileSpawnTimerMs: 0,
+    pushers: [],
+    pusherSpawnTimerMs: 0,
     playerStanding: null,
   };
 }
@@ -149,6 +160,12 @@ function makeExplosionId(): string {
   return `boom-${explosionIdCounter}`;
 }
 
+let pusherIdCounter = 0;
+function makePusherId(): string {
+  pusherIdCounter += 1;
+  return `push-${pusherIdCounter}`;
+}
+
 function lerp(min: number, max: number, t: number): number {
   return min + (max - min) * t;
 }
@@ -163,6 +180,15 @@ function rolledSpawnIntervalMs(score: number, roll: number): number {
   const t = Math.min(1, over / PROJECTILE_SPAWN_INTERVAL_RAMP_SCORE);
   const factor = lerp(1, PROJECTILE_SPAWN_INTERVAL_MIN_FACTOR, t);
   const base = lerp(PROJECTILE_SPAWN_INTERVAL_MIN_MS, PROJECTILE_SPAWN_INTERVAL_MAX_MS, roll);
+  return factor * base;
+}
+
+/** Pusher analog of `rolledSpawnIntervalMs`. Separate threshold + ramp + cap. */
+function rolledPusherIntervalMs(score: number, roll: number): number {
+  const over = Math.max(0, score - PUSHER_SPAWN_THRESHOLD_SCORE);
+  const t = Math.min(1, over / PUSHER_SPAWN_INTERVAL_RAMP_SCORE);
+  const factor = lerp(1, PUSHER_SPAWN_INTERVAL_MIN_FACTOR, t);
+  const base = lerp(PUSHER_SPAWN_INTERVAL_MIN_MS, PUSHER_SPAWN_INTERVAL_MAX_MS, roll);
   return factor * base;
 }
 
@@ -184,6 +210,32 @@ function rolledSpawnIntervalMs(score: number, roll: number): number {
  * Without (1) bottom-camping runs avoid most missiles; without (2) above-row
  * missiles look impressive but never threaten.
  */
+/**
+ * Pick a fully-empty (gap) row to spawn a pusher on. Returns null when no
+ * gap row is currently visible. Eligibility:
+ *   - groupId === GAP_GROUP_ID (the row is a deliberate inter-group spacer,
+ *     guaranteeing no segments at any point in its life)
+ *   - topRow inside the visible viewport with a top margin so the score HUD
+ *     doesn't get overlapped at the spawn edge
+ *
+ * Selection is uniform random among eligible rows — pushers don't need the
+ * distance/direction bias projectiles use because they always travel along
+ * a confirmed-blank corridor and only become dangerous when the *player*
+ * walks into them.
+ */
+function pickPusherTargetRow(
+  rows: readonly ScreenRow[],
+  viewport: Viewport,
+  rng: RNG,
+): ScreenRow | null {
+  const candidates = rows.filter(
+    (r) => r.groupId === GAP_GROUP_ID && r.topRow >= 1 && r.topRow < viewport.rows,
+  );
+  if (candidates.length === 0) return null;
+  const idx = Math.floor(rng() * candidates.length);
+  return candidates[Math.min(idx, candidates.length - 1)] ?? null;
+}
+
 function pickTelegraphTargetRow(
   rows: readonly ScreenRow[],
   viewport: Viewport,
@@ -382,6 +434,31 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
   player = applyHorizontal(player, player.input, dt, next.viewport.cols);
   player = applyGravity(player, dt);
 
+  // 5.5 Pusher motion + push effect. Pushers exist on fully empty (gap)
+  //     rows; their `y` matches the stand-line of the platform immediately
+  //     below the gap, so they only ever touch players who are *grounded
+  //     on that platform*. A jumping player rises one cell above the
+  //     stand-line, clearing the pusher for the duration of the arc.
+  //     Push is applied BEFORE settle so a player shoved past the right
+  //     edge of the platform falls on the same tick they're shoved.
+  let pushers: Pusher[] = next.pushers.map((p) => ({
+    ...p,
+    x: p.x + p.velocityX * dt,
+    y: p.y - scroll,
+  }));
+  if (!player.falling) {
+    for (const p of pushers) {
+      if (Math.abs(p.y - player.y) >= 0.5) continue;
+      const leading = Math.round(p.x);
+      const trailing = leading - PUSHER_LENGTH + 1;
+      const foot = Math.round(player.x);
+      if (foot >= trailing && foot <= leading) {
+        player = { ...player, x: clampX(player.x + p.velocityX * dt, cols) };
+        break;
+      }
+    }
+  }
+
   // 6. Settle on supporting row, and track the deepest line stepped on.
   const settled = settle(player, next.rows, elapsedMs);
   player = settled.player;
@@ -456,6 +533,36 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
   }
   projectiles = survivingProjectiles;
 
+  // Pusher ↔ Projectile mutual annihilation. Happens BEFORE the
+  // projectileHitsPlayer check so a missile intercepted by a pusher can't
+  // also kill the player on the same tick.
+  {
+    const pushersHit = new Set<string>();
+    const projsHit = new Set<string>();
+    for (const proj of projectiles) {
+      for (const p of pushers) {
+        if (pushersHit.has(p.id)) continue;
+        if (Math.abs(p.y - proj.y) >= 0.5) continue;
+        const leading = Math.round(p.x);
+        const trailing = leading - PUSHER_LENGTH + 1;
+        const projCell = Math.floor(proj.x);
+        if (projCell >= trailing && projCell <= leading) {
+          explosions = explosions.concat({
+            id: makeExplosionId(),
+            x: projCell,
+            y: proj.y,
+            remainingMs: EXPLOSION_DURATION_MS,
+          });
+          pushersHit.add(p.id);
+          projsHit.add(proj.id);
+          break;
+        }
+      }
+    }
+    if (pushersHit.size > 0) pushers = pushers.filter((p) => !pushersHit.has(p.id));
+    if (projsHit.size > 0) projectiles = projectiles.filter((p) => !projsHit.has(p.id));
+  }
+
   let killedByProjectile = false;
   for (const p of projectiles) {
     if (projectileHitsPlayer(p, player)) {
@@ -500,6 +607,45 @@ export function tickGameState(state: GameState, dtMs: number, rng: RNG = default
 
   next.telegraphs = telegraphs;
   next.projectiles = projectiles;
+
+  // 7.6 Pusher cleanup + spawn (gated on PUSHER_SPAWN_THRESHOLD_SCORE).
+  pushers = pushers.filter((p) => {
+    if (p.y < -0.5 || p.y >= next.viewport.rows) return false;
+    // Despawn once the trailing edge has scrolled past the right wall.
+    const trailing = Math.round(p.x) - PUSHER_LENGTH + 1;
+    return trailing < cols;
+  });
+  let pusherTimerMs = next.pusherSpawnTimerMs;
+  if (next.score >= PUSHER_SPAWN_THRESHOLD_SCORE) {
+    pusherTimerMs -= dtMs;
+    let pusherSafety = 4;
+    while (pusherTimerMs <= 0 && pusherSafety > 0) {
+      pusherSafety -= 1;
+      const target = pickPusherTargetRow(next.rows, next.viewport, rng);
+      if (target) {
+        const speed = lerp(
+          PUSHER_VELOCITY_MIN_CELLS_PER_SEC,
+          PUSHER_VELOCITY_MAX_CELLS_PER_SEC,
+          rng(),
+        );
+        pushers = pushers.concat({
+          id: makePusherId(),
+          // Leading cell at 0 → only the leading `)` is visible at spawn;
+          // the trailing two cells emerge as the body slides right.
+          x: 0,
+          // p.y = gap.topRow lines up with the stand-line of the platform
+          // directly below the gap (whose topRow = gap.topRow + 1, so its
+          // stand-line is exactly gap.topRow).
+          y: target.topRow,
+          velocityX: speed,
+        });
+      }
+      pusherTimerMs += rolledPusherIntervalMs(next.score, rng());
+    }
+  }
+  next.pushers = pushers;
+  next.pusherSpawnTimerMs = pusherTimerMs;
+
   next.explosions = explosions;
   next.projectileSpawnTimerMs = spawnTimerMs;
 
