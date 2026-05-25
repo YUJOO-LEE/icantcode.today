@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  GAP_GROUP_ID,
   currentLinesPerSec,
   levelFromElapsed,
   makeInitialState,
@@ -736,5 +737,190 @@ describe('tickGameState — shifting platform drag', () => {
     };
     state = tickGameState(state, 16, mulberry32(703));
     expect(state.playerStanding).toBeNull();
+  });
+});
+
+describe('tickGameState — pusher hazard', () => {
+  function gapRow(overrides: Partial<Parameters<typeof makeRow>[0]> = {}) {
+    return makeRow({
+      id: 'gap-a',
+      topRow: 10,
+      lineNumber: 5,
+      groupId: GAP_GROUP_ID,
+      segments: [],
+      text: '',
+      ...overrides,
+    });
+  }
+
+  it('drags a grounded player rightward when its body cells overlap the foot', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    // Platform below the gap so the player has a stand-line at gap.topRow.
+    const gap = gapRow({ id: 'g', topRow: 10 });
+    const floor = makeRow({
+      id: 'floor',
+      topRow: 11,
+      lineNumber: 6,
+      segments: [{ startX: 0, endX: 20 }],
+    });
+    state = {
+      ...state,
+      rows: [gap, floor],
+      // Player standing on the platform below the gap: y = floor.topRow - 1 = 10 = gap.topRow.
+      player: { ...state.player, x: 5, y: 10, falling: false, velocityY: 0, groundY: 10 },
+      pushers: [{ id: 'p1', x: 5, y: 10, velocityX: 10 }],
+    };
+    const x0 = state.player.x;
+    state = tickGameState(state, 16, mulberry32(900));
+    // dt = 0.016s, velocity = 10 → player.x += 0.16
+    expect(state.player.x).toBeGreaterThan(x0);
+    expect(state.player.x).toBeCloseTo(x0 + 10 * 0.016, 3);
+  });
+
+  it('does not push a jumping (airborne) player', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 10 })],
+      player: { ...state.player, x: 5, y: 10, falling: true, velocityY: -3 },
+      pushers: [{ id: 'p1', x: 5, y: 10, velocityX: 10 }],
+    };
+    const x0 = state.player.x;
+    state = tickGameState(state, 16, mulberry32(901));
+    expect(state.player.x).toBe(x0);
+  });
+
+  it('annihilates with a projectile sharing its row, leaving an explosion', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 10 })],
+      pushers: [{ id: 'p1', x: 20, y: 10, velocityX: 5 }],
+      projectiles: [
+        { id: 'm1', x: 19.5, y: 10, velocityX: -20, glyph: '◄' },
+      ],
+      // Push the spawn timer well into the future so this tick doesn't
+      // spawn a replacement pusher that masks the annihilation.
+      pusherSpawnTimerMs: 60_000,
+    };
+    state = tickGameState(state, 16, mulberry32(902));
+    expect(state.pushers.find((p) => p.id === 'p1')).toBeUndefined();
+    expect(state.projectiles.find((p) => p.id === 'm1')).toBeUndefined();
+    expect(state.explosions.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('spawns pushers from score 0 (no missile-style threshold gate)', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    // Seed a visible gap row so the spawner has somewhere to land.
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 12 })],
+      pusherSpawnTimerMs: 1, // about to drain on this tick
+    };
+    state = tickGameState(state, 16, mulberry32(903));
+    expect(state.pushers.length).toBeGreaterThanOrEqual(1);
+    // Row scroll happens BEFORE spawn in the same tick, so the target's
+    // topRow is now 12 - linesPerSec * 0.016 — close to 12 but not exact.
+    expect(state.pushers[0]?.y).toBeCloseTo(12, 1);
+  });
+
+  it('never targets a non-gap (platform) row', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [
+        makeRow({
+          id: 'plat',
+          topRow: 10,
+          lineNumber: 4,
+          // Default makeRow gives a non-gap groupId; ensure segments exist too.
+          segments: [{ startX: 0, endX: 8 }],
+        }),
+      ],
+      pusherSpawnTimerMs: 1,
+    };
+    // Run many ticks: should never spawn because no GAP row is on screen.
+    for (let i = 0; i < 20; i += 1) {
+      state = tickGameState(state, 16, mulberry32(910 + i));
+    }
+    expect(state.pushers).toHaveLength(0);
+  });
+
+  it('does not push a grounded player whose row differs from the pusher row', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 8 })],
+      player: { ...state.player, x: 5, y: 12, falling: false, velocityY: 0, groundY: 12 },
+      pushers: [{ id: 'p1', x: 5, y: 8, velocityX: 10 }],
+      pusherSpawnTimerMs: 60_000,
+    };
+    const x0 = state.player.x;
+    state = tickGameState(state, 16, mulberry32(920));
+    expect(state.player.x).toBe(x0);
+  });
+
+  it('does not push when the player foot is outside the pusher body cells', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 10 })],
+      // Pusher body = [3..5]; player at x=10 is well outside.
+      player: { ...state.player, x: 10, y: 10, falling: false, velocityY: 0, groundY: 10 },
+      pushers: [{ id: 'p1', x: 5, y: 10, velocityX: 10 }],
+      pusherSpawnTimerMs: 60_000,
+    };
+    const x0 = state.player.x;
+    state = tickGameState(state, 16, mulberry32(921));
+    expect(state.player.x).toBe(x0);
+  });
+
+  it('despawns once the trailing edge has scrolled past the right wall', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 10 })],
+      // cols = 80; trailing edge = round(x) - 2 = 80. >= cols → despawn.
+      pushers: [{ id: 'p1', x: 82, y: 10, velocityX: 5 }],
+      pusherSpawnTimerMs: 60_000,
+    };
+    state = tickGameState(state, 16, mulberry32(922));
+    expect(state.pushers).toHaveLength(0);
+  });
+
+  it('does not annihilate when a projectile is on a different y than the pusher', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 10 })],
+      pushers: [{ id: 'p1', x: 20, y: 10, velocityX: 5 }],
+      projectiles: [{ id: 'm1', x: 19.5, y: 14, velocityX: -20, glyph: '◄' }],
+      pusherSpawnTimerMs: 60_000,
+    };
+    state = tickGameState(state, 16, mulberry32(923));
+    expect(state.pushers.find((p) => p.id === 'p1')).toBeDefined();
+    expect(state.projectiles.find((p) => p.id === 'm1')).toBeDefined();
+  });
+
+  it('only annihilates one pusher per projectile (does not double-charge an already-hit pusher)', () => {
+    let state = startNewRun(makeInitialState(VIEWPORT), 0, null);
+    state = {
+      ...state,
+      rows: [gapRow({ id: 'g', topRow: 10 })],
+      // Two projectiles converging on the same pusher cell — only one can
+      // claim the kill. Exercises the `pushersHit.has(p.id)` continue
+      // branch.
+      pushers: [{ id: 'p1', x: 20, y: 10, velocityX: 5 }],
+      projectiles: [
+        { id: 'm1', x: 19.7, y: 10, velocityX: -20, glyph: '◄' },
+        { id: 'm2', x: 19.5, y: 10, velocityX: -20, glyph: '◄' },
+      ],
+      pusherSpawnTimerMs: 60_000,
+    };
+    state = tickGameState(state, 16, mulberry32(924));
+    expect(state.pushers.find((p) => p.id === 'p1')).toBeUndefined();
+    // Exactly one projectile is consumed; the other survives.
+    const survivingMissiles = state.projectiles.filter((p) => p.id === 'm1' || p.id === 'm2');
+    expect(survivingMissiles).toHaveLength(1);
   });
 });

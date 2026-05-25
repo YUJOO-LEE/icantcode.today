@@ -22,7 +22,10 @@ function directionOf(e: KeyboardEvent): Direction | null {
 }
 
 function isJumpKey(e: KeyboardEvent): boolean {
-  return e.key === 'ArrowUp' || e.code === 'KeyW';
+  // Space is the canonical platformer jump key and reads naturally on any
+  // keyboard layout — `e.code === 'Space'` survives IME and language remaps
+  // the way `e.key === ' '` does not.
+  return e.code === 'Space';
 }
 
 function isDashKey(e: KeyboardEvent): boolean {

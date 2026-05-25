@@ -4,7 +4,7 @@
   "labels.death": "DEATH:",
   "labels.best": "best:",
   "labels.move": "←/→ · A/D move",
-  "labels.jump": "↑ · W jump",
+  "labels.jump": "Space jump",
   "labels.dash": "Shift dash",
   "death.timeout": "pushed off the top",
   "death.segfault": "fell through all platforms",

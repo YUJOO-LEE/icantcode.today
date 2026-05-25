@@ -168,6 +168,42 @@ export const PROJECTILE_UPWARD_WEIGHT_FACTOR = 0.1;
 export const PROJECTILE_GLYPH = '◄';
 export const TELEGRAPH_GLYPH = '•';
 
+// ─── PUSHER hazard ─────────────────────────────────────────────────────────
+// Left-to-right "gust" that only travels along fully empty (gap) rows. The
+// missile axis is right-to-left and deadly on contact; pushers are the
+// opposite axis — slower, non-lethal on its own, but they drag a grounded
+// player to the right until the player either jumps clear or runs out of
+// platform under their feet. They never overlap a platform line, so they
+// won't crash through a real row.
+
+// [TUNING] Pusher visual: an opening parenthesis "spit" sequence. The body
+// is `LENGTH` cells wide and spawned as a staggered streak — three `)`
+// glyphs entering the viewport one at a time so the rising count of dots
+// itself reads as the "telegraph" (no separate blinking warning needed).
+export const PUSHER_GLYPH = ')';
+export const PUSHER_LENGTH = 3;
+
+// [TUNING] Score at which pushers begin spawning. 0 = no gate; the gust can
+// appear from the very first gap row of the run. Spawn cadence is slow
+// enough (~2.5–5.5s base) that opening minutes still feel mostly about
+// gravity, but an unlucky early gust is intentional flavor.
+export const PUSHER_SPAWN_THRESHOLD_SCORE = 0;
+
+// [TUNING] Horizontal speed range. Min must clearly beat a standing player
+// (no horizontal velocity unless walking — 12 cells/sec) so just standing
+// still can't outpace the gust; max kept well under missile's 38 so the two
+// hazards stay visually and tactically distinct.
+export const PUSHER_VELOCITY_MIN_CELLS_PER_SEC = 6;
+export const PUSHER_VELOCITY_MAX_CELLS_PER_SEC = 14;
+
+// [TUNING] Spawn cadence (ms). Slower than missiles so the screen never
+// fills with both hazards at once. Like the missile cadence this scales
+// down with score, but with a gentler ramp.
+export const PUSHER_SPAWN_INTERVAL_MIN_MS = 2_500;
+export const PUSHER_SPAWN_INTERVAL_MAX_MS = 5_500;
+export const PUSHER_SPAWN_INTERVAL_RAMP_SCORE = 600;
+export const PUSHER_SPAWN_INTERVAL_MIN_FACTOR = 0.4;
+
 // Three-stage explosion. The impact frame lights up a radial cluster
 // (center + horizontal arms at ±1ch/±2ch + sub-row vertical pips + diagonal
 // sparks) so the burst reads as a near-circular pop. Cells outside the

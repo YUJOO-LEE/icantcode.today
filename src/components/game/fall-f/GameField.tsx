@@ -9,6 +9,7 @@ import {
 import Explosion from './Explosion';
 import Player from './Player';
 import Projectile from './Projectile';
+import Pusher from './Pusher';
 import Telegraph from './Telegraph';
 import { GAP_GROUP_ID } from './gameState';
 import type { GameState } from './types';
@@ -118,6 +119,9 @@ const GameField = forwardRef<HTMLDivElement, GameFieldProps>(function GameField(
       />
       {state.projectiles.map((p) => (
         <Projectile key={p.id} x={p.x} y={p.y} glyph={p.glyph} />
+      ))}
+      {state.pushers.map((p) => (
+        <Pusher key={p.id} x={p.x} y={p.y} />
       ))}
     </div>
   );

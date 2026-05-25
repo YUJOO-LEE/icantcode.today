@@ -40,7 +40,7 @@ describe('useKeyboard', () => {
   it('does not bind when enabled=false', () => {
     renderHook(() => useKeyboard({ enabled: false, onInput, onJump, onDash }));
     press('ArrowLeft');
-    press('ArrowUp');
+    pressCode('Space', ' ');
     press('Shift');
     expect(onInput).not.toHaveBeenCalled();
     expect(onJump).not.toHaveBeenCalled();
@@ -86,11 +86,11 @@ describe('useKeyboard', () => {
     expect(onInput).not.toHaveBeenCalled();
   });
 
-  it('preventDefault on ArrowLeft / ArrowRight / ArrowUp / Shift', () => {
+  it('preventDefault on ArrowLeft / ArrowRight / Space / Shift', () => {
     renderHook(() => useKeyboard({ enabled: true, onInput, onJump, onDash }));
     expect(press('ArrowLeft')).toHaveBeenCalled();
     expect(press('ArrowRight')).toHaveBeenCalled();
-    expect(press('ArrowUp')).toHaveBeenCalled();
+    expect(pressCode('Space', ' ')).toHaveBeenCalled();
     expect(press('Shift')).toHaveBeenCalled();
   });
 
@@ -101,7 +101,7 @@ describe('useKeyboard', () => {
     expect(onInput).not.toHaveBeenCalled();
   });
 
-  it('maps WASD via e.code, independent of e.key (CapsLock / IME safe)', () => {
+  it('maps A/D via e.code, independent of e.key (CapsLock / IME safe)', () => {
     renderHook(() => useKeyboard({ enabled: true, onInput, onJump, onDash }));
     // `key` deliberately not the plain letter — e.g. Korean IME / CapsLock.
     expect(pressCode('KeyA', 'ㅁ')).toHaveBeenCalled();
@@ -113,8 +113,11 @@ describe('useKeyboard', () => {
     expect(onInput).toHaveBeenLastCalledWith('right');
     releaseCode('KeyD', 'ㅇ');
     expect(onInput).toHaveBeenLastCalledWith('none');
+  });
 
-    expect(pressCode('KeyW', 'ㅈ')).toHaveBeenCalled();
+  it('maps Space via e.code so the platformer jump survives non-Latin IMEs', () => {
+    renderHook(() => useKeyboard({ enabled: true, onInput, onJump, onDash }));
+    expect(pressCode('Space', ' ')).toHaveBeenCalled();
     expect(onJump).toHaveBeenCalledOnce();
   });
 
@@ -146,10 +149,16 @@ describe('useKeyboard', () => {
     expect(onInput).toHaveBeenLastCalledWith('none');
   });
 
-  it('calls onJump on ArrowUp keydown', () => {
+  it('calls onJump on Space keydown', () => {
+    renderHook(() => useKeyboard({ enabled: true, onInput, onJump, onDash }));
+    pressCode('Space', ' ');
+    expect(onJump).toHaveBeenCalledOnce();
+  });
+
+  it('does NOT call onJump on ArrowUp (jump is bound to Space only)', () => {
     renderHook(() => useKeyboard({ enabled: true, onInput, onJump, onDash }));
     press('ArrowUp');
-    expect(onJump).toHaveBeenCalledOnce();
+    expect(onJump).not.toHaveBeenCalled();
   });
 
   it('calls onDash on Shift keydown', () => {
@@ -158,10 +167,10 @@ describe('useKeyboard', () => {
     expect(onDash).toHaveBeenCalledOnce();
   });
 
-  it('ignores OS auto-repeat for ArrowUp and Shift', () => {
+  it('ignores OS auto-repeat for Space and Shift', () => {
     renderHook(() => useKeyboard({ enabled: true, onInput, onJump, onDash }));
-    press('ArrowUp');
-    press('ArrowUp', { repeat: true });
+    pressCode('Space', ' ');
+    pressCode('Space', ' ', { repeat: true });
     expect(onJump).toHaveBeenCalledOnce();
     press('Shift');
     press('Shift', { repeat: true });
@@ -170,7 +179,7 @@ describe('useKeyboard', () => {
 
   it('handlers are no-ops when callbacks are not supplied', () => {
     expect(() => renderHook(() => useKeyboard({ enabled: true, onInput }))).not.toThrow();
-    expect(press('ArrowUp')).toHaveBeenCalled(); // still preventDefault
+    expect(pressCode('Space', ' ')).toHaveBeenCalled(); // still preventDefault
     expect(press('Shift')).toHaveBeenCalled();
   });
 
