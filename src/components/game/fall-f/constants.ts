@@ -145,14 +145,13 @@ export const PROJECTILE_SPAWN_INTERVAL_MIN_MS = 1_100;
 export const PROJECTILE_SPAWN_INTERVAL_MAX_MS = 3_000;
 
 // [TUNING] Score over `THRESHOLD` at which the spawn interval has been
-// shrunk all the way down to MIN_FACTOR (no further). Earlier ramp = the
-// curve actually bites within a single run — at the old 700 threshold
-// most matches ended before the player noticed the ramp at all. 350
-// puts the cap at roughly the halfway mark of a typical run; 0.22 makes
-// the cap interval ~4.5× the base spawn rate at threshold instead of 3×,
-// so the late game has the "missile spam" feel the curve is meant to
-// produce.
-export const PROJECTILE_SPAWN_INTERVAL_RAMP_SCORE = 350;
+// shrunk all the way down to MIN_FACTOR (no further). 540 lands the cap
+// at score ~550 — a deliberate "you've earned the spam" moment that
+// shares headroom with the upcoming left-side pusher hazard. Earlier
+// ramps (350) put the spam at ~360 where missiles + pushers together
+// would be unfair. MIN_FACTOR 0.22 stays — once you're at the cap the
+// missile field is supposed to feel relentless.
+export const PROJECTILE_SPAWN_INTERVAL_RAMP_SCORE = 540;
 export const PROJECTILE_SPAWN_INTERVAL_MIN_FACTOR = 0.22;
 
 // [TUNING] Weight multiplier applied to candidate rows whose stand-line sits
