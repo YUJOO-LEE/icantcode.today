@@ -2,39 +2,44 @@
 //       [TUNING] = author-suggested starting value, adjust freely.
 
 // [SPEC §A.3] Progressive line-rate curve — discrete 21-step ease-in.
-// Each step advances every LEVEL_DURATION_MS. The increments themselves
-// grow over time (≈ +0.12 → +0.85 line/sec) so early bumps are already
-// perceptible while the cap (≈ 8.9 line/sec, ~9× base) only arrives at
-// the 200s mark — i.e. genuinely punishing late-game pace.
+// Each step advances every LEVEL_DURATION_MS. The opening bumps are now
+// large (+0.25 then +0.30 per step) so the first minute already feels
+// like pressure rather than the old 1.0–1.5 idle drift; the cap stays
+// at 8.9 line/sec (= 200s mark) so late-game ceiling is unchanged.
 //
 // Game-balance invariant: LINE_RATE_MAX MUST stay strictly below
 // PLAYER_GRAVITY_CELLS_PER_SEC. If lines scroll up faster than the player
 // falls, a player standing on a platform can no longer reach a lower
 // platform and the game becomes unwinnable past the cap. Enforced by a
 // unit test in `__tests__/gameState.test.ts`.
+//
+// Jump survivability check: a single jump costs ~0.667s of airtime, so
+// at the cap (8.9 line/sec) the player scrolls ~5.94 cells closer to
+// the top edge during the arc. Platforms below mid-screen still leave
+// safe headroom — no timeout-death from a routine hop.
 export const LEVEL_DURATION_MS = 10_000;
 export const LEVEL_RATES = [
   1.0, // L0  — 0–10s
-  1.12, // L1  — 10–20s
-  1.25, // L2  — 20–30s
-  1.4, // L3  — 30–40s
-  1.56, // L4  — 40–50s
-  1.74, // L5  — 50–60s
-  1.94, // L6  — 60–70s
-  2.16, // L7  — 70–80s
-  2.4, // L8  — 80–90s
-  2.66, // L9  — 90–100s
-  2.94, // L10 — 100–110s
-  3.24, // L11 — 110–120s
-  3.5, // L12 — 120–130s
-  4.0, // L13 — 130–140s
-  4.55, // L14 — 140–150s
-  5.15, // L15 — 150–160s
-  5.8, // L16 — 160–170s
-  6.5, // L17 — 170–180s
-  7.25, // L18 — 180–190s
-  8.05, // L19 — 190–200s
-  8.9, // L20+ — 200s and beyond (cap)
+  1.25, // L1  — 10–20s  (+0.25 — opening is no longer flat)
+  1.55, // L2  — 20–30s  (+0.30)
+  1.85, // L3  — 30–40s  (+0.30)
+  2.15, // L4  — 40–50s  (+0.30)
+  2.45, // L5  — 50–60s  (+0.30)
+  2.75, // L6  — 60–70s  (+0.30) — at the old L9 (90s) tempo by 60s
+  3.05, // L7  — 70–80s  (+0.30)
+  3.4, // L8  — 80–90s  (+0.35)
+  3.75, // L9  — 90–100s (+0.35)
+  4.1, // L10 — 100–110s (+0.35)
+  4.5, // L11 — 110–120s (+0.40)
+  4.95, // L12 — 120–130s (+0.45)
+  5.45, // L13 — 130–140s (+0.50)
+  6.0, // L14 — 140–150s (+0.55)
+  6.55, // L15 — 150–160s (+0.55)
+  7.1, // L16 — 160–170s (+0.55)
+  7.65, // L17 — 170–180s (+0.55)
+  8.15, // L18 — 180–190s (+0.50)
+  8.55, // L19 — 190–200s (+0.40)
+  8.9, // L20+ — 200s and beyond (cap — unchanged)
 ] as const;
 export const LEVEL_MAX = LEVEL_RATES.length - 1;
 export const LINE_RATE_MAX = LEVEL_RATES[LEVEL_MAX];
@@ -117,7 +122,12 @@ export const PROJECTILE_SPAWN_THRESHOLD_SCORE = 10;
 
 // [TUNING] Telegraph lead time — a blinking dot appears at the row's right
 // edge this many ms before the projectile actually enters the row.
-export const PROJECTILE_TELEGRAPH_MS = 500;
+// Keep this small relative to LINE_RATE_MAX: at 500ms the targeted row
+// scrolled ~4.5 cells upward before the missile actually flew, so by the
+// time anything launched the row had drifted into the upper third of the
+// screen and a player camping near the bottom was never threatened. 300ms
+// keeps the warning visible while only scrolling ~2.7 cells at the cap.
+export const PROJECTILE_TELEGRAPH_MS = 300;
 
 // [TUNING] Random horizontal speed range. Min must beat the player's walk
 // (12 cells/sec) so a "run from the missile" strategy cannot win every time;
@@ -135,18 +145,24 @@ export const PROJECTILE_SPAWN_INTERVAL_MIN_MS = 1_100;
 export const PROJECTILE_SPAWN_INTERVAL_MAX_MS = 3_000;
 
 // [TUNING] Score over `THRESHOLD` at which the spawn interval has been
-// shrunk all the way down to MIN_FACTOR (no further). e.g. 700 + 0.3 means
-// scaling reaches its cap at score = threshold + 700, where intervals are
-// 30% of their base length (≈ 3× more frequent than at threshold).
-export const PROJECTILE_SPAWN_INTERVAL_RAMP_SCORE = 700;
-export const PROJECTILE_SPAWN_INTERVAL_MIN_FACTOR = 0.3;
+// shrunk all the way down to MIN_FACTOR (no further). Earlier ramp = the
+// curve actually bites within a single run — at the old 700 threshold
+// most matches ended before the player noticed the ramp at all. 350
+// puts the cap at roughly the halfway mark of a typical run; 0.22 makes
+// the cap interval ~4.5× the base spawn rate at threshold instead of 3×,
+// so the late game has the "missile spam" feel the curve is meant to
+// produce.
+export const PROJECTILE_SPAWN_INTERVAL_RAMP_SCORE = 350;
+export const PROJECTILE_SPAWN_INTERVAL_MIN_FACTOR = 0.22;
 
 // [TUNING] Weight multiplier applied to candidate rows whose stand-line sits
 // ABOVE the player. The run only ever moves downward, so missiles spawned
 // above the player are cosmetic — visible flair, no real threat. Keep them
-// rare but not zero so the field doesn't feel half-empty. 0.2 = upward rows
-// pick at ~20% the rate of downward rows at the same distance.
-export const PROJECTILE_UPWARD_WEIGHT_FACTOR = 0.2;
+// rare but not zero so the field doesn't feel half-empty. 0.1 = upward rows
+// pick at ~10% the rate of downward rows at the same distance — at 0.2 the
+// field still felt biased toward already-passed rows once the telegraph
+// scroll was factored in.
+export const PROJECTILE_UPWARD_WEIGHT_FACTOR = 0.1;
 
 // Single-cell glyphs. Picked to stay inside the terminal/box-drawing aesthetic.
 export const PROJECTILE_GLYPH = '◄';
