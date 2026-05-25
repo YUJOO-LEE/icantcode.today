@@ -4,7 +4,7 @@
   "labels.death": "사망:",
   "labels.best": "최고:",
   "labels.move": "←/→ · A/D 이동",
-  "labels.jump": "↑ · W 점프",
+  "labels.jump": "Space 점프",
   "labels.dash": "Shift 대시",
   "death.timeout": "위로 밀려 사라짐",
   "death.segfault": "발판 모두 놓치고 추락",
