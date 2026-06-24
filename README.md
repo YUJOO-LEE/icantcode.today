@@ -14,7 +14,7 @@
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React_19-61DAFB?style=flat-square&logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite_6-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite_8-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
 ![TanStack Query](https://img.shields.io/badge/TanStack_Query_5-FF4154?style=flat-square&logo=reactquery&logoColor=white)
 
@@ -62,7 +62,7 @@ $ icantcode --features
 
 | Category | Technology |
 |----------|-----------|
-| Framework | React 19 + Vite 6 |
+| Framework | React 19 + Vite 8 |
 | Language | TypeScript (strict) |
 | Server State | TanStack Query v5 |
 | Client State | Zustand v5 |
