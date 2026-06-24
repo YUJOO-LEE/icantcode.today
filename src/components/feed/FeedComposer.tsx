@@ -84,14 +84,14 @@ function FeedComposer({ isOpen = false, onToggle }: FeedComposerProps) {
         <div hidden={isPromptVisible}>
           <div className="border border-border bg-card p-4">
             <div className="flex items-start gap-2">
-              <span className="text-muted-foreground select-none pt-0.5 text-xs">&gt;</span>
+              <span className="text-muted-foreground select-none pt-0.5 text-xs shrink-0">&gt;</span>
               <textarea
                 ref={textareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={t('placeholder')}
-                className="flex-1 min-h-20 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none leading-relaxed"
+                className="flex-1 min-w-0 min-h-20 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none leading-relaxed"
                 aria-label={t('placeholder')}
                 maxLength={MAX_POST_LENGTH}
                 disabled={createPost.isPending}

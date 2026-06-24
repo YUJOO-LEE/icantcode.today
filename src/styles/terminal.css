@@ -50,6 +50,18 @@
   );
 }
 
+/* iOS Safari auto-zooms when a focused form control reports a font-size below
+   16px. The CLI type scale is intentionally tiny (text-xs), so on touch
+   devices we raise form controls to 16px to suppress the focus zoom while
+   pointer-precise (desktop) screens keep the small terminal text. */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

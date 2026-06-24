@@ -652,6 +652,16 @@ xl  1280 px
 - Box-drawing characters don't shrink (keep font-size stable).
 - Long prompt lines ellipsize (`overflow: hidden; text-overflow: ellipsis`).
 - Touch targets ≥ 44 × 44 px (WCAG) — achieved via button padding.
+- Form controls (`input`, `textarea`, `select`) render at ≥ 16 px on
+  coarse-pointer (touch) devices so focus never triggers iOS Safari
+  auto-zoom; pointer-precise screens keep the small CLI scale.
+  (`@media (pointer: coarse)` in `terminal.css`.)
+- No horizontal scroll at 320 px. User-generated bodies (post, comment)
+  wrap unbreakable tokens with `break-words`; identity strings (header
+  handle, post/comment author) `truncate`. Flex/grid children holding
+  variable text carry `min-w-0` so nothing forces the page wider than
+  the viewport. Covered by `e2e/10-mobile-no-horizontal-overflow.spec.ts`
+  and the `mobile-320` visual baselines.
 
 ## 10. Animation guide
 
