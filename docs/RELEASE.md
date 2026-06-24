@@ -52,9 +52,10 @@ git add package.json package-lock.json
 git commit -m "chore(release): vX.Y.Z"
 git tag -a vX.Y.Z -m "vX.Y.Z - <한 줄 요약>"
 
-# 4. 커밋과 태그를 같이 push
-git push origin master
-git push origin vX.Y.Z
+# 4. 커밋과 태그를 한 번에 push
+#    --follow-tags: release 커밋과 그 커밋이 가리키는 annotated 태그를 함께 전송 →
+#    브랜치만 가거나 태그만 가는 부분 push를 원천 차단.
+git push origin master --follow-tags
 ```
 
 태그 push가 `.github/workflows/release-deploy.yml`을 트리거하면 다음이 자동
@@ -99,8 +100,7 @@ npm version patch --no-git-tag-version
 git add package.json package-lock.json
 git commit -m "chore(release): vX.Y.(Z+1)"
 git tag -a vX.Y.(Z+1) -m "vX.Y.(Z+1) - hotfix: <요약>"
-git push origin master
-git push origin vX.Y.(Z+1)
+git push origin master --follow-tags
 ```
 
 ---
@@ -121,8 +121,7 @@ npm version patch --no-git-tag-version
 git add package.json package-lock.json
 git commit -m "chore(release): vX.Y.(Z+1)"
 git tag -a vX.Y.(Z+1) -m "vX.Y.(Z+1) - revert"
-git push origin master
-git push origin vX.Y.(Z+1)
+git push origin master --follow-tags
 ```
 
 ---
