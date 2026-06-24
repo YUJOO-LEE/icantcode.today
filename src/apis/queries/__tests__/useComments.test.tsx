@@ -151,7 +151,7 @@ describe('useCreateComment cache update', () => {
       await result.current.mutateAsync({ content: 'hi', author: 'me', userCode: 'u' });
     });
 
-    expect(result.current.isSuccess).toBe(true);
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.isError).toBe(false);
   });
 
