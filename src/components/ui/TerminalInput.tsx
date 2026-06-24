@@ -13,7 +13,7 @@ const TerminalInput = forwardRef<HTMLInputElement, TerminalInputProps>(
         </span>
         <input
           ref={ref}
-          className={`flex-1 bg-transparent border-b border-border px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:shadow-[0_1px_0_0_var(--primary)] transition-colors ${className}`}
+          className={`flex-1 min-w-0 bg-transparent border-b border-border px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:shadow-[0_1px_0_0_var(--primary)] transition-colors ${className}`}
           {...props}
         />
       </div>

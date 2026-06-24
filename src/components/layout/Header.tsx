@@ -39,17 +39,17 @@ function Header() {
           <Link
             to={ROUTES.HOME}
             aria-label={t('siteNavHome')}
-            className="flex items-center gap-1 text-xs text-muted-foreground sm:gap-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
+            className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground sm:gap-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/60"
           >
-            <Logo size={16} />
-            <span className="text-foreground">{username}@icantcode.today</span>
-            <span>:</span>
-            <span className="text-foreground">~</span>
-            <span>$</span>
-            <span className="cursor">_</span>
+            <Logo size={16} className="shrink-0" />
+            <span className="text-foreground min-w-0 truncate">{username}@icantcode.today</span>
+            <span className="shrink-0">:</span>
+            <span className="text-foreground shrink-0">~</span>
+            <span className="shrink-0">$</span>
+            <span className="cursor shrink-0">_</span>
           </Link>
 
-          <nav aria-label={t('siteNav')}>
+          <nav aria-label={t('siteNav')} className="shrink-0">
             <div className="flex items-center gap-1 text-[10px] sm:gap-2">
               <Link
                 to={primaryNavTo}

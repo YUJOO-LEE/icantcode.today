@@ -20,7 +20,7 @@ const FeedItem = memo(function FeedItem({ post }: FeedItemProps) {
       </div>
 
       <div className="pl-4 border-l border-border/50 mb-2">
-        <pre className="whitespace-pre-wrap text-foreground leading-relaxed text-xs">
+        <pre className="whitespace-pre-wrap break-words text-foreground leading-relaxed text-xs">
           {post.content}
         </pre>
       </div>
