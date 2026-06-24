@@ -16,7 +16,7 @@ Production: https://icantcode.today
 
 | Concern | Tool | Notes |
 |---|---|---|
-| Framework | React 19 + Vite 6 | SPA, no SSR |
+| Framework | React 19 + Vite 8 | SPA, no SSR |
 | Language | TypeScript 5.7 strict | `tsc -b` must pass |
 | Server state | TanStack Query v5 | Hooks live in `src/apis/queries/` |
 | Client state | Zustand v5 | Stores in `src/stores/` |
