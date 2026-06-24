@@ -7,7 +7,7 @@ How the 10 specialized agents in `.claude/agents/` divide work on this repo.
 
 SPA community that activates only during Claude Code API outages. Anonymous
 UUID sessions, delayed nickname entry (only required to post), single route,
-state-driven rendering. Stack: React 19 + Vite 6 + TypeScript + TanStack
+state-driven rendering. Stack: React 19 + Vite 8 + TypeScript + TanStack
 Query + Zustand + Tailwind + Playwright.
 
 ## Methodology — TDD
