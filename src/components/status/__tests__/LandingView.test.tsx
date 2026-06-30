@@ -1,14 +1,12 @@
 import { render, screen } from '@testing-library/react';
-import { I18nextProvider } from 'react-i18next';
 import { describe, it, expect, beforeEach } from 'vitest';
-import i18n from '@/lib/i18n';
 import { useStatusStore } from '@/stores/statusStore';
+import { createTestWrapper } from '@/tests/wrappers';
 import LandingView from '../LandingView';
-import type { ReactNode } from 'react';
 
-function Wrapper({ children }: { children: ReactNode }) {
-  return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>;
-}
+// LandingView now embeds NotificationButton, whose push hook calls
+// useMutation — so a QueryClient (plus i18n) must wrap it.
+const { Wrapper } = createTestWrapper({ withI18n: true });
 
 describe('LandingView', () => {
   beforeEach(() => {

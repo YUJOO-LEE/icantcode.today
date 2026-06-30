@@ -372,6 +372,10 @@ a measurement first.
   - `VITE_API_BASE_URL` — backend base URL.
   - `VITE_CF_BEACON_TOKEN` — Cloudflare Web Analytics beacon token
     (public by design).
+  - `VITE_VAPID_PUBLIC_KEY` — Web Push VAPID public key. Gates the push
+    opt-in UI (`NotificationButton`); when empty the opt-in stays hidden so
+    the feature is dormant until the push backend is configured. The matching
+    private key is server-side only. See API_SPEC §3.1.
 - Any new `VITE_*` var must be treated as **public** — it ends up inlined
   in the client bundle.
 
