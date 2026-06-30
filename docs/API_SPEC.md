@@ -82,6 +82,30 @@ reference and may drift — cross-check before implementing.
   earliest `playedAt`. Consumed by `useRanking` in `apis/queries/useGames.ts`
   and rendered by `components/game/fall-f/RankingBoard.tsx`. A successful
   `games/die` invalidates the `['games', 'ranking']` query.
+- `push/subscribe` (POST) — store a Web Push subscription so the backend can
+  notify this device on status changes. Body
+  `{ subscription, lang }` where `subscription` is the browser
+  `PushSubscription.toJSON()` (`{ endpoint, expirationTime?, keys: { p256dh, auth } }`)
+  and `lang` is `ko` | `en` for notification copy. Returns `{ ok }`.
+  Consumed by `useSubscribePush` in `apis/queries/usePushSubscription.ts`.
+- `push/unsubscribe` (POST) — stop pushing to a removed subscription. Body
+  `{ endpoint }`. Returns `{ ok }`. Consumed by `useUnsubscribePush`.
 
 When a new endpoint is added, update both the type file
 (`src/types/api.ts`) and this section.
+
+### 3.1 Web Push backend responsibilities
+
+The frontend only registers subscriptions; delivery is entirely backend-side:
+
+- Generate a VAPID key pair once. The **public** key is exposed to the client
+  as `VITE_VAPID_PUBLIC_KEY` (gates the opt-in UI — empty key hides it); the
+  **private** key never leaves the server.
+- Persist subscriptions from `push/subscribe` (dedupe by `endpoint`).
+- On a `can-i-code` status transition (down→up or up→down), send a Web Push to
+  every stored subscription (e.g. the `web-push` library). Payload JSON the
+  service worker understands: `{ title, body, url?, tag?, icon?, badge? }`.
+- Prune subscriptions that return `404`/`410` from the push service.
+
+The service worker that receives these lives at `public/sw.js`; it has no fetch
+handler or cache by design (push only).

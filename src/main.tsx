@@ -6,6 +6,8 @@ import App from './App';
 import { routes } from './routes';
 import i18n from './lib/i18n';
 import ErrorFallback from './components/common/ErrorFallback';
+import { isPushSupported, registerServiceWorker } from './lib/push';
+import { useInstallStore } from './stores/installStore';
 import './styles/globals.css';
 
 type HydrationData = NonNullable<Parameters<typeof createBrowserRouter>[1]>['hydrationData'];
@@ -67,3 +69,26 @@ function renderBootstrapError(err: unknown) {
 }
 
 bootstrap().catch(renderBootstrapError);
+
+// Register the push service worker after the page has loaded so it never
+// competes with the initial render. It has no fetch handler, so it cannot
+// affect navigation or caching — it only enables Web Push.
+if (isPushSupported()) {
+  window.addEventListener('load', () => {
+    registerServiceWorker().catch((err) => {
+      console.error('Service worker registration failed:', err);
+    });
+  });
+}
+
+// Capture the deferred install prompt (Chromium only) so the post-subscribe
+// "add to home screen" nudge can trigger it on a user gesture. Registered
+// synchronously so the event is never missed if it fires before React mounts.
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  useInstallStore.getState().setDeferredPrompt(e);
+});
+window.addEventListener('appinstalled', () => {
+  useInstallStore.getState().setDeferredPrompt(null);
+  useInstallStore.getState().setInstalled(true);
+});

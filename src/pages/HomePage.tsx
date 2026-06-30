@@ -9,6 +9,7 @@ import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 import LandingView from '@/components/status/LandingView';
 import CheckingView from '@/components/status/CheckingView';
 import StatusBanner from '@/components/status/StatusBanner';
+import NotificationButton from '@/components/status/NotificationButton';
 import FeedComposer from '@/components/feed/FeedComposer';
 import FeedList from '@/components/feed/FeedList';
 
@@ -97,6 +98,9 @@ function HomePage() {
           </div>
 
           <StatusBanner status={apiStatus} />
+          <div className="mb-4">
+            <NotificationButton />
+          </div>
           <FeedComposer
             isOpen={showComposer}
             onToggle={() => setShowComposer((prev) => !prev)}
