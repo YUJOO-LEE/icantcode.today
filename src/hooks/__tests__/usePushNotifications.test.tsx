@@ -1,6 +1,10 @@
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
 import { createTestWrapper } from '@/tests/wrappers';
+import { server } from '@/tests/mocks/server';
+import { API_BASE_URL } from '@/lib/constants';
+import i18n from '@/lib/i18n';
 
 // The hook gates on a configured VAPID key; provide one for the test graph.
 vi.mock('@/lib/constants', async () => {
@@ -87,6 +91,15 @@ describe('usePushNotifications — initial status', () => {
     const { result } = renderHook(() => usePushNotifications(), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.status).toBe('subscribed'));
   });
+
+  it('is default when permission granted but no subscription exists yet', async () => {
+    mocked.getNotificationPermission.mockReturnValue('granted');
+    mocked.getServiceWorkerRegistration.mockResolvedValue({} as ServiceWorkerRegistration);
+    mocked.getExistingPushSubscription.mockResolvedValue(null);
+    const { Wrapper } = createTestWrapper();
+    const { result } = renderHook(() => usePushNotifications(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.status).toBe('default'));
+  });
 });
 
 describe('usePushNotifications — enable()', () => {
@@ -145,6 +158,55 @@ describe('usePushNotifications — enable()', () => {
     await waitFor(() => expect(result.current.error).toBe('sw boom'));
     expect(result.current.status).toBe('default');
   });
+
+  it('returns to default when permission stays "default" (prompt dismissed)', async () => {
+    mocked.requestNotificationPermission.mockResolvedValue('default');
+    const { Wrapper } = createTestWrapper();
+    const { result } = renderHook(() => usePushNotifications(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.status).toBe('default'));
+
+    await act(async () => {
+      await result.current.enable();
+    });
+
+    expect(mocked.subscribeToPush).not.toHaveBeenCalled();
+    expect(result.current.status).toBe('default');
+  });
+
+  it('stringifies a non-Error throw into the error message', async () => {
+    mocked.ensurePushRegistration.mockRejectedValue('plain boom');
+    const { Wrapper } = createTestWrapper();
+    const { result } = renderHook(() => usePushNotifications(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.status).toBe('default'));
+
+    await act(async () => {
+      await result.current.enable();
+    });
+
+    await waitFor(() => expect(result.current.error).toBe('plain boom'));
+  });
+
+  it('sends lang=en when the UI language is English', async () => {
+    let body: { lang?: string } | undefined;
+    server.use(
+      http.post(`${API_BASE_URL}/push/subscribe`, async ({ request }) => {
+        body = (await request.json()) as { lang?: string };
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+    await i18n.changeLanguage('en');
+    const { Wrapper } = createTestWrapper();
+    const { result } = renderHook(() => usePushNotifications(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.status).toBe('default'));
+
+    await act(async () => {
+      await result.current.enable();
+    });
+
+    await waitFor(() => expect(result.current.status).toBe('subscribed'));
+    expect(body?.lang).toBe('en');
+    await i18n.changeLanguage('ko');
+  });
 });
 
 describe('usePushNotifications — disable()', () => {
@@ -166,5 +228,55 @@ describe('usePushNotifications — disable()', () => {
 
     expect(unsubscribe).toHaveBeenCalled();
     await waitFor(() => expect(result.current.status).toBe('default'));
+  });
+
+  it('no-ops cleanly when there is no existing subscription', async () => {
+    mocked.getServiceWorkerRegistration.mockResolvedValue(null);
+    const { Wrapper } = createTestWrapper();
+    const { result } = renderHook(() => usePushNotifications(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await result.current.disable();
+    });
+
+    await waitFor(() => expect(result.current.status).toBe('default'));
+  });
+
+  it('records an error when unsubscribing throws', async () => {
+    mocked.getNotificationPermission.mockReturnValue('granted');
+    mocked.getServiceWorkerRegistration.mockResolvedValue({} as ServiceWorkerRegistration);
+    mocked.getExistingPushSubscription.mockResolvedValue({
+      endpoint: 'https://push.example.com/abc',
+      unsubscribe: vi.fn(async () => {
+        throw new Error('unsub boom');
+      }),
+    } as unknown as PushSubscription);
+    const { Wrapper } = createTestWrapper();
+    const { result } = renderHook(() => usePushNotifications(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.status).toBe('subscribed'));
+
+    await act(async () => {
+      await result.current.disable();
+    });
+
+    await waitFor(() => expect(result.current.error).toBe('unsub boom'));
+  });
+
+  it('stringifies a non-Error throw while disabling', async () => {
+    mocked.getNotificationPermission.mockReturnValue('granted');
+    mocked.getServiceWorkerRegistration.mockResolvedValue({} as ServiceWorkerRegistration);
+    mocked.getExistingPushSubscription.mockResolvedValue({
+      endpoint: 'https://push.example.com/abc',
+      unsubscribe: vi.fn().mockRejectedValue('raw disable boom'),
+    } as unknown as PushSubscription);
+    const { Wrapper } = createTestWrapper();
+    const { result } = renderHook(() => usePushNotifications(), { wrapper: Wrapper });
+    await waitFor(() => expect(result.current.status).toBe('subscribed'));
+
+    await act(async () => {
+      await result.current.disable();
+    });
+
+    await waitFor(() => expect(result.current.error).toBe('raw disable boom'));
   });
 });

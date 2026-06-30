@@ -23,8 +23,8 @@ export function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
   if (/iphone|ipad|ipod/i.test(ua)) return true;
-  // iPadOS 13+ reports a desktop Safari UA; fall back to a touch-capable Mac.
-  return /macintosh/i.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document;
+  // iPadOS 13+ reports a desktop Safari UA; detect it via a touch-capable Mac.
+  return /macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
 }
 
 /** True when running as an installed PWA (home-screen / standalone window). */

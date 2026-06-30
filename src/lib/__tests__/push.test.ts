@@ -5,6 +5,12 @@ import {
   isStandalone,
   getNotificationPermission,
   urlBase64ToUint8Array,
+  registerServiceWorker,
+  ensurePushRegistration,
+  requestNotificationPermission,
+  getServiceWorkerRegistration,
+  subscribeToPush,
+  getExistingPushSubscription,
 } from '../push';
 
 function setUserAgent(ua: string) {
@@ -88,6 +94,11 @@ describe('isStandalone', () => {
     );
     expect(isStandalone()).toBe(false);
   });
+
+  it('returns false when matchMedia is unavailable', () => {
+    vi.stubGlobal('matchMedia', undefined);
+    expect(isStandalone()).toBe(false);
+  });
 });
 
 describe('isPushSupported', () => {
@@ -116,5 +127,109 @@ describe('isPushSupported', () => {
     if (!hadSW) delete (navigator as unknown as Record<string, unknown>).serviceWorker;
     if (!hadPM) delete (window as unknown as Record<string, unknown>).PushManager;
     if (!hadN) delete (window as unknown as Record<string, unknown>).Notification;
+  });
+});
+
+describe('isIOS (iPadOS 13+ desktop-UA fallback)', () => {
+  function setMaxTouchPoints(value: number) {
+    Object.defineProperty(window.navigator, 'maxTouchPoints', { configurable: true, value });
+  }
+
+  afterEach(() => setMaxTouchPoints(0));
+
+  it('detects a touch-capable Mac (iPadOS reporting as macOS)', () => {
+    setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari');
+    setMaxTouchPoints(5);
+    expect(isIOS()).toBe(true);
+  });
+
+  it('returns false for a Mac without touch', () => {
+    setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) Safari');
+    setMaxTouchPoints(0);
+    expect(isIOS()).toBe(false);
+  });
+});
+
+describe('isStandalone (iOS navigator.standalone)', () => {
+  it('returns true via the iOS navigator.standalone flag', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+    Object.defineProperty(window.navigator, 'standalone', { configurable: true, value: true });
+    expect(isStandalone()).toBe(true);
+    delete (window.navigator as unknown as Record<string, unknown>).standalone;
+  });
+});
+
+describe('service worker + push wrappers', () => {
+  function installServiceWorkerMock(overrides: Record<string, unknown> = {}) {
+    const subscription = { endpoint: 'https://push.example.com/x' };
+    const registration = {
+      pushManager: {
+        subscribe: vi.fn(async () => subscription),
+        getSubscription: vi.fn(async () => subscription),
+      },
+    };
+    const sw = {
+      register: vi.fn(async () => registration),
+      ready: Promise.resolve(registration),
+      getRegistration: vi.fn(async () => registration),
+      ...overrides,
+    };
+    Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: sw });
+    return { sw, registration, subscription };
+  }
+
+  function removeServiceWorker() {
+    delete (navigator as unknown as Record<string, unknown>).serviceWorker;
+  }
+
+  it('registerServiceWorker registers /sw.js', async () => {
+    const { sw, registration } = installServiceWorkerMock();
+    await expect(registerServiceWorker()).resolves.toBe(registration);
+    expect(sw.register).toHaveBeenCalledWith('/sw.js');
+    removeServiceWorker();
+  });
+
+  it('ensurePushRegistration resolves the ready registration', async () => {
+    const { sw, registration } = installServiceWorkerMock();
+    await expect(ensurePushRegistration()).resolves.toBe(registration);
+    expect(sw.register).toHaveBeenCalled();
+    removeServiceWorker();
+  });
+
+  it('requestNotificationPermission delegates to Notification.requestPermission', async () => {
+    vi.stubGlobal('Notification', { requestPermission: vi.fn(async () => 'granted') });
+    await expect(requestNotificationPermission()).resolves.toBe('granted');
+  });
+
+  it('getServiceWorkerRegistration returns null when serviceWorker is unavailable', async () => {
+    removeServiceWorker();
+    await expect(getServiceWorkerRegistration()).resolves.toBeNull();
+  });
+
+  it('getServiceWorkerRegistration returns the active registration', async () => {
+    const { registration } = installServiceWorkerMock();
+    await expect(getServiceWorkerRegistration()).resolves.toBe(registration);
+    removeServiceWorker();
+  });
+
+  it('getServiceWorkerRegistration coerces a missing registration to null', async () => {
+    installServiceWorkerMock({ getRegistration: vi.fn(async () => undefined) });
+    await expect(getServiceWorkerRegistration()).resolves.toBeNull();
+    removeServiceWorker();
+  });
+
+  it('subscribeToPush subscribes with the VAPID key', async () => {
+    const { registration, subscription } = installServiceWorkerMock();
+    await expect(subscribeToPush(registration as never, 'aGVsbG8')).resolves.toBe(subscription);
+    expect(registration.pushManager.subscribe).toHaveBeenCalledWith(
+      expect.objectContaining({ userVisibleOnly: true }),
+    );
+    removeServiceWorker();
+  });
+
+  it('getExistingPushSubscription reads the current subscription', async () => {
+    const { registration, subscription } = installServiceWorkerMock();
+    await expect(getExistingPushSubscription(registration as never)).resolves.toBe(subscription);
+    removeServiceWorker();
   });
 });
