@@ -59,12 +59,17 @@ describe('usePushNotifications — initial status', () => {
     expect(result.current.isSupported).toBe(false);
   });
 
-  it('is needs-install on iOS Safari outside an installed PWA', async () => {
+  it('is needs-install on an iOS tab even though the push APIs are absent', async () => {
+    // Real iOS Safari/Chrome tabs expose no PushManager/Notification, so
+    // isPushSupported() is false there — yet we must still surface the opt-in
+    // as an "add to home screen" install entry point rather than hiding it.
+    mocked.isPushSupported.mockReturnValue(false);
     mocked.isIOS.mockReturnValue(true);
     mocked.isStandalone.mockReturnValue(false);
     const { Wrapper } = createTestWrapper();
     const { result } = renderHook(() => usePushNotifications(), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.status).toBe('needs-install'));
+    expect(result.current.isSupported).toBe(true);
     expect(result.current.needsInstall).toBe(true);
   });
 

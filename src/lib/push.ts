@@ -27,6 +27,17 @@ export function isIOS(): boolean {
   return /macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
 }
 
+/**
+ * True on an iOS browser that is NOT Safari (Chrome=CriOS, Firefox=FxiOS,
+ * Edge=EdgiOS, Opera=OPT/). On iOS only Safari can create a push-capable
+ * home-screen web app, so these browsers must first route the user to Safari
+ * instead of showing the share-sheet install steps.
+ */
+export function isIOSNonSafari(): boolean {
+  if (!isIOS()) return false;
+  return /crios|fxios|edgios|opt\//i.test(navigator.userAgent);
+}
+
 /** True when running as an installed PWA (home-screen / standalone window). */
 export function isStandalone(): boolean {
   if (typeof window === 'undefined') return false;
