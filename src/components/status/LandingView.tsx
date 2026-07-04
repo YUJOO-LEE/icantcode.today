@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import MultilineTypewriterText from '@/components/ui/MultilineTypewriterText';
 import ModelStatusLine from './ModelStatusLine';
 import StatusPageLine from './StatusPageLine';
+import NotificationButton from './NotificationButton';
 
 function LandingView() {
   const { t } = useTranslation('status');
@@ -36,6 +37,9 @@ function LandingView() {
           />
           <div className="mt-2 pt-2 border-t border-border/50">
             <p className="text-muted-foreground/50"># {t('feedOnlyOnOutage')}</p>
+            <div className="mt-2">
+              <NotificationButton />
+            </div>
           </div>
         </div>
       </div>

@@ -14,5 +14,23 @@
       "critical": "CRIT",
       "maintenance": "MAINT"
     }
+  },
+  "notify": {
+    "enable": "상태 변동 알림 받기",
+    "enabling": "구독 중...",
+    "enabled": "알림 켜짐",
+    "disable": "끄기",
+    "denied": "알림이 차단되어 있어요. 브라우저 설정에서 알림을 허용해 주세요.",
+    "error": "알림을 켜지 못했어요. 다시 시도해 주세요.",
+    "addToHome": "홈 화면에도 추가",
+    "iosInstall": "아이폰에서 알림 받기",
+    "iosGuide": {
+      "title": "홈 화면에 추가하면 알림을 받을 수 있어요",
+      "step1": "Safari 하단의 공유 버튼을 누르세요",
+      "step2": "\"홈 화면에 추가\"를 선택하세요",
+      "step3": "홈 화면에서 icantcode를 열고 \"상태 변동 알림 받기\"를 다시 누르세요",
+      "safariNote": "Safari에서만 동작해요.",
+      "close": "확인"
+    }
   }
 }

@@ -14,5 +14,23 @@
       "critical": "CRIT",
       "maintenance": "MAINT"
     }
+  },
+  "notify": {
+    "enable": "Get status alerts",
+    "enabling": "Subscribing...",
+    "enabled": "Alerts on",
+    "disable": "turn off",
+    "denied": "Notifications are blocked. Allow them in your browser settings.",
+    "error": "Couldn't enable alerts. Please try again.",
+    "addToHome": "Add to Home Screen too",
+    "iosInstall": "Get alerts on your iPhone",
+    "iosGuide": {
+      "title": "Add to Home Screen to get alerts",
+      "step1": "Tap the Share button in Safari",
+      "step2": "Choose \"Add to Home Screen\"",
+      "step3": "Open icantcode from your home screen, then tap \"Get status alerts\" again",
+      "safariNote": "This only works in Safari.",
+      "close": "Got it"
+    }
   }
 }

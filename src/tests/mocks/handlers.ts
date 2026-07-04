@@ -46,4 +46,12 @@ export const handlers = [
   http.get(`${API_BASE_URL}/games/ranking`, () => {
     return HttpResponse.json({ list: [] });
   }),
+
+  http.post(`${API_BASE_URL}/push/subscribe`, () => {
+    return HttpResponse.json({ ok: true });
+  }),
+
+  http.post(`${API_BASE_URL}/push/unsubscribe`, () => {
+    return HttpResponse.json({ ok: true });
+  }),
 ];

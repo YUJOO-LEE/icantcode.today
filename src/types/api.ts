@@ -96,3 +96,27 @@ export interface RankingItem {
 export interface RankingResponse {
   list: RankingItem[];
 }
+
+/** Browser `PushSubscription.toJSON()` shape sent to the push backend. */
+export interface WebPushSubscriptionJSON {
+  endpoint: string;
+  expirationTime?: number | null;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+}
+
+export interface PushSubscribeRequest {
+  subscription: WebPushSubscriptionJSON;
+  /** Locale so the backend can localize notification copy (`ko` | `en`). */
+  lang: string;
+}
+
+export interface PushUnsubscribeRequest {
+  endpoint: string;
+}
+
+export interface PushSubscribeResponse {
+  ok: boolean;
+}
