@@ -10,6 +10,20 @@ test.use({
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.clock.install({ time: new Date('2026-04-01T00:00:00Z') });
+  // Headless Chromium reports Notification.permission === 'denied' and
+  // Playwright's grantPermissions doesn't change that getter, which would make
+  // the push opt-in render its "notifications blocked" notice. Force 'granted'
+  // so the baseline captures the inviting "enable alerts" state instead.
+  await page.addInitScript(() => {
+    try {
+      Object.defineProperty(Notification, 'permission', {
+        configurable: true,
+        get: () => 'granted',
+      });
+    } catch {
+      /* Notification unavailable — leave the default. */
+    }
+  });
 });
 
 test('시각 스냅샷: 320px 랜딩', async ({ page }) => {
@@ -47,5 +61,7 @@ test('시각 스냅샷: 320px 장애 피드 (긴 작성자명·댓글)', async (
   await expect(page.getByText(/cannot ship anything/)).toBeVisible();
   await page.getByLabel(/댓글/).first().click();
   await expect(page.getByText(/same here/)).toBeVisible();
+  // Lock the post-hydration state: the opt-in has mounted in its enable form.
+  await expect(page.getByRole('button', { name: /상태 변동 알림 받기/ })).toBeVisible();
   await expect(page).toHaveScreenshot('mobile320-feed.png', { fullPage: true });
 });
