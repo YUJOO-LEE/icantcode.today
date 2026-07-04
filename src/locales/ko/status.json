@@ -30,7 +30,14 @@
       "step2": "\"홈 화면에 추가\"를 선택하세요",
       "step3": "홈 화면에서 icantcode를 열고 \"상태 변동 알림 받기\"를 다시 누르세요",
       "safariNote": "Safari에서만 동작해요.",
-      "close": "확인"
+      "close": "확인",
+      "nonSafari": {
+        "title": "먼저 Safari에서 열어 주세요",
+        "body": "지금 브라우저에서는 iOS 알림을 받을 수 없어요. Safari로 열면 홈 화면에 추가해 알림을 받을 수 있어요.",
+        "copyUrl": "주소 복사",
+        "copied": "복사됨",
+        "menuHint": "또는 브라우저 메뉴에서 \"Safari에서 열기\"를 선택하세요."
+      }
     }
   }
 }

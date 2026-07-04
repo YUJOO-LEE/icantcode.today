@@ -30,7 +30,14 @@
       "step2": "Choose \"Add to Home Screen\"",
       "step3": "Open icantcode from your home screen, then tap \"Get status alerts\" again",
       "safariNote": "This only works in Safari.",
-      "close": "Got it"
+      "close": "Got it",
+      "nonSafari": {
+        "title": "Open in Safari first",
+        "body": "This browser can't receive iOS alerts. Open the site in Safari, then add it to your home screen to enable alerts.",
+        "copyUrl": "Copy address",
+        "copied": "Copied",
+        "menuHint": "Or choose \"Open in Safari\" from your browser menu."
+      }
     }
   }
 }

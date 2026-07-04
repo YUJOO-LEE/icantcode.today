@@ -48,9 +48,15 @@ export function usePushNotifications(): UsePushNotifications {
   const subscribeMutation = useSubscribePush();
   const unsubscribeMutation = useUnsubscribePush();
 
-  // Feature is available only when the browser supports push AND the backend
-  // VAPID key is configured; otherwise the opt-in stays hidden.
-  const isSupported = isPushSupported() && Boolean(VAPID_PUBLIC_KEY);
+  // The opt-in renders when the backend VAPID key is configured AND either the
+  // browser can do Web Push OR we're on an iOS tab that still needs installing.
+  // iOS delivers push only inside a home-screen PWA — a browser tab (Safari or
+  // Chrome) exposes no PushManager/Notification, so isPushSupported() is false
+  // there. Hiding on that alone would kill the very "add to home screen" entry
+  // point iOS users need, so treat the needs-install case as supported too.
+  const isConfigured = Boolean(VAPID_PUBLIC_KEY);
+  const iosNeedsInstall = isIOS() && !isStandalone();
+  const isSupported = isConfigured && (isPushSupported() || iosNeedsInstall);
 
   const [status, setStatus] = useState<PushStatus>('unsupported');
   const [error, setError] = useState<string | null>(null);

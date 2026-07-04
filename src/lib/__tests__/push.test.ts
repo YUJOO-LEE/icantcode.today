@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   isPushSupported,
   isIOS,
+  isIOSNonSafari,
   isStandalone,
   getNotificationPermission,
   urlBase64ToUint8Array,
@@ -63,6 +64,35 @@ describe('isIOS', () => {
   it('returns false for desktop Chrome', () => {
     setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome');
     expect(isIOS()).toBe(false);
+  });
+});
+
+describe('isIOSNonSafari', () => {
+  const IOS = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko)';
+
+  it('detects Chrome on iOS (CriOS)', () => {
+    setUserAgent(`${IOS} CriOS/112.0.5615.70 Mobile/15E148 Safari/604.1`);
+    expect(isIOSNonSafari()).toBe(true);
+  });
+
+  it('detects Firefox on iOS (FxiOS)', () => {
+    setUserAgent(`${IOS} FxiOS/112.0 Mobile/15E148 Safari/604.1`);
+    expect(isIOSNonSafari()).toBe(true);
+  });
+
+  it('detects Edge on iOS (EdgiOS)', () => {
+    setUserAgent(`${IOS} EdgiOS/112.0 Mobile/15E148 Safari/604.1`);
+    expect(isIOSNonSafari()).toBe(true);
+  });
+
+  it('returns false for Safari on iOS', () => {
+    setUserAgent(`${IOS} Version/16.4 Mobile/15E148 Safari/604.1`);
+    expect(isIOSNonSafari()).toBe(false);
+  });
+
+  it('returns false on non-iOS even in Chrome', () => {
+    setUserAgent('Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/112.0 Mobile Safari/537.36');
+    expect(isIOSNonSafari()).toBe(false);
   });
 });
 
