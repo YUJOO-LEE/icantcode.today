@@ -13,7 +13,7 @@ Please do **not** open a public issue for security-related reports.
 
 ## Supported Versions
 
-icantcode.today is a single-page web application with continuous deployment — only the latest build on the `master` branch is maintained. Previous commits are not patched.
+icantcode.today is a single-page web application deployed from version tags — only the latest tagged release from the `master` branch is maintained. Previous releases are not patched.
 
 | Branch   | Supported |
 | -------- | --------- |
@@ -33,7 +33,7 @@ This repo enforces security in three layers. All three are required — each cov
 | Layer | What it checks | Can it be bypassed? |
 |---|---|---|
 | **Local pre-push hook** (`.githooks/pre-push`) | typecheck, lint, unit tests | Yes (`git push --no-verify`). Developer ergonomics only — never trust as a gate. |
-| **GitHub Actions CI** (`.github/workflows/`) | `audit` (npm audit, high+), `typecheck`, `lint`, `test` (coverage ≥97%), `e2e` (Playwright), `build` (SEO smoke) | No — authoritative gate. |
+| **GitHub Actions CI** (`.github/workflows/ci.yml`) | `audit` (production high+ plus exact dev-only advisory policy), `typecheck`, `lint`, `test` (coverage ≥97%), `e2e` (Playwright), `build` (SEO smoke) | No — authoritative gate. |
 | **GitHub repository settings** (maintainer configures in UI) | Secret scanning, Push protection, Dependabot, CodeQL default setup (weekly), Branch protection ruleset | No — set once, enforced always. |
 
 ### Repository Settings Checklist (maintainer)
@@ -51,13 +51,27 @@ One-time GitHub UI configuration. Re-verify after any org/repo setting change.
 **Settings → Rules → Rulesets** (target: `master`)
 - [ ] Restrict deletions
 - [ ] Block force pushes
-- [ ] Require status checks to pass (from `deploy.yml`):
+- [ ] Require status checks to pass (from `ci.yml`):
   - `audit`
   - `typecheck`
   - `lint`
   - `test`
   - `e2e`
   - `build`
+
+### Dependency Audit Policy
+
+`npm run audit` enforces two checks:
+
+1. Production dependencies must contain no high or critical vulnerabilities.
+2. The full dependency tree must contain no high or critical vulnerabilities
+   except advisories explicitly listed in `scripts/audit-policy.mjs`.
+
+An allowlisted advisory is accepted only while the production-only audit stays
+clean. Transitive records are resolved back to their source advisory, so a new
+high or critical advisory still fails CI. Every policy exception requires a
+regression test in `scripts/audit-policy.test.mjs` and must be removed when the
+affected development-tool chain publishes a compatible fix.
 
 ### Vite Bundle Exposure — Important
 
