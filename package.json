@@ -21,14 +21,14 @@
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.101.4",
-    "i18next": "^26.3.6",
+    "@tanstack/react-query": "^5.102.8",
+    "i18next": "^26.4.2",
     "motion": "^12.42.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-i18next": "^17.0.11",
-    "react-router": "^8.3.0",
-    "zustand": "^5.0.14"
+    "react-i18next": "^17.0.13",
+    "react-router": "^8.3.1",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
